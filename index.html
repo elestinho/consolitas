@@ -186,7 +186,7 @@
       Tus juegos y partidas se guardan solo en este dispositivo. Guarda dentro del juego y exporta el
       archivo <b>.sav</b> desde el menú de pausa de vez en cuando.
     </div>
-    <div class="tips" style="padding-top:0;opacity:.6">Versión 9 · logos y carrusel</div>
+    <div class="tips" style="padding-top:0;opacity:.6">Versión 10 · portadas automáticas</div>
   </section>
 
   <!-- Pantalla 2: juegos de una consola -->
@@ -196,6 +196,7 @@
       <h1 id="cTitle">Consola<span class="sub" id="cSub"></span></h1>
       <button class="ibtn acc" id="btnAddC" aria-label="Añadir juego">＋</button>
     </div>
+    <div id="cstatus" style="color:var(--mut);font-size:13px;padding:0 18px;min-height:18px"></div>
     <div id="games" class="ggrid"></div>
   </section>
 </div>
@@ -209,7 +210,8 @@
   <div class="grab"></div>
   <div class="shead"><div class="cover" id="sCover"></div><div class="st"><b id="sTitle"></b><span id="sMeta"></span></div></div>
   <button class="sbtn pri" id="sPlay">▶ Jugar</button>
-  <button class="sbtn" id="sCover2">Cambiar portada</button>
+  <button class="sbtn" id="sAuto">Buscar portada automática</button>
+  <button class="sbtn" id="sCover2">Cambiar portada (foto)</button>
   <a class="sbtn" id="sSearch" target="_blank" rel="noopener">Buscar portada en internet</a>
   <button class="sbtn" id="sRename">Renombrar</button>
   <button class="sbtn danger" id="sDelete">Eliminar de la biblioteca</button>
@@ -221,8 +223,9 @@
   <h2>Ajustes</h2>
   <div class="row" id="skinRow"><span>Skin de Game Boy Advance</span><select id="skinSel"></select></div>
   <div class="row"><span>Efecto LCD (rejilla de píxeles)</span><input type="checkbox" id="lcd"></div>
+  <div class="row"><span>Buscar portadas automáticamente</span><input type="checkbox" id="autoCov"></div>
   <div class="row"><span>Diagnóstico (si el juego se cierra solo)</span><button class="ibtn" id="btnDiag" style="width:auto;padding:0 14px;font-size:14px;border-radius:12px;height:36px">Ver</button></div>
-  <p class="note">La skin solo se usa con la GBA. El resto de consolas usan los controles táctiles del emulador.</p>
+  <p class="note">La skin solo se usa con la GBA. Las portadas se buscan en catálogos públicos de GitHub (libretro): se compara la huella de tu ROM en tu dispositivo y no se envía ningún archivo.</p>
   <button class="sbtn pri" id="setClose">Listo</button>
 </div>
 
@@ -342,12 +345,13 @@
   /* ====== IndexedDB: 'roms' (ROM completa) y 'meta' (título, portada; ligero) ====== */
   function openDB() {
     return new Promise(function (res, rej) {
-      var r = indexedDB.open(DB, 3);
+      var r = indexedDB.open(DB, 4);
       r.onupgradeneeded = function () {
         var db = r.result;
         if (!db.objectStoreNames.contains('roms')) db.createObjectStore('roms', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('auto')) db.createObjectStore('auto', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('cache')) db.createObjectStore('cache', { keyPath: 'id' });
       };
       r.onsuccess = function () { res(r.result); };
       r.onerror = function () { rej(r.error); };
@@ -370,6 +374,8 @@
   var allMeta = function () { return tx('meta', 'readonly', function (s) { return s.getAll(); }); };
   var putAuto = function (o) { return tx('auto', 'readwrite', function (s) { return s.put(o); }); };
   var getAuto = function (id) { return tx('auto', 'readonly', function (s) { return s.get(id); }); };
+  var getCache = function (id) { return tx('cache', 'readonly', function (s) { return s.get(id); }); };
+  var putCache = function (o) { return tx('cache', 'readwrite', function (s) { return s.put(o); }); };
 
   function romSize(g) { return g.buf ? g.buf.byteLength : (g.blob ? g.blob.size : 0); }
   // Lista ligera: recorre las ROM una a una sin retenerlas en memoria
@@ -407,7 +413,7 @@
     if (r.name === 'NotAllowedError') { console.warn(r); return; }
     log('Error (promesa): ' + (r.name ? r.name + ': ' : '') + (r.message || r) + '\n' + where(r.stack));
   });
-  function status(t) { $('status').textContent = t || ''; }
+  function status(t) { $('status').textContent = t || ''; $('cstatus').textContent = t || ''; }
   var toastT;
   function toast(t, ms) {
     var el = $('toast'); el.textContent = t; el.classList.add('show');
@@ -448,6 +454,7 @@
         var m = meta[g.id] || {};
         g.title = m.title || prettify(g.name);
         g.cover = m.cover || null;
+        g.ct = m.ct || 0;
         return g;
       }).sort(function (a, b) { return a.title.localeCompare(b.title); });
       byId = {}; games.forEach(function (g) { byId[g.id] = g; });
@@ -536,7 +543,9 @@
   function coverEl(g, small) {
     var d = document.createElement('div'); d.className = 'cover';
     if (g.cover) {
-      var im = document.createElement('img'); im.src = g.cover; im.alt = ''; d.appendChild(im);
+      var im = document.createElement('img'); im.alt = '';
+      im.onload = function () { var ar = im.naturalWidth / im.naturalHeight; if (Math.abs(ar - 1) > 0.14) im.style.objectFit = 'contain'; };
+      im.src = g.cover; d.appendChild(im);
     } else {
       var h = hueOf(g.title);
       var ph = document.createElement('div'); ph.className = 'ph';
@@ -588,11 +597,22 @@
   $('bd').onclick = closeSheets;
   $('sPlay').onclick = function () { if (sheetId) location.href = location.pathname + '?g=' + sheetId; };
   $('sCover2').onclick = function () { $('coverIn').click(); };
+  $('sAuto').onclick = function () {
+    var id = sheetId, btn = $('sAuto'); if (!id) return;
+    btn.textContent = 'Buscando…'; btn.disabled = true;
+    autoCover(id, true).then(function (res) {
+      toast(res ? 'Portada encontrada: ' + baseTitle(res.name) : 'No encontré portada para este juego. Prueba con una foto.', 3200);
+      if (ctxConsole) renderGames();
+      if (sheetId === id) openSheet(id);
+    }).catch(function (e) {
+      toast(/fetch|network|Load failed/i.test(e.message) ? 'Sin conexión: no pude consultar el catálogo' : 'Error: ' + e.message, 3200);
+    }).then(function () { btn.textContent = 'Buscar portada automática'; btn.disabled = false; });
+  };
   $('sRename').onclick = function () {
     var g = byId[sheetId]; if (!g) return;
     var n = prompt('Nuevo nombre:', g.title);
     if (n && n.trim()) {
-      putMeta({ id: g.id, title: n.trim(), cover: g.cover }).then(function () { closeSheets(); return refresh(); });
+      putMeta({ id: g.id, title: n.trim(), cover: g.cover, ct: g.ct }).then(function () { closeSheets(); return refresh(); });
     }
   };
   $('sDelete').onclick = function () {
@@ -619,7 +639,7 @@
   }
   function saveCover(id, dataUrl) {
     var g = byId[id];
-    return putMeta({ id: id, title: g ? g.title : undefined, cover: dataUrl });
+    return putMeta({ id: id, title: g ? g.title : undefined, cover: dataUrl, ct: g ? g.ct : 0 });
   }
   $('coverIn').addEventListener('change', function (e) {
     var f = e.target.files[0]; e.target.value = '';
@@ -630,6 +650,184 @@
       .then(function () { openSheet(id); toast('Portada actualizada'); })
       .catch(function (err) { toast('Error: ' + err.message); });
   });
+
+  /* ====== Portadas automáticas: huellas No-Intro + miniaturas de libretro (GitHub) ====== */
+  /* @@COVERLIB-START */
+  var DAT_BASE = 'https://raw.githubusercontent.com/libretro/libretro-database/master/metadat/no-intro/';
+  var THUMB_BASE = 'https://raw.githubusercontent.com/libretro-thumbnails/';
+  var SET_GBA = { dat: 'Nintendo - Game Boy Advance', repo: 'Nintendo_-_Game_Boy_Advance' };
+  var SET_GBC = { dat: 'Nintendo - Game Boy Color', repo: 'Nintendo_-_Game_Boy_Color' };
+  var SET_GB = { dat: 'Nintendo - Game Boy', repo: 'Nintendo_-_Game_Boy' };
+  var SET_NES = { dat: 'Nintendo - Nintendo Entertainment System', repo: 'Nintendo_-_Nintendo_Entertainment_System' };
+  var SET_SNES = { dat: 'Nintendo - Super Nintendo Entertainment System', repo: 'Nintendo_-_Super_Nintendo_Entertainment_System' };
+  function coverSetsFor(consoleId, ext) {
+    if (consoleId === 'gba') return [SET_GBA];
+    if (consoleId === 'nes') return [SET_NES];
+    if (consoleId === 'snes') return [SET_SNES];
+    return ext === 'gb' ? [SET_GB, SET_GBC] : [SET_GBC, SET_GB];
+  }
+  function parseDat(text) {                        // catálogo clrmamepro -> nombres + huellas
+    var names = [], sha1 = {}, crc = {}, blocks = text.split(/\ngame \(\r?\n/);
+    for (var i = 1; i < blocks.length; i++) {
+      var b = blocks[i], m = /\tname "([^"]+)"/.exec(b);
+      if (!m) continue;
+      var idx = names.length; names.push(m[1]);
+      var re = /rom \( name "[^"]*" size (\d+) crc ([0-9A-Fa-f]{8})(?: md5 [0-9A-Fa-f]+)?(?: sha1 ([0-9A-Fa-f]{40}))?/g, r;
+      while ((r = re.exec(b))) {
+        if (r[3]) sha1[r[3].toUpperCase()] = idx;
+        crc[r[2].toUpperCase() + ':' + r[1]] = idx;
+      }
+    }
+    return { names: names, sha1: sha1, crc: crc };
+  }
+  function loadIndex(set) {                        // se descarga una vez y se guarda en el dispositivo
+    var key = 'dat:' + set.dat;
+    return getCache(key).then(function (c) {
+      if (c && c.idx && Date.now() - c.t < 30 * 86400000) return c.idx;
+      return fetch(DAT_BASE + encodeURIComponent(set.dat) + '.dat').then(function (r) {
+        if (!r.ok) throw new Error('catálogo no disponible (' + r.status + ')');
+        return r.text();
+      }).then(function (t) {
+        var idx = parseDat(t);
+        return putCache({ id: key, t: Date.now(), idx: idx }).then(function () { return idx; });
+      });
+    });
+  }
+  var CRC_T = null;
+  function crc32(u8) {
+    if (!CRC_T) { CRC_T = new Uint32Array(256); for (var n = 0; n < 256; n++) { var k = n; for (var j = 0; j < 8; j++) k = k & 1 ? 0xEDB88320 ^ (k >>> 1) : k >>> 1; CRC_T[n] = k >>> 0; } }
+    var c = 0xFFFFFFFF; for (var i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8);
+    return ('0000000' + ((c ^ 0xFFFFFFFF) >>> 0).toString(16)).slice(-8).toUpperCase();
+  }
+  function hexOf(ab) { return Array.prototype.map.call(new Uint8Array(ab), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('').toUpperCase(); }
+  function romVariants(buf) {                      // la ROM tal cual y sin cabecera (iNES / copiador de SNES)
+    var u8 = new Uint8Array(buf), v = [u8];
+    if (u8.length > 16 && u8[0] === 0x4E && u8[1] === 0x45 && u8[2] === 0x53 && u8[3] === 0x1A) v.push(u8.subarray(16));
+    if (u8.length % 1024 === 512) v.push(u8.subarray(512));
+    return v;
+  }
+  function lookupHash(idxs, buf) {
+    var hasSubtle = typeof crypto !== 'undefined' && crypto.subtle && crypto.subtle.digest;
+    function check(v) {
+      var p = hasSubtle ? crypto.subtle.digest('SHA-1', v).then(hexOf) : Promise.resolve(null);
+      return p.then(function (h) {
+        var i;
+        if (h) for (i = 0; i < idxs.length; i++) if (idxs[i].sha1[h] !== undefined) return { set: i, idx: idxs[i].sha1[h] };
+        var c = crc32(v) + ':' + v.length;
+        for (i = 0; i < idxs.length; i++) if (idxs[i].crc[c] !== undefined) return { set: i, idx: idxs[i].crc[c] };
+        return null;
+      });
+    }
+    var chain = Promise.resolve(null);
+    romVariants(buf).forEach(function (v) { chain = chain.then(function (hit) { return hit || check(v); }); });
+    return chain;
+  }
+  var STOPW = { the: 1, a: 1, an: 1, of: 1, version: 1, edition: 1, and: 1 };
+  function tokens(str) {
+    return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, ' ')
+      .split(' ').filter(function (t) { return t && !STOPW[t]; })
+      .map(function (t) { return t.length > 3 && t.slice(-1) === 's' && t.slice(-2) !== 'ss' ? t.slice(0, -1) : t; });
+  }
+  function dice(a, b) {
+    if (!a.length || !b.length) return 0;
+    var bag = {}, m = 0; b.forEach(function (t) { bag[t] = (bag[t] || 0) + 1; });
+    a.forEach(function (t) { if (bag[t] > 0) { bag[t]--; m++; } });
+    return 2 * m / (a.length + b.length);
+  }
+  function baseTitle(n) { return n.replace(/\s*\([^)]*\)/g, '').trim(); }
+  function relScore(name, ref, hint) {             // menor = mejor (misma región que la ROM, luego USA/Europa/mundo)
+    if (ref && name === ref) return -100;
+    var s = /\((beta|proto|demo|sample|kiosk|unl|pirate|program)/i.test(name) ? 50 : 0;
+    var r = /\(([^)]*)\)/.exec(ref), mm = /\(([^)]*)\)/.exec(name), ml = mm ? mm[1].toLowerCase() : '';
+    var prefs = (r ? [r[1].toLowerCase().split(/,\s*/)[0]] : (hint ? [hint] : [])).concat(['usa', 'europe', 'world', 'japan']), pos = 9;
+    for (var i = 0; i < prefs.length; i++) if (ml.indexOf(prefs[i]) >= 0) { pos = i; break; }
+    return s + pos;
+  }
+  function siblingsOf(idx, name, exact, hint) {
+    var base = baseTitle(name), out = [], ref = exact ? name : null;
+    idx.names.forEach(function (n) { if (baseTitle(n) === base) out.push(n); });
+    out.sort(function (a, b) { return relScore(a, ref, hint) - relScore(b, ref, hint); });
+    return out;
+  }
+  function isNum(t) { return /^\d+$/.test(t); }
+  function fuzzyPick(idxs, queries) {              // para hacks o volcados que no están en el catálogo
+    var qt = queries.map(tokens).filter(function (t) { return t.length; }), best = { score: 0, len: 99 };
+    idxs.forEach(function (idx, si) {
+      var seen = {};
+      idx.names.forEach(function (n) {
+        var b = baseTitle(n); if (seen[b]) return; seen[b] = 1;
+        var tb = tokens(b), sc = 0;
+        qt.forEach(function (q) {
+          var d = dice(q, tb);
+          q.filter(isNum).forEach(function (t) { if (tb.indexOf(t) < 0) d -= 0.3; });    // «4» no es «1»
+          tb.filter(isNum).forEach(function (t) { if (q.indexOf(t) < 0) d -= 0.15; });
+          if (q.length >= 3 && q.every(function (t) { return tb.indexOf(t) >= 0; })) d = Math.max(d, 0.8);   // título corto dentro de uno largo
+          sc = Math.max(sc, d);
+        });
+        if (sc > best.score || (sc === best.score && sc > 0 && tb.length < best.len)) best = { score: sc, set: si, name: n, len: tb.length };
+      });
+    });
+    return best.score >= 0.72 ? best : null;
+  }
+  function fetchArt(repo, name, folder) {
+    var file = name.replace(/[&*\/:`<>?\\|]/g, '_') + '.png';
+    return fetch(THUMB_BASE + repo + '/master/' + folder + '/' + encodeURIComponent(file))
+      .then(function (r) { return r.ok ? r.blob() : null; }, function () { return null; });
+  }
+  function findCover(consoleId, ext, titles, buf, hint) {
+    var sets = coverSetsFor(consoleId, ext);
+    return Promise.all(sets.map(loadIndex)).then(function (idxs) {
+      return lookupHash(idxs, buf).then(function (hit) {
+        var how = 'huella', si, name;
+        if (hit) { si = hit.set; name = idxs[si].names[hit.idx]; }
+        else { var f = fuzzyPick(idxs, titles); if (!f) return null; how = 'nombre'; si = f.set; name = f.name; }
+        var cands = siblingsOf(idxs[si], name, how === 'huella', hint).slice(0, 8);
+        function tryList(folder, i) {
+          if (i >= cands.length) return Promise.resolve(null);
+          return fetchArt(sets[si].repo, cands[i], folder).then(function (b) {
+            return b ? { blob: b, name: cands[i], how: how, folder: folder } : tryList(folder, i + 1);
+          });
+        }
+        return tryList('Named_Boxarts', 0).then(function (r) { return r || tryList('Named_Titles', 0); });   // si no hay caja, la pantalla de título
+      });
+    });
+  }
+  /* @@COVERLIB-END */
+
+  var coverQueue = [], coverBusy = false;
+  function autoCover(id, force) {
+    var g = byId[id];
+    if (!g || (!force && (g.cover || g.ct))) return Promise.resolve(null);
+    return getRom(id).then(romBuf).then(function (buf) {
+      var hint = /europe/i.test(g.name) ? 'europe' : /japan/i.test(g.name) ? 'japan' : /usa/i.test(g.name) ? 'usa' : '';
+      return findCover(g.console, g.ext, [g.title, prettify(g.name)], buf, hint);
+    }).then(function (res) {
+      if (!res) return null;
+      return fileToCover(res.blob).then(function (url) { res.url = url; return res; });
+    }).then(function (res) {
+      var meta = { id: id, title: g.title, cover: res ? res.url : g.cover, ct: Date.now() };
+      return putMeta(meta).then(function () { g.cover = meta.cover; g.ct = meta.ct; diag('portada ' + (res ? res.how + ': ' + res.name : 'no encontrada') + ' (' + g.title + ')'); return res; });
+    });
+  }
+  function queueCovers(ids) {
+    if (lsGet('auto-covers', '1') !== '1') return;
+    ids.forEach(function (id) { if (coverQueue.indexOf(id) < 0) coverQueue.push(id); });
+    if (!coverBusy) runCoverQueue();
+  }
+  function coverStatus(t) {                        // el progreso de portadas nunca pisa un aviso de error
+    var cur = $('status').textContent;
+    if (!cur || /^(Buscando portada|Juego añadido|\d+ juegos añadidos)/.test(cur)) status(t);
+  }
+  function runCoverQueue() {
+    var id = coverQueue.shift();
+    if (!id) { coverBusy = false; coverStatus(''); return; }
+    coverBusy = true;
+    var g = byId[id]; coverStatus('Buscando portada de ' + (g ? g.title : '…') + '…');
+    autoCover(id, false).then(function (res) {
+      if (res) { toast('Portada encontrada: ' + baseTitle(res.name)); if (ctxConsole) renderGames(); }
+    }).catch(function (e) { diag('portada: error ' + e.message); })
+      .then(runCoverQueue);
+  }
 
   /* ====== Añadir ROMs ====== */
   function extract(file) {
@@ -656,7 +854,7 @@
   $('rom').addEventListener('change', function (e) {
     var files = Array.prototype.slice.call(e.target.files);
     e.target.value = '';
-    var chain = Promise.resolve(), last = null, ok = 0, errs = [];
+    var chain = Promise.resolve(), last = null, ok = 0, errs = [], newIds = [];
     files.forEach(function (f) {
       chain = chain.then(function () {
         status('Procesando ' + f.name + '…');
@@ -668,14 +866,15 @@
           var id = String(Date.now()) + Math.floor(Math.random() * 1000);
           return putRom({ id: id, name: saveKeyOf(r.base), ext: r.ext, console: cid, buf: r.buf })
             .then(function () { return putMeta({ id: id, title: titleFromFile(r.base) }); })
-            .then(function () { ok++; });
+            .then(function () { ok++; newIds.push(id); });
         }).catch(function (err) { errs.push(f.name + ': ' + err.message); });
       });
     });
     chain.then(function () { return refresh(); }).then(function () {
       status(errs.length ? (ok + ' añadidos. Errores: ' + errs.join(' · ')) : (ok === 1 ? 'Juego añadido ✔' : ok + ' juegos añadidos ✔'));
-      if (!errs.length) setTimeout(status, 2500);
+      if (!errs.length) setTimeout(function () { if (!coverBusy) coverStatus(''); }, 2500);
       if (ok && last && !ctxConsole) show(last, true);
+      queueCovers(newIds);
     }).catch(function (err) { status('Error: ' + err.message); });
   });
 
@@ -694,6 +893,8 @@
   var lcdOn = lsGet('gba-lcd', '0') === '1';
   $('lcd').checked = lcdOn;
   $('lcd').addEventListener('change', function () { lcdOn = $('lcd').checked; lsSet('gba-lcd', lcdOn ? '1' : '0'); });
+  $('autoCov').checked = lsGet('auto-covers', '1') === '1';
+  $('autoCov').addEventListener('change', function () { lsSet('auto-covers', $('autoCov').checked ? '1' : '0'); });
   $('btnSettings').onclick = function () { $('bd').style.display = 'block'; $('settings').style.display = 'block'; };
   $('setClose').onclick = closeSheets;
   function showDiag() {
@@ -1018,7 +1219,7 @@
   var qs = new URLSearchParams(location.search);
   diag('— inicio (' + (navigator.standalone ? 'app instalada' : 'navegador') + (qs.get('g') ? ', juego' : ', biblioteca') + ')');
   if (qs.get('g')) launch(qs.get('g'));
-  else refresh().then(function () { show(qs.get('c'), false); }).catch(function (e) { log('Error: ' + e.message); });
+  else refresh().then(function () { show(qs.get('c'), false); queueCovers(games.filter(function (g) { return !g.cover && !g.ct; }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
 })();
 </script>
 </body>
