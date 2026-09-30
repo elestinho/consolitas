@@ -173,6 +173,8 @@
   #ovplay { width:100%; border:0; border-radius:16px; padding:17px; font-size:19px; font-weight:700; color:#fff; background:var(--acc);
     box-shadow:0 10px 30px rgba(124,108,255,.45); }
   #ovplay:active { transform:scale(.97); }
+  #ovload { width:100%; margin-top:10px; border:0; border-radius:14px; padding:13px; font-size:16px; font-weight:600; color:#c9cce0; background:rgba(255,255,255,.1); }
+  #ovload:active { transform:scale(.97); }
   #delpop { display:none; position:fixed; inset:0; z-index:1300; align-items:center; justify-content:center; padding:24px; }
   #delbg { position:absolute; inset:0; background:rgba(0,0,0,.62); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
   #delpanel { position:relative; width:100%; max-width:320px; background:#1a1c26; border-radius:22px; padding:20px 16px 14px; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,.6); }
@@ -210,7 +212,7 @@
     </div>
     <div class="tips" id="prot" style="padding-bottom:10px"></div>
     <div style="padding:0 20px 18px"><button class="pill" id="btnBackup" style="padding:0 18px">Copia de seguridad</button></div>
-    <div class="tips" style="padding-top:0;opacity:.6">Versión 15 · carrusel infinito</div>
+    <div class="tips" style="padding-top:0;opacity:.6">Versión 16 · cargar partida</div>
   </section>
 
   <!-- Pantalla 2: juegos de una consola -->
@@ -234,7 +236,7 @@
 <div id="ov">
   <div id="ovbg"></div>
   <div id="ovfly"></div>
-  <div id="ovinfo"><div id="ovt"></div><button id="ovplay">▶ Jugar</button></div>
+  <div id="ovinfo"><div id="ovt"></div><button id="ovplay">▶ Jugar</button><button id="ovload">Cargar partida (.sav)</button><input type="file" id="savFile" style="display:none"></div>
 </div>
 
 <!-- Aviso al mantener pulsado un juego -->
@@ -719,6 +721,20 @@
   }
   $('ovbg').onclick = closeOverlay;
   $('ovplay').onclick = function () { if (ovId) location.href = location.pathname + '?g=' + ovId; };
+  // Cargar partida: elige un .sav; se aplica al abrir el juego (force = reemplaza la partida actual)
+  $('ovload').onclick = function () {
+    if (!ovId) return;
+    if (!confirm('Esto reemplazará la partida guardada de este juego por la del archivo. ¿Continuar?')) return;
+    $('savFile').value = ''; $('savFile').click();
+  };
+  $('savFile').onchange = function () {
+    var f = this.files && this.files[0], id = ovId; if (!f || !id) return;
+    f.arrayBuffer().then(function (ab) {
+      if (!ab.byteLength) throw new Error('el archivo está vacío');
+      return putAuto({ id: 'sav:' + id, t: Date.now(), state: new Uint8Array(ab), force: true });
+    }).then(function () { toast('Partida cargada: pulsa Jugar', 3500); diag('partida (.sav) cargada para ' + id); })
+      .catch(function (e) { toast('Error: ' + e.message, 4000); });
+  };
 
   /* ====== Mantener pulsado un juego: aviso para eliminarlo ====== */
   var delId = null, pressT = 0, pressAnim = 0, pressX = 0, pressY = 0, longDone = false;
@@ -1338,11 +1354,12 @@
     var g = gm();
     if (!g || !curId || typeof g.getSaveFile !== 'function' || !g.FS || typeof g.getSaveFilePath !== 'function' || typeof g.loadSaveFiles !== 'function') return;
     Promise.resolve(g.getSaveFile()).then(function (cur) {
-      if (cur && cur.length) return;
       return getAuto('sav:' + curId).then(function (a) {
         if (!a || !a.state) return;
+        if (cur && cur.length && !a.force) return;           // ya hay partida y no se pidió cargar otra
         g.FS.writeFile(g.getSaveFilePath(), a.state); g.loadSaveFiles();
-        diag('guardado del juego restaurado desde la copia propia'); toast('Guardado del juego recuperado');
+        if (a.force) putAuto({ id: a.id, t: Date.now(), state: a.state });
+        diag('guardado del juego ' + (a.force ? 'cargado desde archivo' : 'restaurado desde la copia propia')); toast(a.force ? 'Partida cargada' : 'Guardado del juego recuperado');
       });
     }).catch(function (e) { diag('restaurar guardado falló: ' + (e && e.message)); });
   }
