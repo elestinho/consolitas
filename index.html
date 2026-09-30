@@ -212,7 +212,7 @@
     </div>
     <div class="tips" id="prot" style="padding-bottom:10px"></div>
     <div style="padding:0 20px 18px"><button class="pill" id="btnBackup" style="padding:0 18px">Copia de seguridad</button></div>
-    <div class="tips" style="padding-top:0;opacity:.6">Versión 16 · cargar partida</div>
+    <div class="tips" style="padding-top:0;opacity:.6">Versión 17 · guardar y cargar partida</div>
   </section>
 
   <!-- Pantalla 2: juegos de una consola -->
@@ -236,7 +236,7 @@
 <div id="ov">
   <div id="ovbg"></div>
   <div id="ovfly"></div>
-  <div id="ovinfo"><div id="ovt"></div><button id="ovplay">▶ Jugar</button><button id="ovload">Cargar partida (.sav)</button><input type="file" id="savFile" style="display:none"></div>
+  <div id="ovinfo"><div id="ovt"></div><button id="ovplay">▶ Jugar</button><button id="ovload" style="display:none">Continuar partida guardada</button></div>
 </div>
 
 <!-- Aviso al mantener pulsado un juego -->
@@ -309,9 +309,8 @@
 <div id="pause">
   <div class="panel">
     <button class="pri" id="pContinue">Continuar</button>
-    <button id="pQSave">Guardado rápido</button>
-    <button id="pQLoad">Cargar guardado rápido</button>
-    <button id="pExport">Exportar guardado (.sav)</button>
+    <button id="pQSave">Guardar partida</button>
+    <button id="pQLoad">Cargar partida</button>
     <button id="pCover">Usar esta imagen como portada</button>
     <button id="pLcd">Efecto LCD: no</button>
     <button id="pEjs">Menú del emulador (importar .sav…)</button>
@@ -680,6 +679,8 @@
     ovId = id; ovBusy = false;
     fly.innerHTML = ''; fly.appendChild(coverEl(g, false));
     $('ovt').textContent = g.title;
+    $('ovload').style.display = 'none';
+    getAuto('quick:' + id).then(function (a) { if (a && a.state && ovId === id) $('ovload').style.display = 'block'; }).catch(function () {});
     fly.style.left = t.left + 'px'; fly.style.top = t.top + 'px'; fly.style.width = t.size + 'px'; fly.style.height = t.size + 'px';
     info.style.left = t.left + 'px'; info.style.width = t.size + 'px'; info.style.top = (t.top + t.size + 20) + 'px';
     [fly, info, bg].forEach(cancelAnims);
@@ -721,20 +722,8 @@
   }
   $('ovbg').onclick = closeOverlay;
   $('ovplay').onclick = function () { if (ovId) location.href = location.pathname + '?g=' + ovId; };
-  // Cargar partida: elige un .sav; se aplica al abrir el juego (force = reemplaza la partida actual)
-  $('ovload').onclick = function () {
-    if (!ovId) return;
-    if (!confirm('Esto reemplazará la partida guardada de este juego por la del archivo. ¿Continuar?')) return;
-    $('savFile').value = ''; $('savFile').click();
-  };
-  $('savFile').onchange = function () {
-    var f = this.files && this.files[0], id = ovId; if (!f || !id) return;
-    f.arrayBuffer().then(function (ab) {
-      if (!ab.byteLength) throw new Error('el archivo está vacío');
-      return putAuto({ id: 'sav:' + id, t: Date.now(), state: new Uint8Array(ab), force: true });
-    }).then(function () { toast('Partida cargada: pulsa Jugar', 3500); diag('partida (.sav) cargada para ' + id); })
-      .catch(function (e) { toast('Error: ' + e.message, 4000); });
-  };
+  // Continuar partida guardada: abre el juego y carga la última partida guardada
+  $('ovload').onclick = function () { if (ovId) location.href = location.pathname + '?g=' + ovId + '&l=1'; };
 
   /* ====== Mantener pulsado un juego: aviso para eliminarlo ====== */
   var delId = null, pressT = 0, pressAnim = 0, pressX = 0, pressY = 0, longDone = false;
@@ -1314,7 +1303,6 @@
   $('pContinue').onclick = closePause;
   $('pQSave').onclick = function () { closePause(); special('quickSave'); };
   $('pQLoad').onclick = function () { closePause(); special('quickLoad'); };
-  $('pExport').onclick = function () { closePause(); exportSave(); };
   $('pCover').onclick = function () { closePause(); captureCover(); };
   $('pLcd').onclick = function () { lcdOn = !lcdOn; lsSet('gba-lcd', lcdOn ? '1' : '0'); applyLcd(); };
   $('pExit').onclick = leave;
@@ -1365,17 +1353,17 @@
   }
   function quickSave() {
     var g = gm();
-    if (!g || !curId || typeof g.getState !== 'function') { toast('Guardado rápido no disponible'); return; }
+    if (!g || !curId || typeof g.getState !== 'function') { toast('Guardar no disponible'); return; }
     Promise.resolve(g.getState()).then(function (st) {
       if (!st || !st.length) throw new Error('estado vacío');
       var c = new Uint8Array(st.length); c.set(st);
       return putAuto({ id: 'quick:' + curId, t: Date.now(), state: c });
-    }).then(function () { toast('Guardado rápido'); }).catch(function (e) { toast('No se pudo guardar: ' + e.message); });
+    }).then(function () { toast('Partida guardada'); }).catch(function (e) { toast('No se pudo guardar: ' + e.message); });
   }
   function quickLoad() {
     getAuto('quick:' + curId).then(function (a) {
-      if (!a || !a.state) { toast('No hay guardado rápido'); return; }
-      gm().loadState(a.state); toast('Guardado rápido cargado');
+      if (!a || !a.state) { toast('Aún no has guardado la partida'); return; }
+      gm().loadState(a.state); toast('Partida cargada');
     }).catch(function (e) { toast('No se pudo cargar: ' + e.message); });
   }
   // A: Salir espera a que se escriban los guardados antes de cambiar de página
@@ -1471,6 +1459,7 @@
       if (!autoTimer) autoTimer = setInterval(autoSave, 45000);
       keepAwake();
       setTimeout(restoreSav, 1000);
+      if (new URLSearchParams(location.search).get('l') === '1') setTimeout(quickLoad, 2200);
       setTimeout(offerResume, 1500);
       if (skinMode) toast('☀ = menú (guardar y salir)', 4500);
     };
