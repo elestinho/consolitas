@@ -212,7 +212,7 @@
     </div>
     <div class="tips" id="prot" style="padding-bottom:10px"></div>
     <div style="padding:0 20px 18px"><button class="pill" id="btnBackup" style="padding:0 18px">Copia de seguridad</button></div>
-    <div class="tips" style="padding-top:0;opacity:.6">Versión 17 · guardar y cargar partida</div>
+    <div class="tips" style="padding-top:0;opacity:.6">Versión 18 · menú de pausa simplificado</div>
   </section>
 
   <!-- Pantalla 2: juegos de una consola -->
@@ -311,9 +311,6 @@
     <button class="pri" id="pContinue">Continuar</button>
     <button id="pQSave">Guardar partida</button>
     <button id="pQLoad">Cargar partida</button>
-    <button id="pCover">Usar esta imagen como portada</button>
-    <button id="pLcd">Efecto LCD: no</button>
-    <button id="pEjs">Menú del emulador (importar .sav…)</button>
     <button class="danger" id="pExit">Salir a la biblioteca</button>
   </div>
 </div>
@@ -1140,7 +1137,6 @@
 
   function applyLcd() {
     $('grid').style.display = lcdOn ? 'block' : 'none';
-    $('pLcd').textContent = 'Efecto LCD: ' + (lcdOn ? 'sí' : 'no');
   }
 
   /* ====== Animación de arranque (sustituye al texto «Cargando núcleo…» del emulador) ====== */
@@ -1303,13 +1299,7 @@
   $('pContinue').onclick = closePause;
   $('pQSave').onclick = function () { closePause(); special('quickSave'); };
   $('pQLoad').onclick = function () { closePause(); special('quickLoad'); };
-  $('pCover').onclick = function () { closePause(); captureCover(); };
-  $('pLcd').onclick = function () { lcdOn = !lcdOn; lsSet('gba-lcd', lcdOn ? '1' : '0'); applyLcd(); };
   $('pExit').onclick = leave;
-  $('pEjs').onclick = function () {
-    closePause(); document.body.classList.add('ejsmenu');
-    $('touch').style.pointerEvents = 'none'; $('ejsclose').style.display = 'block';
-  };
   $('ejsclose').onclick = function () {
     document.body.classList.remove('ejsmenu'); $('touch').style.pointerEvents = 'auto'; $('ejsclose').style.display = 'none';
   };
