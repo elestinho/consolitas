@@ -206,10 +206,11 @@
     </div>
     <div id="status"></div>
     <div class="tips">
-      Tus juegos y partidas se guardan solo en este dispositivo. Guarda dentro del juego y exporta el
-      archivo <b>.sav</b> desde el menú de pausa de vez en cuando.
+      Tus juegos y partidas se guardan en este dispositivo. Guarda dentro del juego y haz una copia de seguridad de vez en cuando.
     </div>
-    <div class="tips" style="padding-top:0;opacity:.6">Versión 14 · animación de arranque</div>
+    <div class="tips" id="prot" style="padding-bottom:10px"></div>
+    <div style="padding:0 20px 18px"><button class="pill" id="btnBackup" style="padding:0 18px">Copia de seguridad</button></div>
+    <div class="tips" style="padding-top:0;opacity:.6">Versión 15 · carrusel infinito</div>
   </section>
 
   <!-- Pantalla 2: juegos de una consola -->
@@ -258,6 +259,18 @@
   <p class="note">La skin solo se usa con la GBA. Las portadas se buscan en catálogos públicos de GitHub (libretro): se compara la huella de tu ROM en tu dispositivo y no se envía ningún archivo.</p>
   <button class="sbtn pri" id="setClose">Listo</button>
 </div>
+
+<!-- Copia de seguridad -->
+<div class="sheet" id="backup">
+  <div class="grab"></div>
+  <h2>Copia de seguridad</h2>
+  <p class="note" id="bkStatus"></p>
+  <p class="note">Un solo archivo con tus juegos, portadas y partidas. Guárdalo en Archivos o iCloud; si algún día se borran los datos del navegador, restáuralo desde aquí.</p>
+  <button class="sbtn" id="bkSave">Guardar copia</button>
+  <button class="sbtn" id="bkLoad">Restaurar copia</button>
+  <button class="sbtn pri" id="bkClose">Cerrar</button>
+</div>
+<input type="file" id="bkFile" style="display:none">
 
 <!-- Diagnóstico -->
 <div class="sheet" id="diag">
@@ -740,9 +753,101 @@
   });
 
   function closeSheets() {
-    $('bd').style.display = 'none'; $('settings').style.display = 'none'; $('diag').style.display = 'none';
+    $('bd').style.display = 'none'; $('settings').style.display = 'none'; $('diag').style.display = 'none'; $('backup').style.display = 'none';
   }
   $('bd').onclick = closeSheets;
+
+  /* ====== Copia de seguridad y estado de los datos ====== */
+  // Formato: 'RETROBK1\n' + entradas [4 bytes: largo de cabecera][cabecera JSON {store,rec,len}][len bytes binarios]
+  var BK_MAGIC = 'RETROBK1\n';
+  function allOf(store) { return tx(store, 'readonly', function (s) { return s.getAll(); }); }
+  function bkEntry(parts, store, rec, bin) {
+    var h = new TextEncoder().encode(JSON.stringify({ store: store, rec: rec, len: bin ? bin.size : 0 }));
+    var n = new Uint8Array(4); new DataView(n.buffer).setUint32(0, h.length);
+    parts.push(n, h); if (bin) parts.push(bin);
+  }
+  function makeBackup() {
+    return Promise.all([allOf('roms'), allOf('meta'), allOf('auto')]).then(function (r) {
+      var parts = [BK_MAGIC];
+      r[0].forEach(function (g) {
+        var rec = {}; Object.keys(g).forEach(function (k) { if (k !== 'buf' && k !== 'blob') rec[k] = g[k]; });
+        bkEntry(parts, 'roms', rec, g.blob || new Blob([g.buf]));
+      });
+      r[1].forEach(function (m) { bkEntry(parts, 'meta', m, null); });
+      r[2].forEach(function (a) {
+        var rec = {}; Object.keys(a).forEach(function (k) { if (k !== 'state') rec[k] = a[k]; });
+        bkEntry(parts, 'auto', rec, new Blob([a.state]));
+      });
+      return { blob: new Blob(parts, { type: 'application/octet-stream' }), n: r[0].length };
+    });
+  }
+  function restoreBackup(file) {
+    var pos = BK_MAGIC.length, count = 0;
+    function apply(h, bin) {
+      if (h.store === 'meta') return putMeta(h.rec);
+      return bin.arrayBuffer().then(function (ab) {
+        if (h.store === 'roms') { h.rec.buf = ab; count++; return putRom(h.rec); }
+        if (h.store === 'auto') { h.rec.state = new Uint8Array(ab); return putAuto(h.rec); }
+      });
+    }
+    function step() {
+      if (pos >= file.size) return count;
+      return file.slice(pos, pos + 4).arrayBuffer().then(function (b) {
+        var hl = new DataView(b).getUint32(0);
+        return file.slice(pos + 4, pos + 4 + hl).text().then(function (t) {
+          var h = JSON.parse(t), start = pos + 4 + hl;
+          pos = start + h.len;
+          return apply(h, h.len ? file.slice(start, start + h.len) : null).then(step);
+        });
+      });
+    }
+    return file.slice(0, pos).text().then(function (m) {
+      if (m !== BK_MAGIC) throw new Error('no es una copia de seguridad de esta app');
+      return step();
+    });
+  }
+  function updateProt() {
+    var st = navigator.storage;
+    var pr = st && st.persisted ? st.persisted().catch(function () { return null; }) : Promise.resolve(null);
+    var es = st && st.estimate ? st.estimate().catch(function () { return null; }) : Promise.resolve(null);
+    Promise.all([pr, es]).then(function (r) {
+      var last = parseInt(lsGet('last-backup', '0'), 10), txt;
+      txt = r[0] ? '✓ Datos protegidos por el navegador' : '⚠ El navegador podría borrar tus datos si pasan varios días sin abrir la app';
+      if (r[1] && r[1].usage) txt += ' · ' + Math.round(r[1].usage / 1048576) + ' MB';
+      txt += last ? '. Última copia: ' + new Date(last).toLocaleDateString() : '. Aún no has hecho ninguna copia';
+      if (games.length && (!last || Date.now() - last > 7 * 86400000)) txt += ': haz una copia de seguridad.'; else txt += '.';
+      $('prot').textContent = txt; $('bkStatus').textContent = txt;
+    });
+  }
+  $('btnBackup').onclick = function () { updateProt(); $('bd').style.display = 'block'; $('backup').style.display = 'block'; };
+  $('bkClose').onclick = closeSheets;
+  $('bkSave').onclick = function () {
+    toast('Preparando copia…', 4000);
+    makeBackup().then(function (r) {
+      if (!r.n) { toast('Aún no hay juegos que guardar'); return; }
+      var d = new Date(), p2 = function (n) { return (n < 10 ? '0' : '') + n; };
+      var name = 'Retro-copia-' + d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + '.retrobak';
+      var file = new File([r.blob], name, { type: 'application/octet-stream' });
+      var dl = function () {
+        var a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+      };
+      var done = function () { lsSet('last-backup', String(Date.now())); diag('copia de seguridad creada (' + Math.round(file.size / 1048576) + ' MB)'); updateProt(); };
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file] }).then(done, function (e) { if (e && e.name !== 'AbortError') { dl(); done(); } });
+      }
+      dl(); done();
+    }).catch(function (e) { toast('Error: ' + e.message, 4000); diag('copia falló: ' + e.message); });
+  };
+  $('bkLoad').onclick = function () { $('bkFile').value = ''; $('bkFile').click(); };
+  $('bkFile').onchange = function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    toast('Restaurando…', 6000);
+    restoreBackup(f).then(function (n) {
+      toast('Copia restaurada (' + n + ' juegos)', 3500); diag('copia restaurada: ' + n + ' juegos');
+      return refresh().then(updateProt);
+    }).catch(function (e) { toast('Error: ' + e.message, 4500); diag('restaurar falló: ' + e.message); });
+  };
 
   /* ====== Portadas ====== */
   function shrinkToJpeg(src, w, h) {
@@ -1146,8 +1251,8 @@
   /* ====== Menú de pausa ====== */
   function special(n) {
     if (n === 'menu') { openPause(); return; }
-    if (n === 'quickSave') { toast(callGm('quickSave') ? 'Guardado rápido' : 'Guardado rápido no disponible'); return; }
-    if (n === 'quickLoad') { toast(callGm('quickLoad') ? 'Guardado rápido cargado' : 'Carga rápida no disponible'); return; }
+    if (n === 'quickSave') { quickSave(); return; }
+    if (n === 'quickLoad') { quickLoad(); return; }
     if (n === 'toggleFastForward') {
       ff = !ff;
       if (callGm('toggleFastForward', [ff ? 1 : 0])) toast(ff ? 'Avance rápido' : 'Velocidad normal');
@@ -1191,7 +1296,7 @@
   $('pExport').onclick = function () { closePause(); exportSave(); };
   $('pCover').onclick = function () { closePause(); captureCover(); };
   $('pLcd').onclick = function () { lcdOn = !lcdOn; lsSet('gba-lcd', lcdOn ? '1' : '0'); applyLcd(); };
-  $('pExit').onclick = function () { cleanExit(); location.href = exitUrl(); };
+  $('pExit').onclick = leave;
   $('pEjs').onclick = function () {
     closePause(); document.body.classList.add('ejsmenu');
     $('touch').style.pointerEvents = 'none'; $('ejsclose').style.display = 'block';
@@ -1211,7 +1316,55 @@
       }).catch(function (e) { diag('wakeLock: rechazado (' + (e && e.name) + ')'); });
     } catch (e) { diag('wakeLock: error ' + e.message); }
   }
-  function flushSaves() { callGm('saveSaveFiles'); }
+  function flushSaves() { callGm('saveSaveFiles'); backupSav(); }
+  // Copia propia del guardado interno del juego (.sav): sobrevive aunque falle el almacén del emulador
+  function backupSav() {
+    var g = gm();
+    if (!g || !curId || typeof g.getSaveFile !== 'function') return Promise.resolve();
+    try {
+      return Promise.resolve(g.getSaveFile()).then(function (d) {
+        if (!d || !d.length) return;
+        var c = new Uint8Array(d.length); c.set(d);
+        return putAuto({ id: 'sav:' + curId, t: Date.now(), state: c });
+      }).catch(function () {});
+    } catch (e) { return Promise.resolve(); }
+  }
+  function restoreSav() {
+    var g = gm();
+    if (!g || !curId || typeof g.getSaveFile !== 'function' || !g.FS || typeof g.getSaveFilePath !== 'function' || typeof g.loadSaveFiles !== 'function') return;
+    Promise.resolve(g.getSaveFile()).then(function (cur) {
+      if (cur && cur.length) return;
+      return getAuto('sav:' + curId).then(function (a) {
+        if (!a || !a.state) return;
+        g.FS.writeFile(g.getSaveFilePath(), a.state); g.loadSaveFiles();
+        diag('guardado del juego restaurado desde la copia propia'); toast('Guardado del juego recuperado');
+      });
+    }).catch(function (e) { diag('restaurar guardado falló: ' + (e && e.message)); });
+  }
+  function quickSave() {
+    var g = gm();
+    if (!g || !curId || typeof g.getState !== 'function') { toast('Guardado rápido no disponible'); return; }
+    Promise.resolve(g.getState()).then(function (st) {
+      if (!st || !st.length) throw new Error('estado vacío');
+      var c = new Uint8Array(st.length); c.set(st);
+      return putAuto({ id: 'quick:' + curId, t: Date.now(), state: c });
+    }).then(function () { toast('Guardado rápido'); }).catch(function (e) { toast('No se pudo guardar: ' + e.message); });
+  }
+  function quickLoad() {
+    getAuto('quick:' + curId).then(function (a) {
+      if (!a || !a.state) { toast('No hay guardado rápido'); return; }
+      gm().loadState(a.state); toast('Guardado rápido cargado');
+    }).catch(function (e) { toast('No se pudo cargar: ' + e.message); });
+  }
+  // A: Salir espera a que se escriban los guardados antes de cambiar de página
+  var leaving = false;
+  function leave() {
+    if (leaving) return; leaving = true; toast('Guardando…', 4000);
+    callGm('saveSaveFiles');
+    var go = function () { cleanExit(); location.href = exitUrl(); };
+    var t = setTimeout(go, 3000);
+    Promise.all([backupSav(), autoSave()]).catch(function () {}).then(function () { clearTimeout(t); setTimeout(go, 400); });
+  }
   function isPlaying() { return document.body.classList.contains('playing'); }
 
   function autoSave() {
@@ -1220,7 +1373,7 @@
     var fail = function (m) { if (!autoWarned) { autoWarned = true; diag('autoguardado: ' + m); } };
     if (typeof g.getState !== 'function') { fail('getState no disponible'); return; }
     try {
-      Promise.resolve(g.getState()).then(function (st) {
+      return Promise.resolve(g.getState()).then(function (st) {
         if (!st || !st.length) return;
         var c = new Uint8Array(st.length); c.set(st);        // copia propia: no arrastramos la memoria del emulador
         return putAuto({ id: curId, t: Date.now(), state: c });
@@ -1295,6 +1448,7 @@
       if (!flushTimer) flushTimer = setInterval(flushSaves, 30000);
       if (!autoTimer) autoTimer = setInterval(autoSave, 45000);
       keepAwake();
+      setTimeout(restoreSav, 1000);
       setTimeout(offerResume, 1500);
       if (skinMode) toast('☀ = menú (guardar y salir)', 4500);
     };
@@ -1332,7 +1486,7 @@
           } else {
             $('wrap').style.display = 'block';
             $('exit').style.display = 'block';
-            $('exit').onclick = function () { cleanExit(); location.href = exitUrl(); };
+            $('exit').onclick = leave;
           }
           startEmulator(g, buf, !!sk);
         });
@@ -1352,7 +1506,7 @@
   var qs = new URLSearchParams(location.search);
   diag('— inicio (' + (navigator.standalone ? 'app instalada' : 'navegador') + (qs.get('g') ? ', juego' : ', biblioteca') + ')');
   if (qs.get('g')) launch(qs.get('g'));
-  else refresh().then(function () { show(qs.get('c'), false); queueCovers(games.filter(function (g) { return !g.cover && !g.ct; }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
+  else refresh().then(function () { updateProt(); show(qs.get('c'), false); queueCovers(games.filter(function (g) { return !g.cover && !g.ct; }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
 })();
 </script>
 </body>
