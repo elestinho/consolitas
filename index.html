@@ -521,7 +521,7 @@
     $('cview').style.display = ctxConsole ? 'block' : 'none';
     if (push) history.pushState({}, '', ctxConsole ? '?c=' + ctxConsole : location.pathname);
     if (ctxConsole) { renderGames(); window.scrollTo(0, 0); }
-    else if (slideEls.length) { requestAnimationFrame(function () { goSlide(activeIdx, false); }); }   // al volver, recolocar el carrusel
+    else if (slideEls.length) { requestAnimationFrame(recenter); }   // al volver, recolocar el carrusel
   }
   window.addEventListener('popstate', function () {
     if (ignorePop) { ignorePop = false; return; }
@@ -531,10 +531,11 @@
   });
 
   /* ====== Pantalla de consolas ====== */
-  // Carrusel infinito: se pintan 3 copias seguidas de las consolas y, cuando el scroll se detiene
-  // en una copia de los extremos, se salta sin animación a la misma consola de la copia central.
-  var carEl = $('car'), slideEls = [], activeIdx = 0, scrollRaf = 0, NC = ORDER.length, COPIES = 3;
-  var settleTimer = 0, touching = false;
+  // Carrusel infinito: se pintan muchas copias seguidas de las consolas y se empieza en la del centro,
+  // así nunca se llega a un borde. Solo se recoloca en la copia central (sin que se vea) al cargar,
+  // al volver de una consola o, si alguien llegara cerca de un extremo, cuando el scroll se detiene.
+  var carEl = $('car'), slideEls = [], activeIdx = -1, scrollRaf = 0, NC = ORDER.length, COPIES = 41;
+  var MIDC = Math.floor(COPIES / 2) * NC, settleTimer = 0, touching = false;
 
   function renderHome() {                    // solo actualiza los contadores
     slideEls.forEach(function (b, i) {
@@ -548,27 +549,24 @@
     if (carEl.scrollTo) carEl.scrollTo({ left: x, behavior: smooth ? 'smooth' : 'auto' }); else carEl.scrollLeft = x;
   }
   function setActive(i) {
-    if (!slideEls[i]) return;
+    if (!slideEls[i] || i === activeIdx) return;
     var r = i % NC;
+    if (slideEls[activeIdx]) slideEls[activeIdx].classList.remove('active');
+    slideEls[i].classList.add('active');
     activeIdx = i;
-    slideEls.forEach(function (s, k) { s.classList.toggle('active', k === i); });
     Array.prototype.forEach.call($('dots').children, function (d, k) { d.classList.toggle('on', k === r); });
     Array.prototype.forEach.call($('glows').children, function (g) { g.classList.toggle('on', g.getAttribute('data-c') === ORDER[r]); });
     lsSet('car-idx', String(r));
   }
-  function nearestSlide() {
-    var r = carEl.getBoundingClientRect(), mid = r.left + r.width / 2, best = 0, bd = 1e9;
-    slideEls.forEach(function (s, k) {
-      var q = s.getBoundingClientRect(), d = Math.abs(q.left + q.width / 2 - mid);
-      if (d < bd) { bd = d; best = k; }
-    });
-    return best;
+  function nearestSlide() {                  // cálculo directo (hay muchas diapositivas)
+    var a = slideEls[0], b = slideEls[1], pitch = b.offsetLeft - a.offsetLeft;
+    if (!pitch) return activeIdx < 0 ? MIDC : activeIdx;
+    var k = Math.round((carEl.scrollLeft + carEl.clientWidth / 2 - a.offsetLeft - a.offsetWidth / 2) / pitch);
+    return Math.max(0, Math.min(slideEls.length - 1, k));
   }
-  function recenter() {                      // si estamos en una copia lateral, saltar a la central sin que se note
-    if (touching || ctxConsole) return;
-    var i = nearestSlide(), j = NC + i % NC;
-    if (i === j) return;
-    carEl.classList.add('nt');                // sin transiciones durante el salto
+  function recenter() {                      // saltar a la misma consola en la copia central, sin transiciones
+    var j = MIDC + (activeIdx < 0 ? 0 : activeIdx % NC);
+    carEl.classList.add('nt');
     setActive(j); goSlide(j, false);
     void carEl.offsetWidth;
     carEl.classList.remove('nt');
@@ -576,27 +574,34 @@
   function stepSlide(d) { goSlide(Math.max(0, Math.min(slideEls.length - 1, activeIdx + d)), true); }
   function buildCarousel() {
     for (var p = 0; p < NC * COPIES; p++) (function (pos) {
-      var cid = ORDER[pos % NC], c = CONSOLES[cid], clone = pos < NC || pos >= 2 * NC;
+      var cid = ORDER[pos % NC], c = CONSOLES[cid], main = pos >= MIDC && pos < MIDC + NC;
       var b = document.createElement('button'); b.className = 'slide'; b.setAttribute('data-c', cid);
-      if (clone) { b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1; }
-      b.innerHTML = '<div class="art"><img alt=""></div><div class="sn"></div><div class="sc"></div>';
+      if (!main) { b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1; }
+      b.innerHTML = '<div class="art"><img alt="" decoding="async"></div><div class="sn"></div><div class="sc"></div>';
       b.querySelector('img').src = LOGOS[cid];
       b.querySelector('.sn').textContent = c.name;
       b.onclick = function () { if (pos === activeIdx) show(cid, true); else goSlide(pos, true); };
       carEl.appendChild(b); slideEls.push(b);
-      if (clone) return;
-      var r = pos - NC;
+      if (!main) return;
+      var r = pos - MIDC;
       var d = document.createElement('button'); d.className = 'dot'; d.setAttribute('aria-label', c.name);
-      d.onclick = function () { goSlide(activeIdx - activeIdx % NC + r, true); }; $('dots').appendChild(d);
+      d.onclick = function () {                // ir por el camino más corto
+        var cur = activeIdx % NC, diff = ((r - cur) % NC + NC) % NC;
+        if (diff > NC / 2) diff -= NC;
+        goSlide(activeIdx + diff, true);
+      };
+      $('dots').appendChild(d);
       var g = document.createElement('div'); g.className = 'glow'; g.setAttribute('data-c', cid); g.style.setProperty('--g', c.c1);
       $('glows').appendChild(g);
     })(p);
+    function nearEdge() { return activeIdx < 2 * NC || activeIdx >= slideEls.length - 2 * NC; }
+    function settle() { clearTimeout(settleTimer); settleTimer = setTimeout(function () { if (!touching && !ctxConsole && nearEdge()) recenter(); }, 400); }
     carEl.addEventListener('scroll', function () {
       if (!scrollRaf) scrollRaf = requestAnimationFrame(function () { scrollRaf = 0; setActive(nearestSlide()); });
-      clearTimeout(settleTimer); settleTimer = setTimeout(recenter, 160);
+      settle();
     }, { passive: true });
     carEl.addEventListener('touchstart', function () { touching = true; clearTimeout(settleTimer); }, { passive: true });
-    function touchEnd() { touching = false; clearTimeout(settleTimer); settleTimer = setTimeout(recenter, 160); }
+    function touchEnd() { touching = false; settle(); }
     carEl.addEventListener('touchend', touchEnd, { passive: true });
     carEl.addEventListener('touchcancel', touchEnd, { passive: true });
     $('arL').onclick = function () { stepSlide(-1); };
@@ -609,8 +614,8 @@
     });
     var start = parseInt(lsGet('car-idx', '0'), 10);
     if (!(start >= 0 && start < NC)) start = 0;
-    setActive(NC + start);
-    requestAnimationFrame(function () { goSlide(NC + start, false); });
+    setActive(MIDC + start);
+    requestAnimationFrame(recenter);
   }
 
   /* ====== Lista de juegos con portadas ====== */
