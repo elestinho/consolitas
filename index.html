@@ -213,7 +213,7 @@
     </div>
     <div class="tips" id="prot" style="padding-bottom:10px"></div>
     <div style="padding:0 20px 18px"><button class="pill" id="btnBackup" style="padding:0 18px">Copia de seguridad</button></div>
-    <div class="tips" style="padding-top:0;opacity:.6">Versión 18 · skin de Game Boy Color</div>
+    <div class="tips" style="padding-top:0;opacity:.6">Versión 19 · skin de Game Boy Color</div>
   </section>
 
   <!-- Pantalla 2: juegos de una consola -->
@@ -1206,12 +1206,14 @@
   /* Skin sin «screens» (p. ej. GBC de Delta): el mando va abajo a todo el ancho y la pantalla
      del juego ocupa el hueco de arriba, como hace Delta */
   function layoutAuto(W, H) {
-    var st = $('stage'), ih = Math.min(H, W * skinState.mh / skinState.mw), top = H - ih;
+    var rw = skinState.res[0], rh = skinState.res[1], k = skinState.mh / skinState.mw;
+    // en pantallas anchas (ordenador, iPhone en horizontal) se estrecha el mando para que quepa el juego encima
+    var w = Math.min(W, H / (k + rh / rw)), ih = w * k, top = H - ih, st = $('stage');
     st.style.left = '0px'; st.style.top = '0px'; st.style.width = W + 'px'; st.style.height = H + 'px';
-    ['skinimg', 'touch'].forEach(function (k) {
-      var e = $(k).style; e.left = '0px'; e.top = top + 'px'; e.width = W + 'px'; e.height = ih + 'px';
+    ['skinimg', 'touch'].forEach(function (id) {
+      var e = $(id).style; e.left = ((W - w) / 2) + 'px'; e.top = top + 'px'; e.width = w + 'px'; e.height = ih + 'px';
     });
-    var rw = skinState.res[0], rh = skinState.res[1], s = Math.min(W / rw, top / rh), sc = $('screen').style;
+    var s = Math.min(W / rw, top / rh), sc = $('screen').style;
     sc.width = (rw * s) + 'px'; sc.height = (rh * s) + 'px';
     sc.left = ((W - rw * s) / 2) + 'px'; sc.top = ((top - rh * s) / 2) + 'px';
   }
