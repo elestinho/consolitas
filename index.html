@@ -45,6 +45,7 @@
   .slide { flex:0 0 var(--sw); scroll-snap-align:center; scroll-snap-stop:always; border:0; background:none; padding:0;
     color:#fff; text-align:center; opacity:.42; transform:scale(.8); transition:transform .3s ease, opacity .3s ease; }
   .slide.active { opacity:1; transform:scale(1); }
+  .car.nt .slide { transition:none; }
   .art { position:relative; height:min(38vh, 290px); display:flex; align-items:center; justify-content:center; }
   .art::before { content:""; position:absolute; inset:4% 0; border-radius:50%;
     background:radial-gradient(closest-side, rgba(255,255,255,.26), rgba(255,255,255,0) 72%); }
@@ -208,7 +209,7 @@
       Tus juegos y partidas se guardan solo en este dispositivo. Guarda dentro del juego y exporta el
       archivo <b>.sav</b> desde el menú de pausa de vez en cuando.
     </div>
-    <div class="tips" style="padding-top:0;opacity:.6">Versión 13 · animación de arranque</div>
+    <div class="tips" style="padding-top:0;opacity:.6">Versión 14 · animación de arranque</div>
   </section>
 
   <!-- Pantalla 2: juegos de una consola -->
@@ -517,11 +518,14 @@
   });
 
   /* ====== Pantalla de consolas ====== */
-  var carEl = $('car'), slideEls = [], activeIdx = 0, scrollRaf = 0;
+  // Carrusel infinito: se pintan 3 copias seguidas de las consolas y, cuando el scroll se detiene
+  // en una copia de los extremos, se salta sin animación a la misma consola de la copia central.
+  var carEl = $('car'), slideEls = [], activeIdx = 0, scrollRaf = 0, NC = ORDER.length, COPIES = 3;
+  var settleTimer = 0, touching = false;
 
   function renderHome() {                    // solo actualiza los contadores
     slideEls.forEach(function (b, i) {
-      var n = games.filter(function (g) { return g.console === ORDER[i]; }).length;
+      var n = games.filter(function (g) { return g.console === ORDER[i % NC]; }).length;
       b.querySelector('.sc').textContent = n === 0 ? 'Sin juegos' : (n === 1 ? '1 juego' : n + ' juegos');
     });
   }
@@ -532,11 +536,12 @@
   }
   function setActive(i) {
     if (!slideEls[i]) return;
+    var r = i % NC;
     activeIdx = i;
     slideEls.forEach(function (s, k) { s.classList.toggle('active', k === i); });
-    Array.prototype.forEach.call($('dots').children, function (d, k) { d.classList.toggle('on', k === i); });
-    Array.prototype.forEach.call($('glows').children, function (g) { g.classList.toggle('on', g.getAttribute('data-c') === ORDER[i]); });
-    lsSet('car-idx', String(i));
+    Array.prototype.forEach.call($('dots').children, function (d, k) { d.classList.toggle('on', k === r); });
+    Array.prototype.forEach.call($('glows').children, function (g) { g.classList.toggle('on', g.getAttribute('data-c') === ORDER[r]); });
+    lsSet('car-idx', String(r));
   }
   function nearestSlide() {
     var r = carEl.getBoundingClientRect(), mid = r.left + r.width / 2, best = 0, bd = 1e9;
@@ -546,36 +551,53 @@
     });
     return best;
   }
+  function recenter() {                      // si estamos en una copia lateral, saltar a la central sin que se note
+    if (touching || ctxConsole) return;
+    var i = nearestSlide(), j = NC + i % NC;
+    if (i === j) return;
+    carEl.classList.add('nt');                // sin transiciones durante el salto
+    setActive(j); goSlide(j, false);
+    void carEl.offsetWidth;
+    carEl.classList.remove('nt');
+  }
+  function stepSlide(d) { goSlide(Math.max(0, Math.min(slideEls.length - 1, activeIdx + d)), true); }
   function buildCarousel() {
-    ORDER.forEach(function (cid, i) {
-      var c = CONSOLES[cid];
+    for (var p = 0; p < NC * COPIES; p++) (function (pos) {
+      var cid = ORDER[pos % NC], c = CONSOLES[cid], clone = pos < NC || pos >= 2 * NC;
       var b = document.createElement('button'); b.className = 'slide'; b.setAttribute('data-c', cid);
+      if (clone) { b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1; }
       b.innerHTML = '<div class="art"><img alt=""></div><div class="sn"></div><div class="sc"></div>';
       b.querySelector('img').src = LOGOS[cid];
       b.querySelector('.sn').textContent = c.name;
-      b.onclick = function () { if (i === activeIdx) show(cid, true); else goSlide(i, true); };
+      b.onclick = function () { if (pos === activeIdx) show(cid, true); else goSlide(pos, true); };
       carEl.appendChild(b); slideEls.push(b);
+      if (clone) return;
+      var r = pos - NC;
       var d = document.createElement('button'); d.className = 'dot'; d.setAttribute('aria-label', c.name);
-      d.onclick = function () { goSlide(i, true); }; $('dots').appendChild(d);
+      d.onclick = function () { goSlide(activeIdx - activeIdx % NC + r, true); }; $('dots').appendChild(d);
       var g = document.createElement('div'); g.className = 'glow'; g.setAttribute('data-c', cid); g.style.setProperty('--g', c.c1);
       $('glows').appendChild(g);
-    });
+    })(p);
     carEl.addEventListener('scroll', function () {
-      if (scrollRaf) return;
-      scrollRaf = requestAnimationFrame(function () { scrollRaf = 0; setActive(nearestSlide()); });
+      if (!scrollRaf) scrollRaf = requestAnimationFrame(function () { scrollRaf = 0; setActive(nearestSlide()); });
+      clearTimeout(settleTimer); settleTimer = setTimeout(recenter, 160);
     }, { passive: true });
-    $('arL').onclick = function () { goSlide(Math.max(0, activeIdx - 1), true); };
-    $('arR').onclick = function () { goSlide(Math.min(slideEls.length - 1, activeIdx + 1), true); };
+    carEl.addEventListener('touchstart', function () { touching = true; clearTimeout(settleTimer); }, { passive: true });
+    function touchEnd() { touching = false; clearTimeout(settleTimer); settleTimer = setTimeout(recenter, 160); }
+    carEl.addEventListener('touchend', touchEnd, { passive: true });
+    carEl.addEventListener('touchcancel', touchEnd, { passive: true });
+    $('arL').onclick = function () { stepSlide(-1); };
+    $('arR').onclick = function () { stepSlide(1); };
     document.addEventListener('keydown', function (e) {
       if (ctxConsole || $('home').style.display === 'none') return;
-      if (e.key === 'ArrowLeft') goSlide(Math.max(0, activeIdx - 1), true);
-      else if (e.key === 'ArrowRight') goSlide(Math.min(slideEls.length - 1, activeIdx + 1), true);
-      else if (e.key === 'Enter' && document.activeElement === document.body) show(ORDER[activeIdx], true);
+      if (e.key === 'ArrowLeft') stepSlide(-1);
+      else if (e.key === 'ArrowRight') stepSlide(1);
+      else if (e.key === 'Enter' && document.activeElement === document.body) show(ORDER[activeIdx % NC], true);
     });
     var start = parseInt(lsGet('car-idx', '0'), 10);
-    if (!(start >= 0 && start < ORDER.length)) start = 0;
-    setActive(start);
-    requestAnimationFrame(function () { goSlide(start, false); });
+    if (!(start >= 0 && start < NC)) start = 0;
+    setActive(NC + start);
+    requestAnimationFrame(function () { goSlide(NC + start, false); });
   }
 
   /* ====== Lista de juegos con portadas ====== */
