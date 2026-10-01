@@ -101,6 +101,19 @@
   .addbig { display:inline-block; margin-top:16px; background:var(--acc); color:#fff; border:0; border-radius:14px;
     padding:14px 22px; font-size:16px; font-weight:700; }
   #status { color:var(--mut); font-size:13px; padding:0 18px; min-height:18px; }
+  /* Juegos gratis (homebrew con licencia libre) */
+  #hbrew { padding:0 16px 40px; }
+  #hbrew h2 { font-size:19px; margin:4px 2px 2px; }
+  #hbrew .hsub { color:var(--mut); font-size:13px; line-height:1.45; margin:0 2px 12px; }
+  #hbrew .hsub a, .hcard .hby a { color:var(--mut); }
+  .hcard { display:flex; gap:12px; align-items:center; background:var(--card); border-radius:16px; padding:10px; margin-bottom:10px; }
+  .hcard img { width:84px; height:63px; object-fit:cover; border-radius:10px; flex:none; background:#000; }
+  .hcard .hinfo { flex:1; min-width:0; }
+  .hcard b { display:block; font-size:15px; line-height:1.2; }
+  .hcard .hd { color:var(--txt); opacity:.85; font-size:12.5px; line-height:1.35; margin-top:3px; }
+  .hcard .hby { color:var(--mut); font-size:11.5px; margin-top:3px; }
+  .hcard button { flex:none; border:0; border-radius:12px; background:var(--acc); color:#fff; font-size:14px; font-weight:700; padding:10px 12px; }
+  .hcard button:disabled { background:var(--card2); color:var(--mut); }
   .tips { color:var(--mut); font-size:13px; line-height:1.55; padding:0 20px 30px; }
 
   /* ---------- Hojas (fichas y ajustes) ---------- */
@@ -237,7 +250,7 @@
     <div class="tips" id="prot" style="padding-bottom:10px"></div>
     <div class="tips" id="a2hs" style="display:none;padding-top:0;padding-bottom:10px">📲 Para jugar a pantalla completa, sin las barras de Safari: botón Compartir → «Añadir a pantalla de inicio» y ábrela desde su icono. La app instalada guarda los juegos aparte: pásalos con «Guardar copia» aquí y «Restaurar copia» allí.</div>
     <div style="padding:0 20px 18px"><button class="pill" id="btnBackup" style="padding:0 18px">Copia de seguridad</button></div>
-    <div class="tips" style="padding-top:0;opacity:.6">Versión 26 · Consolas favoritas con estrella</div>
+    <div class="tips" style="padding-top:0;opacity:.6">Versión 27 · Juegos gratis de Mega Drive y Game Gear</div>
   </section>
 
   <!-- Pantalla 2: juegos de una consola -->
@@ -250,6 +263,7 @@
     <div id="cstatus" style="color:var(--mut);font-size:13px;padding:0 18px;min-height:18px"></div>
     <div id="games" class="ggrid"></div>
     <div class="hint" id="gHint" style="display:none;padding:0 20px 30px">Toca un juego para abrirlo · mantén pulsado para eliminarlo</div>
+    <div id="hbrew" style="display:none"></div>
   </section>
 </div>
 
@@ -733,6 +747,7 @@
     $('cSub').textContent = list.length === 1 ? '1 juego' : list.length + ' juegos';
     var box = $('games'); box.innerHTML = '';
     $('gHint').style.display = 'none';
+    renderHomebrew();
     if (!list.length) {
       box.innerHTML = '<div class="empty"><div class="big">🎮</div>Aún no hay juegos de ' + c.short +
         (ctxConsole === 'psx'
@@ -750,6 +765,61 @@
       box.appendChild(b);
     });
     $('gHint').style.display = 'block';
+  }
+
+  /* ====== Juegos gratis: homebrew con licencia libre que viene con la app (carpeta homebrew/) ====== */
+  // name es la clave de guardado: no cambiarlo. Créditos y licencias en homebrew/README.md
+  var HOMEBREW = [
+    { console: 'md', name: 'KleleAtoms MD', title: 'KłełeAtoms', ext: 'md', file: 'kleleatoms-md-1.2.1.bin', cover: 'kleleatoms.jpg',
+      by: 'Nightwolf-47', lic: 'MIT', desc: 'Estrategia por turnos de 1 a 4 jugadores: haz estallar tus átomos para quedarte con los del rival.' },
+    { console: 'md', name: 'Minesweeper MD', title: 'Minesweeper MD', ext: 'md', file: 'minesweeper-md-1.1.1.bin', cover: 'minesweeper.jpg',
+      by: 'Nightwolf-47', lic: 'MIT', desc: 'El buscaminas de siempre, con tableros de hasta 38×22 y récords.' },
+    { console: 'gg', name: 'Waternet', title: 'Waternet', ext: 'gg', file: 'waternet-1.0.gg', cover: 'waternet.jpg',
+      by: 'Willems Davy', lic: 'MIT', desc: 'Puzle: gira y desliza las tuberías para que el agua llegue a todas.' },
+    { console: 'gg', name: 'Petris', title: 'Petris', ext: 'gg', file: 'petris-beta-2021-10-10.gg', cover: 'petris.jpg',
+      by: 'bbbbbr', lic: 'CC BY-NC-SA', desc: 'Puzle de piezas que caen: completa mascotas cada vez más largas.' }
+  ];
+  function renderHomebrew() {
+    var el = $('hbrew'), list = HOMEBREW.filter(function (h) { return h.console === ctxConsole; });
+    el.innerHTML = ''; el.style.display = list.length ? 'block' : 'none';
+    if (!list.length) return;
+    el.innerHTML = '<h2>Juegos gratis</h2><div class="hsub">Juegos hechos por aficionados que sus autores comparten con licencia libre. ' +
+      '<a href="https://github.com/elestinho/consolitas/tree/main/homebrew" target="_blank" rel="noopener">Créditos y licencias</a></div>';
+    list.forEach(function (h) {
+      var have = games.some(function (g) { return g.console === h.console && g.name === h.name; });
+      var d = document.createElement('div'); d.className = 'hcard';
+      var im = document.createElement('img'); im.alt = ''; im.src = 'homebrew/portadas/' + h.cover; d.appendChild(im);
+      var info = document.createElement('div'); info.className = 'hinfo';
+      var b = document.createElement('b'); b.textContent = h.title; info.appendChild(b);
+      var ds = document.createElement('div'); ds.className = 'hd'; ds.textContent = h.desc; info.appendChild(ds);
+      var by = document.createElement('div'); by.className = 'hby'; by.textContent = 'De ' + h.by + ' · Licencia ' + h.lic; info.appendChild(by);
+      d.appendChild(info);
+      var btn = document.createElement('button');
+      btn.textContent = have ? '✓ Está' : '＋ Añadir'; btn.disabled = have;
+      btn.onclick = function () { addHomebrew(h, btn); };
+      d.appendChild(btn);
+      el.appendChild(d);
+    });
+  }
+  function addHomebrew(h, btn) {
+    btn.disabled = true; btn.textContent = 'Añadiendo…';
+    var id = String(Date.now()) + Math.floor(Math.random() * 1000), buf;
+    fetch('homebrew/' + h.file).then(function (r) {
+      if (!r.ok) throw new Error('no se pudo descargar (' + r.status + ')');
+      return r.arrayBuffer();
+    }).then(function (b) {
+      buf = b;
+      return fetch('homebrew/portadas/' + h.cover).then(function (r) { return r.ok ? r.blob().then(fileToCover) : null; })
+        .catch(function () { return null; });                       // sin portada también vale
+    }).then(function (cover) {
+      return putRom({ id: id, name: h.name, ext: h.ext, console: h.console, buf: buf })
+        .then(function () { return putMeta({ id: id, title: h.title, cover: cover, ct: Date.now() }); });
+    }).then(refresh).then(function () {
+      toast(h.title + ' añadido ✔');
+    }).catch(function (e) {
+      btn.disabled = false; btn.textContent = '＋ Añadir';
+      toast(/fetch|network|Load failed|offline|Failed/i.test(e.message) ? 'Sin conexión: no pude descargar el juego' : 'Error: ' + e.message, 3200);
+    });
   }
 
   /* ====== Ficha: la portada sube al centro y aparece «Jugar» ====== */
