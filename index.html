@@ -52,7 +52,26 @@
     background:radial-gradient(closest-side, rgba(255,255,255,.26), rgba(255,255,255,0) 72%); }
   .art img { position:relative; max-width:100%; max-height:100%; object-fit:contain; filter:drop-shadow(0 16px 22px rgba(0,0,0,.5));
     -webkit-user-drag:none; user-select:none; }
-  .slide .sn { margin-top:14px; font-size:22px; font-weight:800; letter-spacing:-.3px; }
+  .slide .sn { margin-top:14px; font-size:22px; font-weight:800; letter-spacing:-.3px;
+    display:flex; align-items:center; justify-content:center; gap:8px; }
+  .slide .sn::before { content:""; flex:0 0 30px; }   /* contrapeso de la estrella: el nombre queda centrado */
+  /* Estrella de favorita: gris y translúcida sin marcar; al marcar, salta, gira y suelta destellos */
+  .fav { position:relative; flex:0 0 30px; height:28px; margin:-10px 0; padding:10px 0; box-sizing:content-box;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .fav img { width:30px; height:28px; image-rendering:pixelated; -webkit-user-drag:none; user-select:none;
+    filter:grayscale(1) brightness(1.5); opacity:.32; transition:filter .25s ease, opacity .25s ease; }
+  .fav.on img { filter:drop-shadow(0 2px 3px rgba(0,0,0,.45)); opacity:1; }
+  .slide:not(.active) .fav { pointer-events:none; }
+  .fav.pop img { animation:favPop .65s cubic-bezier(.2,1.5,.4,1); }
+  .fav.unpop img { animation:favDrop .3s ease; }
+  .fav.pop::after { content:""; position:absolute; left:50%; top:50%; width:5px; height:5px; margin:-2.5px 0 0 -2.5px;
+    background:#fff6b0; pointer-events:none; opacity:0; animation:favBurst .6s ease-out;
+    box-shadow:0 -22px #f7d046, 0 22px #f7d046, -22px 0 #f7d046, 22px 0 #f7d046,
+      -16px -16px #fff6b0, 16px -16px #fff6b0, -16px 16px #fff6b0, 16px 16px #fff6b0; }
+  @keyframes favPop { 0% { transform:scale(.3) rotate(-40deg); } 45% { transform:scale(1.6) rotate(18deg); }
+    70% { transform:scale(.9) rotate(-6deg); } 100% { transform:none; } }
+  @keyframes favDrop { 0% { transform:scale(1); } 40% { transform:scale(.7); } 100% { transform:none; } }
+  @keyframes favBurst { 0% { opacity:1; transform:scale(.3); } 100% { opacity:0; transform:scale(1.5); } }
   .slide .sc { margin-top:3px; font-size:14px; opacity:.75; min-height:18px; }
   .dots { display:flex; justify-content:center; gap:8px; margin-top:4px; }
   .dot { width:8px; height:8px; border-radius:4px; border:0; padding:0; background:rgba(255,255,255,.28); transition:all .25s ease; }
@@ -217,7 +236,7 @@
     <div class="tips" id="prot" style="padding-bottom:10px"></div>
     <div class="tips" id="a2hs" style="display:none;padding-top:0;padding-bottom:10px">📲 Para jugar a pantalla completa, sin las barras de Safari: botón Compartir → «Añadir a pantalla de inicio» y ábrela desde su icono. La app instalada guarda los juegos aparte: pásalos con «Guardar copia» aquí y «Restaurar copia» allí.</div>
     <div style="padding:0 20px 18px"><button class="pill" id="btnBackup" style="padding:0 18px">Copia de seguridad</button></div>
-    <div class="tips" style="padding-top:0;opacity:.6">Versión 25 · Mega Drive, Game Gear y PlayStation</div>
+    <div class="tips" style="padding-top:0;opacity:.6">Versión 26 · Consolas favoritas con estrella</div>
   </section>
 
   <!-- Pantalla 2: juegos de una consola -->
@@ -371,6 +390,7 @@
   var $ = function (id) { return document.getElementById(id); };
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  var STAR_IMG = 'data:image/png;base64,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';
 
   /* ====== Audio: recordamos los AudioContext para desbloquearlos con el primer toque (iOS) ====== */
   var audioCtxs = [];
@@ -562,10 +582,16 @@
   // al volver de una consola o, si alguien llegara cerca de un extremo, cuando el scroll se detiene.
   var carEl = $('car'), slideEls = [], activeIdx = -1, scrollRaf = 0, NC = ORDER.length, COPIES = 41;
   var MIDC = Math.floor(COPIES / 2) * NC, settleTimer = 0, touching = false;
+  // Favoritas: se guardan en localStorage y van primero en el carrusel (CAR es el orden en pantalla)
+  var FAVS = lsGet('favs', '').split(',').filter(function (c) { return CONSOLES[c]; }), CAR = [], reorderTimer = 0;
+  function carOrder() {
+    CAR = ORDER.filter(function (c) { return FAVS.indexOf(c) >= 0; })
+      .concat(ORDER.filter(function (c) { return FAVS.indexOf(c) < 0; }));
+  }
 
   function renderHome() {                    // solo actualiza los contadores
     slideEls.forEach(function (b, i) {
-      var n = games.filter(function (g) { return g.console === ORDER[i % NC]; }).length;
+      var n = games.filter(function (g) { return g.console === CAR[i % NC]; }).length;
       b.querySelector('.sc').textContent = n === 0 ? 'Sin juegos' : (n === 1 ? '1 juego' : n + ' juegos');
     });
   }
@@ -581,8 +607,8 @@
     slideEls[i].classList.add('active');
     activeIdx = i;
     Array.prototype.forEach.call($('dots').children, function (d, k) { d.classList.toggle('on', k === r); });
-    Array.prototype.forEach.call($('glows').children, function (g) { g.classList.toggle('on', g.getAttribute('data-c') === ORDER[r]); });
-    lsSet('car-idx', String(r));
+    Array.prototype.forEach.call($('glows').children, function (g) { g.classList.toggle('on', g.getAttribute('data-c') === CAR[r]); });
+    lsSet('car-c', CAR[r]);
   }
   function nearestSlide() {                  // cálculo directo (hay muchas diapositivas)
     var a = slideEls[0], b = slideEls[1], pitch = b.offsetLeft - a.offsetLeft;
@@ -598,14 +624,40 @@
     carEl.classList.remove('nt');
   }
   function stepSlide(d) { goSlide(Math.max(0, Math.min(slideEls.length - 1, activeIdx + d)), true); }
-  function buildCarousel() {
+  function toggleFav(cid, el) {
+    var on = FAVS.indexOf(cid) < 0;
+    if (on) FAVS.push(cid); else FAVS.splice(FAVS.indexOf(cid), 1);
+    lsSet('favs', FAVS.join(','));
+    slideEls.forEach(function (b) {
+      if (b.getAttribute('data-c') === cid) b.querySelector('.fav').classList.toggle('on', on);
+    });
+    el.classList.remove('pop', 'unpop'); void el.offsetWidth;
+    el.classList.add(on ? 'pop' : 'unpop');
+    el.setAttribute('aria-label', on ? 'Quitar de favoritas' : 'Marcar como favorita');
+    clearTimeout(reorderTimer); reorderTimer = setTimeout(reorder, 700);   // tras la animación
+  }
+  function reorder() {                       // recolocar el carrusel con las favoritas delante, sin moverse de consola
+    if (touching || ctxConsole) { reorderTimer = setTimeout(reorder, 400); return; }
+    var cur = activeIdx < 0 ? CAR[0] : CAR[activeIdx % NC];
+    carOrder(); buildSlides(); renderHome();
+    activeIdx = -1; setActive(MIDC + CAR.indexOf(cur));
+    recenter();
+  }
+  function buildSlides() {
+    carEl.innerHTML = ''; $('dots').innerHTML = ''; $('glows').innerHTML = ''; slideEls = [];
     for (var p = 0; p < NC * COPIES; p++) (function (pos) {
-      var cid = ORDER[pos % NC], c = CONSOLES[cid], main = pos >= MIDC && pos < MIDC + NC;
+      var cid = CAR[pos % NC], c = CONSOLES[cid], main = pos >= MIDC && pos < MIDC + NC;
       var b = document.createElement('button'); b.className = 'slide'; b.setAttribute('data-c', cid);
       if (!main) { b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1; }
-      b.innerHTML = '<div class="art"><img alt="" decoding="async"></div><div class="sn"></div><div class="sc"></div>';
-      b.querySelector('img').src = LOGOS[cid];
-      b.querySelector('.sn').textContent = c.name;
+      b.innerHTML = '<div class="art"><img alt="" decoding="async"></div><div class="sn"><span></span>' +
+        '<span class="fav" role="button"><img alt=""></span></div><div class="sc"></div>';
+      b.querySelector('.art img').src = LOGOS[cid];
+      b.querySelector('.sn span').textContent = c.name;
+      var f = b.querySelector('.fav'), isFav = FAVS.indexOf(cid) >= 0;
+      f.querySelector('img').src = STAR_IMG;
+      f.classList.toggle('on', isFav);
+      f.setAttribute('aria-label', isFav ? 'Quitar de favoritas' : 'Marcar como favorita');
+      f.onclick = function (e) { e.stopPropagation(); if (pos === activeIdx) toggleFav(cid, f); else goSlide(pos, true); };
       b.onclick = function () { if (pos === activeIdx) show(cid, true); else goSlide(pos, true); };
       carEl.appendChild(b); slideEls.push(b);
       if (!main) return;
@@ -620,6 +672,9 @@
       var g = document.createElement('div'); g.className = 'glow'; g.setAttribute('data-c', cid); g.style.setProperty('--g', c.c1);
       $('glows').appendChild(g);
     })(p);
+  }
+  function buildCarousel() {
+    carOrder(); buildSlides();
     function nearEdge() { return activeIdx < 2 * NC || activeIdx >= slideEls.length - 2 * NC; }
     function settle() { clearTimeout(settleTimer); settleTimer = setTimeout(function () { if (!touching && !ctxConsole && nearEdge()) recenter(); }, 400); }
     carEl.addEventListener('scroll', function () {
@@ -636,10 +691,10 @@
       if (ctxConsole || $('home').style.display === 'none') return;
       if (e.key === 'ArrowLeft') stepSlide(-1);
       else if (e.key === 'ArrowRight') stepSlide(1);
-      else if (e.key === 'Enter' && document.activeElement === document.body) show(ORDER[activeIdx % NC], true);
+      else if (e.key === 'Enter' && document.activeElement === document.body) show(CAR[activeIdx % NC], true);
     });
-    var start = parseInt(lsGet('car-idx', '0'), 10);
-    if (!(start >= 0 && start < NC)) start = 0;
+    var start = CAR.indexOf(lsGet('car-c', ''));
+    if (start < 0) start = CAR.indexOf(ORDER[parseInt(lsGet('car-idx', '0'), 10)] || ORDER[0]);
     setActive(MIDC + start);
     requestAnimationFrame(recenter);
   }
