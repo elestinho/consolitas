@@ -109,6 +109,12 @@
     70% { transform:scale(.9) rotate(-6deg); } 100% { transform:none; } }
   @keyframes favDrop { 0% { transform:scale(1); } 40% { transform:scale(.7); } 100% { transform:none; } }
   @keyframes favBurst { 0% { opacity:1; transform:scale(.3); } 100% { opacity:0; transform:scale(1.5); } }
+  /* Pista: cada 2 s el icono sin marcar de la consola central late y se ilumina un instante, para que se vea que se puede tocar */
+  .slide.active .fav:not(.on):not(.pop):not(.unpop) img { animation:favHint 2s ease-in-out 1s infinite; }
+  @keyframes favHint { 0%, 72%, 100% { transform:none; }
+    80% { transform:scale(1.22) rotate(-8deg); opacity:.7; filter:grayscale(.3) brightness(1.2); }
+    88% { transform:scale(.96); opacity:.45; } 94% { transform:scale(1.04); } }
+  @media (prefers-reduced-motion: reduce) { .slide.active .fav img, .gfav img { animation:none !important; } }
   .slide .sc { margin-top:3px; font-size:14px; opacity:.75; min-height:18px; }
   /* Personalizar (solo GBA): píldora bajo el nombre con el color de la skin elegida */
   .cust { display:inline-flex; align-items:center; gap:7px; height:30px; margin-top:12px; padding:0 13px 0 9px; border-radius:15px;
@@ -184,6 +190,17 @@
   .gcard .chk { position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:2px solid rgba(255,255,255,.85);
     background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:800; }
   #cview.sel .gcard .chk { display:flex; }
+  /* Favorito de cada juego: icono pequeño de su consola en la esquina de la portada */
+  .gfav { position:absolute; top:0; right:0; z-index:2; width:44px; height:44px; padding:7px; box-sizing:border-box;
+    display:flex; align-items:flex-start; justify-content:flex-end; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .gfav img { width:22px; height:22px; padding:3px; box-sizing:border-box; border-radius:50%; object-fit:contain;
+    background:rgba(0,0,0,.32); -webkit-user-drag:none; user-select:none;
+    filter:grayscale(1) brightness(1.7); opacity:.55; transition:filter .25s ease, opacity .25s ease, background .25s ease; }
+  .gfav img.px { image-rendering:pixelated; }
+  .gfav.on img { background:rgba(0,0,0,.42); filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)); opacity:1; }
+  .gfav.pop img { animation:favPop .65s cubic-bezier(.2,1.5,.4,1); }
+  .gfav.unpop img { animation:favDrop .3s ease; }
+  #cview.sel .gfav { display:none; }
   #cview.sel .gcard.picked .chk { background:#ff6b6b; border-color:#ff6b6b; }
   #cview.sel .gcard.picked .chk::before { content:'✓'; }
   #cview.sel .gcard .cover { transition:transform .15s ease, opacity .15s ease; }
@@ -474,7 +491,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 30</p>
+  <p class="ver">Consolitas · Versión 31</p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1009,7 +1026,7 @@
       return;
     }
     selIds = selIds.filter(function (id) { return byId[id] && byId[id].console === ctxConsole; });
-    list = sortList(list);
+    list = favFirst(sortList(list));               // los favoritos primero; dentro de cada grupo, el orden elegido
     var q = fold($('eQ').value.trim());
     if (q && editOn) list = list.filter(function (g) { return fold(g.title).indexOf(q) >= 0; });
     if (!list.length) {
@@ -1019,6 +1036,7 @@
     list.forEach(function (g) {
       var b = document.createElement('button'); b.className = 'gcard'; b.setAttribute('data-id', g.id);
       var cv = coverEl(g, false), k = document.createElement('div'); k.className = 'chk'; cv.appendChild(k);
+      cv.appendChild(gFavEl(g));
       b.appendChild(cv);
       if (selIds.indexOf(g.id) >= 0) b.classList.add('picked');
       var t = document.createElement('div'); t.className = 'gt'; t.textContent = g.title; b.appendChild(t);
@@ -1126,11 +1144,42 @@
   };
   $('selDel').onclick = function () { if (selIds.length) openDel(selIds.slice()); };
 
+  /* ====== Juegos favoritos: el icono de su consola en la esquina de la portada; van primero en las listas ====== */
+  var GFAVS = lsGet('gfavs', '').split(',').filter(Boolean), gfavTimer = 0;
+  function isGFav(g) { return GFAVS.indexOf(g.id) >= 0; }
+  function favFirst(list) { return list.filter(isGFav).concat(list.filter(function (g) { return !isGFav(g); })); }
+  function gFavEl(g) {
+    var f = document.createElement('span'), on = isGFav(g); f.className = 'gfav' + (on ? ' on' : '');
+    f.setAttribute('role', 'button'); f.setAttribute('data-id', g.id);
+    f.setAttribute('aria-label', on ? 'Quitar de favoritos' : 'Marcar como favorito');
+    var im = document.createElement('img'); im.alt = ''; im.src = FAV_IMG[g.console] || STAR_IMG;
+    if (!FAV_IMG[g.console]) im.className = 'px';
+    f.appendChild(im);
+    f.addEventListener('pointerdown', function (e) { e.stopPropagation(); });   // sin pulsación larga ni hundir la portada
+    f.addEventListener('contextmenu', function (e) { e.stopPropagation(); e.preventDefault(); });
+    f.addEventListener('click', function (e) { e.stopPropagation(); e.preventDefault(); toggleGFav(g.id, f); });
+    return f;
+  }
+  function toggleGFav(id, el) {
+    var on = GFAVS.indexOf(id) < 0;
+    if (on) GFAVS.push(id); else GFAVS.splice(GFAVS.indexOf(id), 1);
+    lsSet('gfavs', GFAVS.join(','));
+    Array.prototype.forEach.call(document.querySelectorAll('.gfav'), function (f) {
+      if (f.getAttribute('data-id') !== id) return;
+      f.classList.toggle('on', on);
+      f.setAttribute('aria-label', on ? 'Quitar de favoritos' : 'Marcar como favorito');
+    });
+    el.classList.remove('pop', 'unpop'); void el.offsetWidth;
+    el.classList.add(on ? 'pop' : 'unpop');
+    clearTimeout(gfavTimer);
+    gfavTimer = setTimeout(function () { if (ctxConsole) renderGames(); else if (TAB === 'lib') renderLib(); }, 700);   // reordenar tras la animación
+  }
+
   /* ====== Pestaña Juegos: los últimos jugados y todos ====== */
   function recentIds() { return lsGet('recent', '').split(',').filter(function (id) { return byId[id]; }); }
   function libCard(g) {
     var b = document.createElement('button'); b.className = 'gcard'; b.setAttribute('data-id', g.id);
-    b.appendChild(coverEl(g, false));
+    var cv = coverEl(g, false); cv.appendChild(gFavEl(g)); b.appendChild(cv);
     var t = document.createElement('div'); t.className = 'gt'; t.textContent = g.title; b.appendChild(t);
     var c = document.createElement('div'); c.className = 'gc'; c.textContent = CONSOLES[g.console] ? CONSOLES[g.console].short : ''; b.appendChild(c);
     attachPress(b, g.id);
@@ -1156,7 +1205,7 @@
     var sub = document.createElement('div'); sub.className = 'psub';
     sub.textContent = (games.length === 1 ? '1 juego' : games.length + ' juegos') + ' · mantén pulsado para eliminar'; el.appendChild(sub);
     var g2 = document.createElement('div'); g2.className = 'ggrid';
-    games.forEach(function (g) { g2.appendChild(libCard(g)); });
+    favFirst(games).forEach(function (g) { g2.appendChild(libCard(g)); });
     el.appendChild(g2);
   }
 
