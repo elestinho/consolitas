@@ -117,7 +117,7 @@
   .cust .sw { width:14px; height:14px; border-radius:50%; background:var(--sw); box-shadow:0 0 0 2px rgba(255,255,255,.18); }
   .cust:active { transform:scale(.96); }
   .slide:not(.active) .cust { opacity:0; pointer-events:none; }
-  .skstrip { display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; margin:6px -18px 14px; padding:8px 18px 4px; }
+  .skstrip { display:flex; gap:12px; overflow-x:auto; overscroll-behavior:contain; scroll-snap-type:x mandatory; scrollbar-width:none; margin:6px -18px 14px; padding:8px 18px 4px; }
   .skstrip::-webkit-scrollbar { display:none; }
   .skopt { flex:0 0 104px; scroll-snap-align:center; border:0; background:none; padding:0; color:var(--mut); font-size:13px; font-weight:600; text-align:center; }
   .skopt .pic { position:relative; display:flex; align-items:center; justify-content:center; height:196px; border-radius:18px;
