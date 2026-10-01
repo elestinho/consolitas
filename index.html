@@ -31,7 +31,27 @@
   .wrapc { max-width:640px; margin:0 auto; }
   .ibtn.ghost { background:rgba(255,255,255,.08); color:#d6d8e6; }
   /* Marca centrada: logo + «Consolitas» */
-  .brandbar { display:grid; grid-template-columns:42px 1fr 42px; padding-top:34px; }
+  .brandbar { display:grid; grid-template-columns:42px 1fr 42px; padding-top:18px; transition:padding .25s ease; }
+  #home.t-cons .brandbar { padding-top:max(64px, 9vh); }
+  #home .pane { flex:1; display:flex; flex-direction:column; }
+  #home { padding-bottom:calc(64px + env(safe-area-inset-bottom)); }
+  /* Barra inferior */
+  .tabbar { position:fixed; left:0; right:0; bottom:0; z-index:50; display:flex; max-width:640px; margin:0 auto;
+    padding:6px 6px calc(env(safe-area-inset-bottom) + 4px); background:rgba(12,13,20,.78);
+    -webkit-backdrop-filter:blur(22px) saturate(1.5); backdrop-filter:blur(22px) saturate(1.5); border-top:1px solid rgba(255,255,255,.07); }
+  .tab { flex:1; border:0; background:none; color:#7a7e96; display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-size:10.5px; font-weight:600; padding:4px 0 2px; transition:color .2s ease; }
+  .tab svg { width:26px; height:26px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  .tab svg .f { fill:currentColor; }
+  .tab.on { color:#bdb4ff; }
+  .tab:active svg { transform:scale(.9); }
+  /* Pestañas Juegos y Gratis */
+  .ptitle { font-size:24px; font-weight:800; letter-spacing:-.4px; margin:6px 18px 2px; }
+  .psub { color:var(--mut); font-size:13px; line-height:1.45; margin:0 18px 10px; }
+  .psub a { color:var(--mut); }
+  .gcard .gc { margin:2px 2px 0; color:var(--mut); font-size:12px; }
+  #pLib .ggrid { padding-bottom:18px; }
+  #pFree .hlist { padding:4px 16px 24px; }
   .top h1.brand { display:flex; align-items:center; justify-content:center; gap:7px; font-size:27px; font-weight:800;
     letter-spacing:-.6px; overflow:visible; }
   .brand .logo { width:36px; height:36px; flex:none; filter:drop-shadow(0 4px 10px rgba(124,108,255,.45)); }
@@ -254,7 +274,7 @@
   #delpanel p { margin:0 0 16px; color:var(--mut); font-size:13px; line-height:1.4; }
   #delYes { display:block; width:100%; border:0; border-radius:14px; padding:15px; margin-bottom:8px; font-size:16px; font-weight:700; background:#3a1e26; color:#ff8f8f; }
   #delNo { display:block; width:100%; border:0; border-radius:14px; padding:15px; font-size:16px; font-weight:600; background:#262a3c; color:var(--txt); }
-  #toast { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 24px); transform:translateX(-50%);
+  #toast { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 84px); transform:translateX(-50%);
     z-index:100003; background:rgba(0,0,0,.85); color:#fff; padding:9px 15px; border-radius:999px;
     font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90%; text-align:center; }
   #toast.show { opacity:1; }
@@ -264,10 +284,10 @@
 
 <div id="app">
   <!-- Pantalla 1: consolas -->
-  <section id="home" class="wrapc">
+  <section id="home" class="wrapc t-cons">
     <div id="glows"></div>
     <div class="top brandbar">
-      <button class="ibtn ghost" id="btnSettings" aria-label="Ajustes">⚙︎</button>
+      <span></span>
       <h1 class="brand"><svg class="logo" viewBox="0 0 44 44" aria-hidden="true">
           <defs>
             <linearGradient id="lgBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9d4ff"/></linearGradient>
@@ -285,18 +305,33 @@
         </svg><span class="word">Consolitas</span></h1>
       <button class="ibtn acc" id="btnAddHome" aria-label="Añadir juego">＋</button>
     </div>
-    <div class="stage">
-      <button class="arrow l" id="arL" aria-label="Anterior">‹</button>
-      <button class="arrow r" id="arR" aria-label="Siguiente">›</button>
-      <div id="car" class="car"></div>
-      <div id="dots" class="dots"></div>
-    </div>
     <div id="status"></div>
-    <!-- Avisos discretos: solo aparecen cuando hacen falta -->
-    <div class="foot">
-      <button class="chip" id="a2hs" style="display:none"><span class="cdot"></span>Jugar a pantalla completa<span class="go">›</span></button>
+    <!-- Pestaña Consolas: el carrusel -->
+    <div class="pane" id="pCons">
+      <div class="stage">
+        <button class="arrow l" id="arL" aria-label="Anterior">‹</button>
+        <button class="arrow r" id="arR" aria-label="Siguiente">›</button>
+        <div id="car" class="car"></div>
+        <div id="dots" class="dots"></div>
+      </div>
+      <!-- Aviso discreto: solo en Safari -->
+      <div class="foot">
+        <button class="chip" id="a2hs" style="display:none"><span class="cdot"></span>Jugar a pantalla completa<span class="go">›</span></button>
+      </div>
     </div>
+    <!-- Pestaña Juegos: recientes y todos -->
+    <div class="pane" id="pLib" style="display:none"></div>
+    <!-- Pestaña Gratis: juegos homebrew de todas las consolas -->
+    <div class="pane" id="pFree" style="display:none"></div>
   </section>
+
+  <!-- Barra inferior -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab on" data-t="cons"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9a4.5 4.5 0 0 1 4.4 5.4l-.9 4.3a2.4 2.4 0 0 1-4.1 1.2L13.6 16h-3.2l-2.3 2.4A2.4 2.4 0 0 1 4 17.2l-.9-4.3a4.5 4.5 0 0 1 4.4-5.4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11.2" r=".6" class="f"/><circle cx="17" cy="12.9" r=".6" class="f"/></svg>Consolas</button>
+    <button class="tab" data-t="lib"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Juegos</button>
+    <button class="tab" data-t="free"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="4" rx="1.2"/><path d="M5 12.5v6.5a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-6.5M12 8.5v12M12 8.5C10.5 5 7 4.6 7 6.6S10 8.5 12 8.5zM12 8.5c1.5-3.5 5-3.9 5-1.9s-3 1.9-5 1.9z"/></svg>Gratis</button>
+    <button class="tab" id="btnSettings" data-t="set"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
+  </nav>
 
   <!-- Pantalla 2: juegos de una consola -->
   <section id="cview" class="wrapc" style="display:none">
@@ -639,18 +674,36 @@
         return g;
       }).sort(function (a, b) { return a.title.localeCompare(b.title); });
       byId = {}; games.forEach(function (g) { byId[g.id] = g; });
-      renderHome(); renderGames();
+      renderHome(); renderGames(); if (TAB === 'lib') renderLib(); if (TAB === 'free') renderFree();
     });
   }
 
   /* ====== Navegación ====== */
+  var TAB = 'cons';
+  function setTab(t) {
+    if (t === 'set') { $('bd').style.display = 'block'; $('settings').style.display = 'block'; return; }
+    TAB = t;
+    $('home').className = 'wrapc t-' + t;
+    $('pCons').style.display = t === 'cons' ? 'flex' : 'none';
+    $('pLib').style.display = t === 'lib' ? 'block' : 'none';
+    $('pFree').style.display = t === 'free' ? 'block' : 'none';
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) { b.classList.toggle('on', b.getAttribute('data-t') === t); });
+    if (t === 'lib') renderLib(); else if (t === 'free') renderFree();
+    window.scrollTo(0, 0);
+    if (t === 'cons' && slideEls.length) requestAnimationFrame(recenter);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+    if (b.id !== 'btnSettings') b.onclick = function () { setTab(b.getAttribute('data-t')); };
+  });
   function show(cid, push) {
     ctxConsole = cid && CONSOLES[cid] ? cid : null;
     $('home').style.display = ctxConsole ? 'none' : 'flex';
+    $('tabbar').style.display = ctxConsole ? 'none' : '';
     $('cview').style.display = ctxConsole ? 'block' : 'none';
     if (push) history.pushState({}, '', ctxConsole ? '?c=' + ctxConsole : location.pathname);
     if (ctxConsole) { renderGames(); window.scrollTo(0, 0); }
-    else if (slideEls.length) { requestAnimationFrame(recenter); }   // al volver, recolocar el carrusel
+    else if (slideEls.length && TAB === 'cons') { requestAnimationFrame(recenter); }   // al volver, recolocar el carrusel
+    else if (TAB === 'lib') renderLib();
   }
   window.addEventListener('popstate', function () {
     if (ignorePop) { ignorePop = false; return; }
@@ -720,7 +773,7 @@
     clearTimeout(reorderTimer); reorderTimer = setTimeout(reorder, 700);   // tras la animación
   }
   function reorder() {                       // recolocar el carrusel con las favoritas delante, sin moverse de consola
-    if (touching || ctxConsole) { reorderTimer = setTimeout(reorder, 400); return; }
+    if (touching || ctxConsole || TAB !== 'cons') { reorderTimer = setTimeout(reorder, 400); return; }
     var cur = activeIdx < 0 ? CAR[0] : CAR[activeIdx % NC];
     carOrder(); buildSlides(); renderHome();
     activeIdx = -1; setActive(MIDC + CAR.indexOf(cur));
@@ -760,7 +813,7 @@
   function buildCarousel() {
     carOrder(); buildSlides();
     function nearEdge() { return activeIdx < 2 * NC || activeIdx >= slideEls.length - 2 * NC; }
-    function settle() { clearTimeout(settleTimer); settleTimer = setTimeout(function () { if (!touching && !ctxConsole && nearEdge()) recenter(); }, 400); }
+    function settle() { clearTimeout(settleTimer); settleTimer = setTimeout(function () { if (!touching && !ctxConsole && TAB === 'cons' && nearEdge()) recenter(); }, 400); }
     carEl.addEventListener('scroll', function () {
       if (!scrollRaf) scrollRaf = requestAnimationFrame(function () { scrollRaf = 0; setActive(nearestSlide()); });
       settle();
@@ -772,7 +825,7 @@
     $('arL').onclick = function () { stepSlide(-1); };
     $('arR').onclick = function () { stepSlide(1); };
     document.addEventListener('keydown', function (e) {
-      if (ctxConsole || $('home').style.display === 'none') return;
+      if (ctxConsole || TAB !== 'cons' || $('home').style.display === 'none') return;
       if (e.key === 'ArrowLeft') stepSlide(-1);
       else if (e.key === 'ArrowRight') stepSlide(1);
       else if (e.key === 'Enter' && document.activeElement === document.body) show(CAR[activeIdx % NC], true);
@@ -831,6 +884,40 @@
     $('gHint').style.display = 'block';
   }
 
+  /* ====== Pestaña Juegos: los últimos jugados y todos ====== */
+  function recentIds() { return lsGet('recent', '').split(',').filter(function (id) { return byId[id]; }); }
+  function libCard(g) {
+    var b = document.createElement('button'); b.className = 'gcard'; b.setAttribute('data-id', g.id);
+    b.appendChild(coverEl(g, false));
+    var t = document.createElement('div'); t.className = 'gt'; t.textContent = g.title; b.appendChild(t);
+    var c = document.createElement('div'); c.className = 'gc'; c.textContent = CONSOLES[g.console] ? CONSOLES[g.console].short : ''; b.appendChild(c);
+    attachPress(b, g.id);
+    return b;
+  }
+  function renderLib() {
+    var el = $('pLib'); el.innerHTML = '';
+    if (!games.length) {
+      el.innerHTML = '<div class="ptitle">Juegos</div><div class="empty"><div class="big">🎮</div>Aún no tienes juegos.<br>' +
+        'Añade una ROM con ＋ o prueba los de la pestaña Gratis.<br><button class="addbig" id="libAdd">＋ Añadir juego</button></div>';
+      $('libAdd').onclick = function () { $('rom').click(); };
+      return;
+    }
+    var rec = recentIds().slice(0, 4);
+    if (rec.length) {
+      var h = document.createElement('div'); h.className = 'ptitle'; h.textContent = 'Seguir jugando'; el.appendChild(h);
+      var g1 = document.createElement('div'); g1.className = 'ggrid';
+      rec.forEach(function (id) { g1.appendChild(libCard(byId[id])); });
+      el.appendChild(g1);
+    }
+    var h2 = document.createElement('div'); h2.className = 'ptitle';
+    h2.textContent = 'Todos tus juegos'; el.appendChild(h2);
+    var sub = document.createElement('div'); sub.className = 'psub';
+    sub.textContent = (games.length === 1 ? '1 juego' : games.length + ' juegos') + ' · mantén pulsado para eliminar'; el.appendChild(sub);
+    var g2 = document.createElement('div'); g2.className = 'ggrid';
+    games.forEach(function (g) { g2.appendChild(libCard(g)); });
+    el.appendChild(g2);
+  }
+
   /* ====== Juegos gratis: homebrew con licencia libre que viene con la app (carpeta homebrew/) ====== */
   // name es la clave de guardado: no cambiarlo. Créditos y licencias en homebrew/README.md
   var HOMEBREW = [
@@ -849,6 +936,16 @@
     if (!list.length) return;
     el.innerHTML = '<h2>Juegos gratis</h2><div class="hsub">Juegos hechos por aficionados que sus autores comparten con licencia libre. ' +
       '<a href="https://github.com/elestinho/consolitas/tree/main/homebrew" target="_blank" rel="noopener">Créditos y licencias</a></div>';
+    hbCards(el, list, false);
+  }
+  function renderFree() {
+    var el = $('pFree');
+    el.innerHTML = '<div class="ptitle">Juegos gratis</div><div class="psub">Hechos por aficionados que los comparten con licencia libre. ' +
+      '<a href="https://github.com/elestinho/consolitas/tree/main/homebrew" target="_blank" rel="noopener">Créditos y licencias</a></div>';
+    var box = document.createElement('div'); box.className = 'hlist'; el.appendChild(box);
+    hbCards(box, HOMEBREW, true);
+  }
+  function hbCards(el, list, withConsole) {
     list.forEach(function (h) {
       var have = games.some(function (g) { return g.console === h.console && g.name === h.name; });
       var d = document.createElement('div'); d.className = 'hcard';
@@ -856,7 +953,7 @@
       var info = document.createElement('div'); info.className = 'hinfo';
       var b = document.createElement('b'); b.textContent = h.title; info.appendChild(b);
       var ds = document.createElement('div'); ds.className = 'hd'; ds.textContent = h.desc; info.appendChild(ds);
-      var by = document.createElement('div'); by.className = 'hby'; by.textContent = 'De ' + h.by + ' · Licencia ' + h.lic; info.appendChild(by);
+      var by = document.createElement('div'); by.className = 'hby'; by.textContent = (withConsole ? CONSOLES[h.console].short + ' · ' : '') + 'De ' + h.by + ' · Licencia ' + h.lic; info.appendChild(by);
       d.appendChild(info);
       var btn = document.createElement('button');
       btn.textContent = have ? '✓ Está' : '＋ Añadir'; btn.disabled = have;
@@ -889,7 +986,13 @@
   /* ====== Ficha: la portada sube al centro y aparece «Jugar» ====== */
   var ovId = null, ovBusy = false, ovPushed = false, ignorePop = false;
   function canAnimate() { return typeof Element !== 'undefined' && !!Element.prototype.animate; }
-  function coverOf(id) { return document.querySelector('.gcard[data-id="' + id + '"] .cover'); }
+  var lastCard = null;
+  function coverOf(id) {
+    if (lastCard && lastCard.getAttribute('data-id') === id && lastCard.offsetParent) return lastCard.querySelector('.cover');
+    var all = document.querySelectorAll('.gcard[data-id="' + id + '"]');
+    for (var i = 0; i < all.length; i++) if (all[i].offsetParent) return all[i].querySelector('.cover');
+    return null;
+  }
   function ovTarget() {
     var W = window.innerWidth, H = window.innerHeight;
     var S = Math.min(W * 0.74, 340, H * 0.44), block = S + 20 + 44 + 14 + 56;
@@ -962,7 +1065,7 @@
     });
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { b.addEventListener(ev, cancel); });
     b.addEventListener('contextmenu', function (e) { e.preventDefault(); if (!longDone) { cancel(); longDone = true; openDel(id); } });
-    b.addEventListener('click', function (e) { if (longDone) { longDone = false; e.preventDefault(); return; } openOverlay(id); });
+    b.addEventListener('click', function (e) { if (longDone) { longDone = false; e.preventDefault(); return; } lastCard = b; openOverlay(id); });
   }
   function openDel(id) {
     var g = byId[id]; if (!g) return;
@@ -2176,6 +2279,8 @@
   }
 
   function launch(id) {
+    var rec = lsGet('recent', '').split(',').filter(function (x) { return x && x !== id; });
+    rec.unshift(id); lsSet('recent', rec.slice(0, 12).join(','));
     getRom(id).then(function (g) {
       if (!g) { location.href = location.pathname; return; }
       curId = id; curConsole = g.console || 'gba'; curName = prettify(g.name);
