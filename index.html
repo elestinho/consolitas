@@ -31,7 +31,7 @@
   .wrapc { max-width:640px; margin:0 auto; }
   .ibtn.ghost { background:rgba(255,255,255,.08); color:#d6d8e6; }
   /* Marca centrada: logo + «Consolitas» */
-  .brandbar { display:grid; grid-template-columns:42px 1fr 42px; padding-top:14px; }
+  .brandbar { display:grid; grid-template-columns:42px 1fr 42px; padding-top:34px; }
   .top h1.brand { display:flex; align-items:center; justify-content:center; gap:7px; font-size:27px; font-weight:800;
     letter-spacing:-.6px; overflow:visible; }
   .brand .logo { width:36px; height:36px; flex:none; filter:drop-shadow(0 4px 10px rgba(124,108,255,.45)); }
@@ -295,7 +295,6 @@
     <!-- Avisos discretos: solo aparecen cuando hacen falta -->
     <div class="foot">
       <button class="chip" id="a2hs" style="display:none"><span class="cdot"></span>Jugar a pantalla completa<span class="go">›</span></button>
-      <button class="chip warn" id="bkNudge" style="display:none"><span class="cdot"></span>Haz una copia de seguridad<span class="go">›</span></button>
     </div>
   </section>
 
@@ -356,11 +355,7 @@
     <span class="go">›</span>
   </button>
   <div class="row" id="skinRow"><span>Skin de Game Boy Advance</span><select id="skinSel"></select></div>
-  <div class="row"><span>Efecto LCD (rejilla de píxeles)</span><input type="checkbox" id="lcd"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
-  <div class="row"><span>Buscar portadas automáticamente</span><input type="checkbox" id="autoCov"></div>
-  <div class="row"><span>Diagnóstico (si el juego se cierra solo)</span><button class="ibtn" id="btnDiag" style="width:auto;padding:0 14px;font-size:14px;border-radius:12px;height:36px">Ver</button></div>
-  <p class="note">Las skins se usan con la GBA y la Game Boy / Color. Las portadas se buscan en catálogos públicos de GitHub (libretro): se compara la huella de tu ROM en tu dispositivo y no se envía ningún archivo.</p>
   <button class="sbtn pri" id="setClose">Listo</button>
   <p class="ver">Consolitas · Versión 28</p>
 </div>
@@ -1060,12 +1055,10 @@
       $('bkStatus').textContent = r[0] ? '' : 'El navegador podría borrar tus datos si pasan varios días sin abrir la app. Guarda la copia en Archivos o iCloud.';
       $('prot').textContent = due ? (last ? 'Hace tiempo de la última: ' + lastTxt : 'Aún no has hecho ninguna') : 'Última copia: ' + lastTxt;
       $('prot').className = due ? 'warn' : '';
-      $('bkNudge').style.display = due ? '' : 'none';
     });
   }
   function openBackup() { closeSheets(); updateProt(); $('bd').style.display = 'block'; $('backup').style.display = 'block'; }
   $('btnBackup').onclick = openBackup;
-  $('bkNudge').onclick = openBackup;
   $('a2hs').onclick = function () { $('bd').style.display = 'block'; $('a2hsSheet').style.display = 'block'; };
   $('a2hsBk').onclick = openBackup;
   $('a2hsClose').onclick = closeSheets;
@@ -1282,7 +1275,6 @@
     });
   }
   function queueCovers(ids) {
-    if (lsGet('auto-covers', '1') !== '1') return;
     ids.forEach(function (id) { if (coverQueue.indexOf(id) < 0) coverQueue.push(id); });
     if (!coverBusy) runCoverQueue();
   }
@@ -1710,13 +1702,9 @@
     if (gbaSkins.length <= 1) $('skinRow').style.display = 'none';
   })();
   sel.addEventListener('change', function () { lsSet('skin-gba', sel.value); });
-  var lcdOn = lsGet('gba-lcd', '0') === '1';
-  $('lcd').checked = lcdOn;
-  $('lcd').addEventListener('change', function () { lcdOn = $('lcd').checked; lsSet('gba-lcd', lcdOn ? '1' : '0'); });
+  var lcdOn = false;   // el efecto LCD se quitó de Ajustes (Versión 28)
   $('perf').checked = lsGet('perf-hud', '0') === '1';
   $('perf').addEventListener('change', function () { lsSet('perf-hud', $('perf').checked ? '1' : '0'); });
-  $('autoCov').checked = lsGet('auto-covers', '1') === '1';
-  $('autoCov').addEventListener('change', function () { lsSet('auto-covers', $('autoCov').checked ? '1' : '0'); });
   $('btnSettings').onclick = function () { $('bd').style.display = 'block'; $('settings').style.display = 'block'; };
   $('setClose').onclick = closeSheets;
   function showDiag() {
@@ -1725,7 +1713,6 @@
     closeSheets(); $('bd').style.display = 'block'; $('diag').style.display = 'block';
     pre.scrollTop = pre.scrollHeight;
   }
-  $('btnDiag').onclick = showDiag;
   $('diagClose').onclick = closeSheets;
   $('diagClear').onclick = function () { lsSet(DIAG, '[]'); showDiag(); };
   $('diagCopy').onclick = function () {
