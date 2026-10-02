@@ -510,9 +510,10 @@
     <span class="bkt"><b>Jugar sin conexión</b><small id="offSum">Consolas listas para jugar sin internet</small></span>
     <span class="go">›</span>
   </button>
+  <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 34 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 35 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1518,7 +1519,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 34, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 35, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2282,6 +2283,8 @@
   var lcdOn = false;   // el efecto LCD se quitó de Ajustes (Versión 28)
   $('perf').checked = lsGet('perf-hud', '0') === '1';
   $('perf').addEventListener('change', function () { lsSet('perf-hud', $('perf').checked ? '1' : '0'); });
+  $('resumeSw').checked = lsGet('resume-game', '1') === '1';
+  $('resumeSw').addEventListener('change', function () { lsSet('resume-game', $('resumeSw').checked ? '1' : '0'); });
   $('btnSettings').onclick = function () { offRender(); $('bd').style.display = 'block'; $('settings').style.display = 'block'; };
   $('setClose').onclick = closeSheets;
   function showDiag() {
@@ -2567,7 +2570,7 @@
   };
 
   /* ====== Evitar cortes, autoguardado y recuperación ====== */
-  var wakeLock = null, wlTries = 0, flushTimer = null, autoTimer = null, hbTimer = null, autoOk = true, autoWarned = false, starting = false;
+  var wakeLock = null, wlTries = 0, flushTimer = null, autoTimer = null, hbTimer = null, autoOk = true, autoWarned = false, starting = false, resumeMode = false;
   function keepAwake() {
     try {
       if (!navigator.wakeLock) { diag('wakeLock: no disponible en este navegador'); return; }
@@ -2682,6 +2685,14 @@
       $('rNew').onclick = function () { $('recover').style.display = 'none'; autoOk = true; diag('recuperación: descartada'); };
     }).catch(function () { autoOk = true; });
   }
+  // Vuelta al juego al reabrir la app (la sesión anterior no terminó con «Salir»): carga la partida automática sin preguntar
+  function autoResume() {
+    autoOk = false;                                          // que el autoguardado no pise la copia antes de cargarla
+    getAuto(curId).then(function (a) {
+      if (!a || !a.state) { diag('vuelta al juego: no había partida automática'); return; }
+      gm().loadState(a.state); toast('Sigues donde lo dejaste'); diag('vuelta al juego: estado cargado');
+    }).catch(function (e) { diag('vuelta al juego falló: ' + (e && e.message)); }).then(function () { autoOk = true; });
+  }
   function startHeartbeat() {
     if (hbTimer) return;
     hbTimer = setInterval(function () {
@@ -2717,7 +2728,7 @@
   window.addEventListener('pagehide', function (e) {
     diag('pagehide (persistente=' + !!e.persisted + ')');
     if (sess) { sess.ph = Date.now(); saveSess(); }
-    if (isPlaying()) flushSaves();
+    if (isPlaying()) { flushSaves(); autoSave(); }
   });
   window.addEventListener('pageshow', function (e) { if (e.persisted && sess) { sess.ph = 0; saveSess(); diag('pageshow desde caché'); } });
 
@@ -2769,7 +2780,7 @@
       keepAwake();
       setTimeout(restoreSav, 1000);
       if (new URLSearchParams(location.search).get('l') === '1') setTimeout(quickLoad, 2200);
-      setTimeout(offerResume, 1500);
+      setTimeout(resumeMode ? autoResume : offerResume, 1500);
       if (skinMode) toast((menuHint || '☀') + ' = menú (guardar y salir)', 4500);
     };
     window.EJS_pathtodata = EJS_DATA;
@@ -2789,7 +2800,10 @@
     getRom(id).then(function (g) {
       if (!g) { location.href = location.pathname; return; }
       curId = id; curConsole = g.console || 'gba'; curName = prettify(g.name);
-      beginSession(id); startHeartbeat(); diag('lanzando ' + curName + ' (' + curConsole + ')');
+      beginSession(id); startHeartbeat();
+      if (new URLSearchParams(location.search).get('r') === '1') {   // vuelta automática: se quita la marca de la dirección
+        resumeMode = true; sess.auto = 1; saveSess(); history.replaceState({}, '', location.pathname + '?g=' + encodeURIComponent(id));
+      } diag('lanzando ' + curName + ' (' + curConsole + ')');
       // El emulador recibe un Blob y lo lee él: no se hace otra copia de la ROM en memoria (un disco de PS1 son cientos de MB)
       var data = g.blob || new Blob([g.buf]); g.buf = null;
       return Promise.resolve(data).then(function (data) {
@@ -2822,6 +2836,14 @@
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
 
   /* ====== Inicio ====== */
+  // Si la app se cerró jugando (iOS la descartó en segundo plano o se cerró desde el selector de apps) sin pulsar «Salir»,
+  // al abrirla se vuelve directamente a ese juego. No se repite si la vuelta anterior se cerró nada más arrancar (posible fallo).
+  if (!new URLSearchParams(location.search).get('g') && prevUnclean && prevSess.game && lsGet('resume-game', '1') === '1' && !(prevSess.auto && (prevSess.up || 0) < 30)) {
+    prevSess.clean = true; lsSet(SESS, JSON.stringify(prevSess));   // si el juego ya no existe, no se vuelve a intentar
+    diag('vuelta automática al juego');
+    location.replace(location.pathname + '?g=' + encodeURIComponent(prevSess.game) + '&r=1');
+    return;
+  }
   buildCarousel();
   var qs = new URLSearchParams(location.search);
   diag('— inicio (' + (navigator.standalone ? 'app instalada' : 'navegador') + (qs.get('g') ? ', juego' : ', biblioteca') + ')');
