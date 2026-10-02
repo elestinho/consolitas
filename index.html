@@ -3079,6 +3079,25 @@
   }
   if (qs.get('g')) launch(qs.get('g'));
   else refresh().then(function () { updateProt(); show(qs.get('c'), false); queueCovers(games.filter(function (g) { return !g.cover && !g.ct; }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
+  // Medidas temporales para ajustar la barra de abajo (solo con ?medir en la dirección)
+  if (/medir/.test(location.search)) {
+    var md = document.createElement('div');
+    md.style.cssText = 'position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 50px);transform:translateX(-50%);z-index:100005;' +
+      'background:rgba(0,0,0,.85);color:#9f9;font:12px/1.35 monospace;padding:6px 8px;border-radius:8px;pointer-events:none;white-space:pre';
+    document.body.appendChild(md);
+    var sa = document.createElement('div');
+    sa.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top);width:1px;visibility:hidden';
+    var sb = document.createElement('div');
+    sb.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);width:1px;visibility:hidden';
+    document.body.appendChild(sa); document.body.appendChild(sb);
+    setInterval(function () {
+      var r = $('tabbar').getBoundingClientRect(), vv = window.visualViewport;
+      md.textContent = 'pestaña ' + TAB + (navigator.standalone ? ' · icono' : ' · Safari') +
+        '\npantalla ' + screen.height + ' · inner ' + innerHeight + ' · vv ' + (vv ? Math.round(vv.height) : '-') +
+        '\nhtml ' + document.documentElement.clientHeight + ' · doc ' + document.documentElement.scrollHeight + ' · scroll ' + Math.round(scrollY) +
+        '\nbarra ' + Math.round(r.top) + '-' + Math.round(r.bottom) + ' · safe ' + sa.offsetHeight + '/' + sb.offsetHeight;
+    }, 300);
+  }
 })();
 </script>
 </body>
