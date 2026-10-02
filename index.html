@@ -579,8 +579,9 @@
   </button>
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
+  <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 43 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 44 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1698,7 +1699,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 43, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 44, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2462,6 +2463,10 @@
   var lcdOn = false;   // el efecto LCD se quitó de Ajustes (Versión 28)
   $('perf').checked = lsGet('perf-hud', '0') === '1';
   $('perf').addEventListener('change', function () { lsSet('perf-hud', $('perf').checked ? '1' : '0'); });
+  $('thrSw').checked = lsGet('threads', '1') === '1';
+  $('thrSw').addEventListener('change', function () {           // al volver a activarlo se da otra oportunidad a las consolas que fallaron
+    lsSet('threads', $('thrSw').checked ? '1' : '0'); Object.keys(THREAD_CONS).forEach(function (c) { lsSet('thr-off-' + c, ''); lsSet('thr-try-' + c, ''); });
+  });
   $('resumeSw').checked = lsGet('resume-game', '1') === '1';
   $('resumeSw').addEventListener('change', function () { lsSet('resume-game', $('resumeSw').checked ? '1' : '0'); });
   $('btnSettings').onclick = function () { offRender(); $('bd').style.display = 'block'; $('settings').style.display = 'block'; };
@@ -2862,7 +2867,8 @@
         var d = t - last; n++; total += d; if (d > worst) worst = d; if (d > 25) slow++;
         if (!t0) t0 = t;
         if (t - t0 >= 1000) {
-          el.textContent = Math.round(n * 1000 / (t - t0)) + ' fps\n' + (total / n).toFixed(1) + ' ms · máx ' + Math.round(worst) + '\nperdidos ' + slow;
+          el.textContent = Math.round(n * 1000 / (t - t0)) + ' fps\n' + (total / n).toFixed(1) + ' ms · máx ' + Math.round(worst) + '\nperdidos ' + slow
+            + (THREAD_CONS[curConsole] ? '\nvarios núcleos: ' + (useThreads ? 'sí' : 'no') : '');
           n = 0; worst = 0; slow = 0; total = 0; t0 = t;
         }
       }
@@ -2954,8 +2960,9 @@
      así que se quita lo que cuesta CPU y apenas se nota: reverb del sonido, tramado de color y caché de
      instrucciones (solo la usan los Formula One 99/2001/Arcade). Si el móvil no llega, salta un fotograma antes
      que cortar el sonido. Todo se puede cambiar en el menú del emulador para un juego concreto. */
-  function psxSetup() {
+  function psxSetup(thr) {
     window.EJS_defaultOptions = {
+      pcsx_rearmed_gpu_thread_rendering: thr ? 'async' : 'disabled',
       pcsx_rearmed_frameskip_type: 'auto',
       pcsx_rearmed_spu_reverb: 'disabled',
       pcsx_rearmed_spu_interpolation: 'simple',
@@ -2979,19 +2986,48 @@
       B('R1', 'r1', 'right', 16, -100, 11, true), B('R2', 'r2', 'right', 16, -150, 13, true)
     ];
   }
+  /* Varios núcleos (DS y PS1): con la página aislada (la aísla sw.js) se usa la versión del núcleo con hilos, que dibuja
+     el 3D de la DS y los gráficos de la PS1 en otro núcleo del procesador mientras el principal emula el resto.
+     Si un arranque con hilos no llega a empezar el juego, la vez siguiente esa consola vuelve a la versión de siempre. */
+  var THREAD_CONS = { nds: 1, psx: 1 };
+  function threadsFor(c) {
+    if (!THREAD_CONS[c] || lsGet('threads', '1') !== '1') return false;
+    if (lsGet('thr-try-' + c, '') === '1') { lsSet('thr-off-' + c, '1'); lsSet('thr-try-' + c, ''); diag('hilos: el último arranque no terminó, ' + c + ' vuelve al modo normal'); }
+    if (lsGet('thr-off-' + c, '') === '1') return false;
+    return !!(window.crossOriginIsolated && typeof SharedArrayBuffer === 'function');
+  }
+  var useThreads = false;
+  // El dibujo en otro núcleo solo se lee al cargar el juego (cambiarlo después no hace nada), y EmulatorJS solo escribe
+  // en ese momento los ajustes que tenga guardados para el juego: se dejan ahí antes de arrancar (misma clave que EmulatorJS).
+  function presetCore(name, thr) {
+    var k = 'ejs-1-' + CONSOLES[curConsole].core + '-' + name + '-settings', o = null;
+    try { o = JSON.parse(lsGet(k, 'null')); } catch (e) {}
+    if (!o || typeof o !== 'object') o = {};
+    if (!o.settings || typeof o.settings !== 'object') o.settings = {};
+    o.settings.ejs_threads = thr ? 'enabled' : 'disabled';
+    if (curConsole === 'nds') o.settings.melonds_threaded_renderer = thr ? 'enabled' : 'disabled';
+    if (curConsole === 'psx') o.settings.pcsx_rearmed_gpu_thread_rendering = thr ? 'async' : 'disabled';
+    lsSet(k, JSON.stringify(o));
+  }
   function startEmulator(g, data, skinMode, menuHint) {
     window.EJS_player = '#game';
     window.EJS_core = CONSOLES[curConsole].core;
+    useThreads = threadsFor(curConsole);
+    window.EJS_threads = useThreads;
+    diag('hilos: ' + (useThreads ? 'sí' : 'no') + (THREAD_CONS[curConsole] && !window.crossOriginIsolated ? ' (página sin aislar)' : ''));
+    if (useThreads) lsSet('thr-try-' + curConsole, '1');
     // DS (melonDS): pantallas una encima de otra sin hueco, como en la skin, y la táctil como puntero absoluto
-    if (curConsole === 'nds') window.EJS_defaultOptions = { melonds_screen_layout: 'Top/Bottom', melonds_screen_gap: '0', melonds_touch_mode: 'Touch', lockMouse: 'disabled' };
-    if (curConsole === 'psx') psxSetup();
+    if (curConsole === 'nds') window.EJS_defaultOptions = { melonds_screen_layout: 'Top/Bottom', melonds_screen_gap: '0', melonds_touch_mode: 'Touch', lockMouse: 'disabled',
+      melonds_threaded_renderer: useThreads ? 'enabled' : 'disabled' };
+    if (curConsole === 'psx') psxSetup(useThreads);
     window.EJS_gameName = g.name;                       // clave de guardado
+    if (THREAD_CONS[curConsole]) presetCore(g.name, useThreads);
     // Sega y PS1: se pasa como File para que el núcleo vea la extensión (con una URL blob el archivo se llamaría solo «nombre»)
     window.EJS_gameUrl = NEEDS_EXT[curConsole]
       ? new File([data], g.name.replace(/[\/#?]/g, '_') + '.' + (g.ext || CONSOLES[curConsole].exts[0]))
       : URL.createObjectURL(data) + '#' + encodeURIComponent(g.name) + '.' + (g.ext || 'gba');
     window.EJS_onGameStart = function () {
-      log(''); diag('juego iniciado'); hideBoot(false); startHud(); offMark(curConsole);
+      log(''); diag('juego iniciado'); hideBoot(false); startHud(); offMark(curConsole); lsSet('thr-try-' + curConsole, '');
       if (!flushTimer) flushTimer = setInterval(flushSaves, 30000);
       if (!autoTimer) autoTimer = setInterval(autoSave, 45000);
       keepAwake();
