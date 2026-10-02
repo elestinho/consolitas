@@ -33,6 +33,7 @@
   /* Marca centrada: logo + «Consolitas» */
   .brandbar { display:grid; grid-template-columns:42px 1fr 42px; padding-top:18px; transition:padding .25s ease; }
   #home.t-cons .brandbar { padding-top:max(64px, 9vh); }
+  #home:not(.t-lib) #btnAddHome { visibility:hidden; pointer-events:none; }   /* el ＋ de arriba solo en Juegos */
   #home .pane { flex:1; display:flex; flex-direction:column; }
   #home { padding-bottom:calc(64px + env(safe-area-inset-bottom)); }
   /* Barra inferior */
@@ -494,7 +495,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 32 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 33 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1203,7 +1204,7 @@
     var el = $('pLib'); el.innerHTML = '';
     if (!games.length) {
       el.innerHTML = '<div class="ptitle">Juegos</div><div class="empty"><div class="big">🎮</div>Aún no tienes juegos.<br>' +
-        'Añade una ROM con ＋ o prueba los de la pestaña Gratis.<br><button class="addbig" id="libAdd">＋ Añadir juego</button></div>';
+        'Añade una ROM o prueba los de la pestaña Gratis.<br><button class="addbig" id="libAdd">＋ Añadir juego</button></div>';
       $('libAdd').onclick = function () { $('rom').click(); };
       return;
     }
@@ -1487,7 +1488,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 32, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 33, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2072,6 +2073,14 @@
     return pickBase(pt, info, batchRoms);
   }
 
+  // Solo archivos de juego: sin image/* ni video/* iOS no ofrece fototeca ni cámara.
+  // application/octet-stream deja elegir ROMs con extensiones que iOS no conoce.
+  var ROM_ACCEPT = Object.keys(CONSOLES).reduce(function (a, k) { return a.concat(CONSOLES[k].exts); }, [])
+    .concat(DISC_EXTS, PATCH_EXTS, ['zip', 'rom'])
+    .filter(function (e, i, a) { return a.indexOf(e) === i; })
+    .map(function (e) { return '.' + e; }).concat(['application/zip', 'application/octet-stream']).join(',');
+  $('rom').accept = ROM_ACCEPT;
+  $('patchBase').accept = ROM_ACCEPT;
   function askAdd() { $('rom').click(); }
   $('btnAddHome').onclick = askAdd;
   $('btnAddC').onclick = askAdd;
