@@ -130,6 +130,12 @@
     background:radial-gradient(closest-side, rgba(255,255,255,.26), rgba(255,255,255,0) 72%); }
   .art img { position:relative; max-width:100%; max-height:100%; object-fit:contain; filter:drop-shadow(0 16px 22px rgba(0,0,0,.5));
     -webkit-user-drag:none; user-select:none; }
+  /* La consola del centro flota despacio y su halo respira a la vez (como los logos de Partidas) */
+  .slide.active .art img { animation:cfloat 4s ease-in-out infinite; }
+  .slide.active .art::before { animation:chalo 4s ease-in-out infinite; }
+  @keyframes cfloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
+  @keyframes chalo { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.75; transform:scale(.95); } }
+  @media (prefers-reduced-motion: reduce) { .slide.active .art img, .slide.active .art::before { animation:none; } }
   .slide .sn { margin-top:14px; font-size:22px; font-weight:800; letter-spacing:-.3px;
     display:flex; align-items:center; justify-content:center; gap:8px; }
   .slide .sn::before { content:""; flex:0 0 30px; }   /* contrapeso de la estrella: el nombre queda centrado */
@@ -571,7 +577,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 41 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 42 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1689,7 +1695,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 41, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 42, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
