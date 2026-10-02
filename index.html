@@ -274,6 +274,18 @@
   .bkcard { background:var(--bg); border-radius:16px; padding:4px 14px; margin-bottom:8px; }
   .bkcard div { display:flex; justify-content:space-between; gap:10px; padding:11px 0; font-size:14px; border-bottom:1px solid var(--line); }
   .bkcard div:last-child { border-bottom:0; } .bkcard span { color:var(--mut); } .bkcard b { font-weight:600; text-align:right; }
+  /* Jugar sin conexión: el icono de favorita de cada consola, gris hasta que está lista; ruedecita mientras se descarga */
+  #offList div { align-items:center; padding:6px 0; }
+  .offi { position:relative; width:30px; height:28px; flex:none; display:flex; align-items:center; justify-content:center; }
+  .offi img { width:30px; height:28px; object-fit:contain; filter:grayscale(1) brightness(1.5); opacity:.32; transition:filter .25s ease, opacity .25s ease; }
+  .offi img.px { image-rendering:pixelated; }
+  .offi.on img { filter:drop-shadow(0 2px 3px rgba(0,0,0,.45)); opacity:1; }
+  .offi.pop img { animation:favPop .65s cubic-bezier(.2,1.5,.4,1); }
+  .offi.busy img { display:none; }
+  .offi.busy::after, .spin { content:""; width:20px; height:20px; box-sizing:border-box; border-radius:50%;
+    border:2.5px solid rgba(255,255,255,.25); border-top-color:#fff; animation:spin .8s linear infinite; }
+  .spin { display:inline-block; width:18px; height:18px; margin-right:10px; vertical-align:-3px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
   .bkcard b.ok { color:#8fe3a8; } .bkcard b.warn { color:#f7c46c; }
 
   /* ---------- Modo marco simple (sin skin) ---------- */
@@ -1544,7 +1556,7 @@
   var OFF_BASE = [EJS_DATA + 'loader.js', EJS_DATA + 'emulator.min.js', EJS_DATA + 'emulator.min.css', EJS_DATA + 'compression/extract7z.js',
     'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'];
   var EJS_CORE = { gba: 'mgba', gb: 'gambatte', nes: 'fceumm', snes: 'snes9x', nds: 'melonds', md: 'genesis_plus_gx', gg: 'genesis_plus_gx', psx: 'pcsx_rearmed' };
-  var offOk = !!(window.caches && navigator.serviceWorker && window.isSecureContext), offBusy = false;
+  var offOk = !!(window.caches && navigator.serviceWorker && window.isSecureContext), offBusy = false, offNow = '', offPrev = null;
   if (offOk) navigator.serviceWorker.register('sw.js').catch(function (e) { offOk = false; diag('modo sin conexión no disponible: ' + e.message); });
   function offKey(c) { return 'off-' + (EJS_CORE[c] || c); }
   function offMark(c) { if (offOk && navigator.serviceWorker.controller) lsSet(offKey(c), '1'); }
@@ -1567,12 +1579,16 @@
       $('offSum').textContent = !st ? 'No disponible en este navegador' : all ? 'Todas las consolas están listas'
         : ready.length ? 'Listas: ' + ready.map(function (k) { return CONSOLES[k].short; }).join(', ') : 'Aún no hay ninguna consola lista';
       var el = $('offList'); el.innerHTML = '';
-      keys.forEach(function (k) {
-        var d = document.createElement('div'), a = document.createElement('span'), b = document.createElement('b');
-        a.textContent = CONSOLES[k].name; b.textContent = st && st[k] ? '✓ Lista' : 'Falta'; b.className = st && st[k] ? 'ok' : 'warn';
-        d.appendChild(a); d.appendChild(b); el.appendChild(d);
+      keys.forEach(function (k) {                   // icono de favorita: gris si falta, en color (con salto) al quedar lista
+        var d = document.createElement('div'), a = document.createElement('span'), b = document.createElement('span'), im = document.createElement('img');
+        var on = !!(st && st[k]), busy = offBusy && offNow === EJS_CORE[k];
+        a.textContent = CONSOLES[k].name; im.alt = ''; im.src = FAV_IMG[k] || STAR_IMG; if (!FAV_IMG[k]) im.className = 'px';
+        b.className = 'offi' + (on ? ' on' : '') + (busy ? ' busy' : '') + (on && offPrev && !offPrev[k] ? ' pop' : '');
+        b.setAttribute('aria-label', busy ? 'Descargando' : on ? 'Lista' : 'Falta');
+        b.appendChild(im); d.appendChild(a); d.appendChild(b); el.appendChild(d);
       });
-      $('offGet').style.display = st && !all ? '' : 'none';
+      offPrev = st;
+      $('offGet').style.display = st && (!all || offBusy) ? '' : 'none';
       if (offBusy) return;
       $('offNote').textContent = !offOk ? 'Este navegador no deja guardar el emulador para usarlo sin internet.'
         : !st ? 'Se está activando. Cierra y vuelve a abrir la app con internet.'
@@ -1583,7 +1599,7 @@
   function offPrepare() {
     if (offBusy || !offOk) return;
     if (navigator.onLine === false) { toast('Hace falta internet para preparar las consolas', 3000); return; }
-    offBusy = true; $('offGet').disabled = true;
+    offBusy = true; $('offGet').disabled = true; $('offGet').innerHTML = '<span class="spin"></span>Descargando…';
     var cores = [], fails = 0, done = 0, lang = '', gl2 = false;
     Object.keys(CONSOLES).forEach(function (k) { if (cores.indexOf(EJS_CORE[k]) < 0) cores.push(EJS_CORE[k]); });
     try { gl2 = !!document.createElement('canvas').getContext('webgl2'); } catch (e) {}
@@ -1607,12 +1623,13 @@
       return Promise.all(base).then(function () {
         return cores.reduce(function (p, core) {
           return p.then(function () {
-            note('Descargando consolas: ' + (done + 1) + ' de ' + cores.length + '…');
+            offNow = core; offRender();
+            note('Descargando consolas: ' + (done + 1) + ' de ' + cores.length + '… No cierres la app.');
             return grab(EJS_DATA + 'cores/reports/' + core + '.json', true).then(function (res) { return res.json(); }).then(function (rep) {
               var webgl2 = gl2 && !!(rep.options && rep.options.defaultWebGL2);   // igual que EmulatorJS: si no, versión «legacy»
               return grab(EJS_DATA + 'cores/' + core + (webgl2 ? '' : '-legacy') + '-wasm.data', true);
             }).then(function () { lsSet('off-' + core, '1'); }, function (e) { fails++; diag('sin conexión: no pude bajar ' + core + ': ' + e.message); })
-              .then(function () { done++; });
+              .then(function () { done++; offNow = ''; return offRender(); });
           });
         }, Promise.resolve());
       });
@@ -1620,7 +1637,7 @@
       toast(fails ? 'Faltan ' + fails + ' por descargar: vuelve a intentarlo' : 'Listo: ya puedes jugar sin conexión', 3500);
     }, function (e) {
       diag('sin conexión: falló la preparación: ' + e.message); toast('No se pudo descargar. ¿Hay conexión?', 3500);
-    }).then(function () { offBusy = false; $('offGet').disabled = false; offRender(); });
+    }).then(function () { offBusy = false; offNow = ''; $('offGet').disabled = false; $('offGet').textContent = 'Preparar todas'; offRender(); });
   }
   $('btnOffline').onclick = function () { closeSheets(); offRender(); $('bd').style.display = 'block'; $('offSheet').style.display = 'block'; };
   $('offGet').onclick = offPrepare;
