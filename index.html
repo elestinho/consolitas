@@ -257,6 +257,7 @@
   .sheet p.note:empty { display:none; }
   .sbtn.ghost { background:none; color:var(--mut); }
   .sheet .ver { text-align:center; color:var(--mut); font-size:12px; opacity:.7; margin:6px 0 0; }
+  .sheet .ver a { color:var(--acc); text-decoration:underline; cursor:pointer; }
   /* Copia de seguridad */
   .bkrow { display:flex; align-items:center; gap:12px; width:100%; border:0; border-radius:16px; padding:12px; margin:8px 0 6px;
     background:var(--card2); color:var(--txt); text-align:left; }
@@ -397,6 +398,8 @@
       <!-- Aviso discreto: solo en Safari -->
       <div class="foot">
         <button class="chip" id="a2hs" style="display:none"><span class="cdot"></span>Jugar a pantalla completa<span class="go">›</span></button>
+        <button class="chip" id="updChip" style="display:none"><span class="cdot"></span><span id="updTxt">Hay una versión nueva</span><span class="go">›</span></button>
+        <button class="chip warn" id="prevChip" style="display:none"><span class="cdot"></span>Enlace de prueba: tus juegos no están aquí<span class="go">›</span></button>
       </div>
     </div>
     <!-- Pestaña Juegos: recientes y todos -->
@@ -491,7 +494,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 31</p>
+  <p class="ver">Consolitas · Versión 32 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -530,6 +533,17 @@
   <p class="note">La app instalada guarda los juegos aparte: pásalos con «Guardar copia» aquí y «Restaurar copia» allí.</p>
   <button class="sbtn" id="a2hsBk">Copia de seguridad</button>
   <button class="sbtn pri" id="a2hsClose">Entendido</button>
+</div>
+
+<!-- Enlace de prueba (raw.githack u otro dominio): sus datos van aparte de la app -->
+<div class="sheet" id="prevSheet">
+  <div class="grab"></div>
+  <h2>Enlace de prueba</h2>
+  <p class="note" id="prevNote">Esta página es una vista previa. Guarda los juegos y partidas aparte de tu app Consolitas, así que aquí empiezas de cero y lo que hagas no pasa a la app.</p>
+  <p class="note"><b>No la añadas a la pantalla de inicio</b>: se quedaría siempre en esta versión y con sus propios datos. Tu app de siempre se actualiza sola sin perder nada.</p>
+  <button class="sbtn" id="prevBk">Copia de seguridad</button>
+  <button class="sbtn" id="prevOpen">Abrir Consolitas oficial</button>
+  <button class="sbtn pri" id="prevClose">Entendido</button>
 </div>
 
 <!-- Diagnóstico -->
@@ -1395,7 +1409,7 @@
   });
 
   function closeSheets() {
-    $('bd').style.display = 'none'; $('settings').style.display = 'none'; $('diag').style.display = 'none'; $('backup').style.display = 'none'; $('a2hsSheet').style.display = 'none'; $('skinSheet').style.display = 'none';
+    $('bd').style.display = 'none'; $('settings').style.display = 'none'; $('diag').style.display = 'none'; $('backup').style.display = 'none'; $('a2hsSheet').style.display = 'none'; $('skinSheet').style.display = 'none'; $('prevSheet').style.display = 'none';
     if (pickDone) pickDone(null);
   }
   $('bd').onclick = closeSheets;
@@ -1471,6 +1485,34 @@
   $('a2hs').onclick = function () { $('bd').style.display = 'block'; $('a2hsSheet').style.display = 'block'; };
   $('a2hsBk').onclick = openBackup;
   $('a2hsClose').onclick = closeSheets;
+
+  /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
+  var APP_VER = 32, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
+  function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
+    if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
+    lastCheck = Date.now();
+    if (manual) $('updCheck').textContent = 'Buscando…';
+    fetch(location.pathname, { cache: 'no-cache' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+      var m = /APP_VER = (\d+)/.exec(t), v = m ? parseInt(m[1], 10) : 0;
+      if (v > APP_VER) {
+        newVer = v; diag('versión nueva disponible: ' + v);
+        $('updTxt').textContent = 'Actualizar a V' + v; $('updChip').style.display = '';
+        $('updCheck').textContent = 'Actualizar a V' + v;
+      } else if (manual) $('updCheck').textContent = 'Está al día';
+    }).catch(function () { if (manual) $('updCheck').textContent = 'Sin conexión'; });
+  }
+  function applyUpdate() {                         // recarga la página en el mismo sitio: ROMs y partidas se quedan
+    diag('actualizando a la versión ' + newVer);
+    var go = function () { location.replace(location.pathname + '?v=' + newVer); };
+    fetch(location.pathname, { cache: 'reload' }).then(go, go);
+  }
+  $('updChip').onclick = applyUpdate;
+  $('updCheck').onclick = function () { if (newVer) applyUpdate(); else checkUpdate(true); };
+  $('prevChip').onclick = function () { $('bd').style.display = 'block'; $('prevSheet').style.display = 'block'; };
+  $('prevBk').onclick = openBackup;
+  $('prevOpen').onclick = function () { location.href = APP_URL; };
+  $('prevClose').onclick = closeSheets;
   $('bkClose').onclick = closeSheets;
   $('bkSave').onclick = function () {
     toast('Preparando copia…', 4000);
@@ -2647,6 +2689,17 @@
   diag('— inicio (' + (navigator.standalone ? 'app instalada' : 'navegador') + (qs.get('g') ? ', juego' : ', biblioteca') + ')');
   // En Safari no se pueden ocultar las barras: se explica cómo instalarla en la pantalla de inicio
   if (!navigator.standalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) $('a2hs').style.display = '';
+  if (!isOfficial && !isLocal) {
+    $('prevChip').style.display = '';
+    if (navigator.standalone) {                    // icono añadido desde un enlace de prueba: nunca se actualizaría
+      $('prevNote').textContent = 'Esta app se añadió desde un enlace de prueba y nunca se va a actualizar. Haz una copia de seguridad aquí, abre Consolitas oficial en Safari, añádela a la pantalla de inicio y restaura allí la copia. A partir de entonces se actualizará sola sin perder nada.';
+      if (!qs.get('g')) $('prevChip').onclick();
+    }
+  }
+  if (!qs.get('g')) {
+    checkUpdate(false);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) checkUpdate(false); });
+  }
   if (qs.get('g')) launch(qs.get('g'));
   else refresh().then(function () { updateProt(); show(qs.get('c'), false); queueCovers(games.filter(function (g) { return !g.cover && !g.ct; }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
 })();
