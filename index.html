@@ -377,6 +377,17 @@
   #pause button.danger { color:#ff9a9a; }
   #pause button small { display:block; font-size:12px; font-weight:500; color:#9aa0bd; margin-top:2px; }
   #pause button.dim { opacity:.55; }
+  #pause .pgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  #pause .ptile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; text-align:center; padding:12px 8px; min-height:118px; }
+  #pause .ptile b { font-size:14px; font-weight:700; }
+  #pause .ptile small { font-size:11.5px; font-weight:500; color:#9aa0bd; margin-top:-3px; }
+  #pause .ptile svg { width:38px; height:38px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; margin-bottom:4px; }
+  #pause .ptile.danger { background:#2a1820; color:#ff9a9a; }
+  #pause .ptile .pc { position:relative; width:58px; height:58px; }
+  #pause .ptile .pc .cover { width:58px; height:58px; aspect-ratio:auto; border-radius:9px; box-shadow:0 4px 10px rgba(0,0,0,.45); }
+  #pause .ptile .pc .cover .ini { font-size:18px; }
+  #pause .ptile .tag { position:absolute; right:-6px; bottom:-5px; z-index:1; background:var(--acc); color:#fff; font-size:9px; font-weight:800; letter-spacing:.4px; padding:2px 5px; border-radius:6px; }
+  #pause .ptile.dim { opacity:.45; }
   #pStat { display:none; border-radius:12px; padding:11px 12px; font-size:14px; font-weight:600; line-height:1.35; background:#1b3326; color:#9be8b4; }
   #pStat.err { background:#3a1e26; color:#ff9a9a; }
   #ejsclose { display:none; position:fixed; top:calc(env(safe-area-inset-top) + 8px); right:10px; z-index:100002;
@@ -560,7 +571,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 40 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 41 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -661,10 +672,12 @@
   <div class="panel">
     <button class="pri" id="pContinue">Continuar</button>
     <div id="pStat"></div>
-    <button id="pQSave">Guardar partida</button>
-    <button id="pQLoad">Cargar partida</button>
-    <button id="pALoad" style="display:none">Cargar autoguardado</button>
-    <button class="danger" id="pExit">Salir a la biblioteca</button>
+    <div class="pgrid">
+      <button class="ptile" id="pQLoad"><div class="pc"></div><b>Cargar partida</b><small>—</small></button>
+      <button class="ptile" id="pALoad"><div class="pc"><span class="tag">AUTO</span></div><b>Autoguardado</b><small>—</small></button>
+      <button class="ptile" id="pQSave"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h11.5l3 3V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5z"/><path d="M7.5 3.5v5h8v-5M13 5.2v1.6"/><rect x="7" y="13" width="10" height="7.5" rx="1"/></svg><b>Guardar partida</b></button>
+      <button class="ptile danger" id="pExit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H6.5A1.5 1.5 0 0 0 5 6v12a1.5 1.5 0 0 0 1.5 1.5H14"/><path d="M10.5 12h10M17 8.5l3.5 3.5-3.5 3.5"/></svg><b>Salir</b></button>
+    </div>
   </div>
 </div>
 <button id="ejsclose">Cerrar menú del emulador</button>
@@ -1676,7 +1689,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 40, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 41, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2690,17 +2703,21 @@
   // Estado visible dentro del menú (no un aviso que desaparece): qué se ha hecho y cuándo
   function pStat(t, err) { var e = $('pStat'); if ($('pause').style.display !== 'flex') { if (t) toast(t, err ? 4000 : 2200); return; } e.textContent = t || ''; e.className = err ? 'err' : ''; e.style.display = t ? 'block' : 'none'; }
   function agoTxt(t) { var s = Math.max(1, Math.round((Date.now() - t) / 1000)); return 'hace ' + fmtAgo(s); }
-  function pauseInfo() {                                   // pone en los botones cuándo se guardó la partida
-    var l = $('pQLoad'), sv = $('pQSave');
-    sv.innerHTML = 'Guardar partida'; l.innerHTML = 'Cargar partida'; l.classList.remove('dim');
+  function pauseInfo() {                                   // portada y fecha de cada partida en las casillas de cargar
+    var l = $('pQLoad'), al = $('pALoad');
+    [l, al].forEach(function (b) { b.classList.add('dim'); b.querySelector('small').textContent = '—'; });
     if (!curId) return;
+    tx('meta', 'readonly', function (st) { return st.get(curId); }).catch(function () { return null; }).then(function (m) {
+      var g = { title: (m && m.title) || curName, cover: (m && m.cover) || null };
+      [l, al].forEach(function (b) { var pc = b.querySelector('.pc'), old = pc.querySelector('.cover'); if (old) old.remove(); pc.insertBefore(coverEl(g, true), pc.firstChild); });
+    });
     getAuto('quick:' + curId).then(function (a) {
-      if (a && a.state) l.innerHTML = 'Cargar partida<small>Guardada ' + agoTxt(a.t) + '</small>';
-      else { l.innerHTML = 'Cargar partida<small>Aún no has guardado ninguna</small>'; l.classList.add('dim'); }
+      if (a && a.state) { l.classList.remove('dim'); l.querySelector('small').textContent = fmtWhen(a.t); }
+      else l.querySelector('small').textContent = 'Aún no hay';
     }).catch(function () {});
-    var al = $('pALoad'); al.style.display = 'none';
     getAuto(curId).then(function (a) {                     // la misma copia automática que sale en Partidas
-      if (a && a.state) { al.innerHTML = 'Cargar autoguardado<small>' + fmtWhen(a.t) + '</small>'; al.style.display = 'block'; }
+      if (a && a.state) { al.classList.remove('dim'); al.querySelector('small').textContent = fmtWhen(a.t); }
+      else al.querySelector('small').textContent = 'Aún no hay';
     }).catch(function () {});
   }
   function openPause() { releaseAll(); pStat(''); pauseInfo(); $('pause').style.display = 'flex'; }
