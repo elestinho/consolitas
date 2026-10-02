@@ -1497,8 +1497,8 @@
       var m = /APP_VER = (\d+)/.exec(t), v = m ? parseInt(m[1], 10) : 0;
       if (v > APP_VER) {
         newVer = v; diag('versión nueva disponible: ' + v);
-        $('updTxt').textContent = 'Versión ' + v + ' disponible: actualizar'; $('updChip').style.display = '';
-        $('updCheck').textContent = 'Actualizar a la Versión ' + v;
+        $('updTxt').textContent = 'Actualizar a V' + v; $('updChip').style.display = '';
+        $('updCheck').textContent = 'Actualizar a V' + v;
       } else if (manual) $('updCheck').textContent = 'Está al día';
     }).catch(function () { if (manual) $('updCheck').textContent = 'Sin conexión'; });
   }
