@@ -57,6 +57,47 @@
     letter-spacing:-.6px; overflow:visible; }
   .brand .logo { width:36px; height:36px; flex:none; filter:drop-shadow(0 4px 10px rgba(124,108,255,.45)); }
   .brand .word { background:linear-gradient(180deg,#ffffff 30%,#c9c1ff); -webkit-background-clip:text; background-clip:text; color:transparent; padding-right:2px; }
+  /* Pestaña Partidas: tarjeta de memoria (logos, como la PS2) y lista de partidas de una consola (como la PS4) */
+  #pMem { padding:0 12px 20px; }
+  .mcard { position:relative; border-radius:22px; min-height:62vh; padding:16px 12px 22px; overflow:hidden;
+    background:radial-gradient(120% 90% at 50% 0%,#5c5d63 0%,#38393e 45%,#1d1e22 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,.08); }
+  .mhead { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:0 4px 14px; color:#eceef4; text-shadow:0 1px 2px rgba(0,0,0,.6); }
+  .mhead b { font-size:19px; font-weight:700; letter-spacing:-.2px; }
+  .mhead b { display:flex; align-items:center; }
+  .mhead .sd, .mlist .sd { width:34px; height:34px; fill:none; stroke:#eceef4; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+  .mlist .lh .sd { width:20px; height:20px; stroke:#fff; vertical-align:-4px; margin-left:4px; filter:none; }
+  .mhead b small { font-size:12px; font-weight:600; opacity:.7; margin-left:6px; }
+  .mhead .sel { text-align:right; font-size:14px; font-weight:600; line-height:1.3; color:#f4e9b8; }
+  .mhead .sel span { display:block; font-size:12px; font-weight:500; color:#d6d8e2; }
+  .mgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px 8px; padding:6px 2px; }
+  .micon { border:0; background:none; padding:6px 2px 4px; display:flex; flex-direction:column; align-items:center; gap:6px; color:#e7e9f0;
+    font-size:12px; font-weight:600; text-shadow:0 1px 2px rgba(0,0,0,.7); position:relative; }
+  .micon img { width:78px; height:58px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,.55)); animation:mfloat 3.2s ease-in-out infinite; }
+  .micon:nth-child(2n) img { animation-delay:-1.1s; } .micon:nth-child(3n) img { animation-delay:-2.2s; }
+  .micon .n { font-size:11px; font-weight:500; opacity:.75; margin-top:-4px; }
+  .micon.on::after { content:''; position:absolute; left:50%; top:46px; width:84px; height:34px; transform:translateX(-50%);
+    background:radial-gradient(closest-side,rgba(255,255,255,.75),rgba(255,255,255,0)); pointer-events:none; }
+  @keyframes mfloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-4px); } }
+  .mempty { text-align:center; color:#d0d2dc; padding:70px 16px; line-height:1.6; font-size:14px; }
+  .mlist { border-radius:22px; min-height:62vh; padding:16px 0 22px; overflow:hidden; color:#fff;
+    background:radial-gradient(140% 70% at 85% 10%,#2f78d6 0%,#1a4fa3 40%,#0b2357 100%); }
+  .mlist .lh { display:flex; align-items:center; gap:10px; padding:0 16px 12px; }
+  .mlist .lh button { border:0; background:rgba(255,255,255,.14); color:#fff; border-radius:999px; padding:7px 12px; font-size:13px; font-weight:600; flex:none; }
+  .mlist .lh b { font-size:18px; font-weight:600; letter-spacing:-.2px; text-shadow:0 1px 3px rgba(0,0,0,.35); }
+  .mrow { display:block; width:100%; text-align:left; border:0; background:none; color:#fff; padding:0; }
+  .mrow .r { width:100%; background:none; color:#fff; text-align:left; font:inherit; border-radius:4px; display:flex; align-items:center; gap:12px; padding:8px 16px; border:2px solid transparent; }
+  .mrow.on .r { border-color:#7fd4ff; background:linear-gradient(90deg,rgba(255,255,255,.16),rgba(255,255,255,.04)); box-shadow:0 0 18px rgba(127,212,255,.35); }
+  .mrow .cover { width:52px; height:52px; flex:none; aspect-ratio:auto; border-radius:6px; box-shadow:0 3px 8px rgba(0,0,0,.4); }
+  .mrow .cover .ini { font-size:17px; }
+  .mrow .tx { flex:1; min-width:0; }
+  .mrow .tx b { display:block; font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mrow .tx span { display:block; font-size:12px; color:#cfe0ff; margin-top:2px; }
+  .mrow .sz { font-size:13px; color:#e3ecff; flex:none; }
+  .mrow .acts { display:none; gap:8px; padding:4px 16px 12px 80px; flex-wrap:wrap; }
+  .mrow.on .acts { display:flex; }
+  .mrow .acts span { background:rgba(255,255,255,.92); color:#0b2357; border-radius:10px; padding:9px 12px; font-size:13px; font-weight:700; }
+  .mrow .acts span small { display:block; font-size:11px; font-weight:500; opacity:.75; margin-top:1px; }
+  .mrow .acts span.sec { background:rgba(255,255,255,.18); color:#fff; }
   /* Avisos discretos bajo el carrusel */
   .foot { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:0 16px 22px; min-height:58px; align-items:flex-end; }
   .chip { display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 12px 0 12px; border-radius:17px;
@@ -334,6 +375,21 @@
   #pause button { background:#1e2130; color:#fff; border:0; border-radius:12px; padding:14px; font-size:16px; font-weight:600; text-align:left; }
   #pause button.pri { background:var(--acc); text-align:center; }
   #pause button.danger { color:#ff9a9a; }
+  #pause button small { display:block; font-size:12px; font-weight:500; color:#9aa0bd; margin-top:2px; }
+  #pause button.dim { opacity:.55; }
+  #pause .pgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  #pause .ptile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; text-align:center; padding:12px 8px; min-height:118px; }
+  #pause .ptile b { font-size:14px; font-weight:700; }
+  #pause .ptile small { font-size:11.5px; font-weight:500; color:#9aa0bd; margin-top:-3px; }
+  #pause .ptile svg { width:38px; height:38px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; margin-bottom:4px; }
+  #pause .ptile.danger { background:#2a1820; color:#ff9a9a; }
+  #pause .ptile .pc { position:relative; width:58px; height:58px; }
+  #pause .ptile .pc .cover { width:58px; height:58px; aspect-ratio:auto; border-radius:9px; box-shadow:0 4px 10px rgba(0,0,0,.45); }
+  #pause .ptile .pc .cover .ini { font-size:18px; }
+  #pause .ptile .tag { position:absolute; right:-6px; bottom:-5px; z-index:1; background:var(--acc); color:#fff; font-size:9px; font-weight:800; letter-spacing:.4px; padding:2px 5px; border-radius:6px; }
+  #pause .ptile.dim { opacity:.45; }
+  #pStat { display:none; border-radius:12px; padding:11px 12px; font-size:14px; font-weight:600; line-height:1.35; background:#1b3326; color:#9be8b4; }
+  #pStat.err { background:#3a1e26; color:#ff9a9a; }
   #ejsclose { display:none; position:fixed; top:calc(env(safe-area-inset-top) + 8px); right:10px; z-index:100002;
     background:var(--acc); color:#fff; border:0; border-radius:999px; padding:8px 14px; font-weight:600; }
   .pill { height:42px; padding:0 16px 0 12px; border-radius:21px; border:0; background:var(--card2); color:var(--txt);
@@ -419,13 +475,15 @@
     <div class="pane" id="pLib" style="display:none"></div>
     <!-- Pestaña Gratis: juegos homebrew de todas las consolas -->
     <div class="pane" id="pFree" style="display:none"></div>
+    <!-- Pestaña Partidas: tarjeta de memoria -->
+    <div class="pane" id="pMem" style="display:none"></div>
   </section>
 
   <!-- Barra inferior -->
   <nav class="tabbar" id="tabbar">
     <button class="tab on" data-t="cons"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9a4.5 4.5 0 0 1 4.4 5.4l-.9 4.3a2.4 2.4 0 0 1-4.1 1.2L13.6 16h-3.2l-2.3 2.4A2.4 2.4 0 0 1 4 17.2l-.9-4.3a4.5 4.5 0 0 1 4.4-5.4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11.2" r=".6" class="f"/><circle cx="17" cy="12.9" r=".6" class="f"/></svg>Consolas</button>
     <button class="tab" data-t="lib"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Juegos</button>
-    <button class="tab" data-t="free"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="4" rx="1.2"/><path d="M5 12.5v6.5a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-6.5M12 8.5v12M12 8.5C10.5 5 7 4.6 7 6.6S10 8.5 12 8.5zM12 8.5c1.5-3.5 5-3.9 5-1.9s-3 1.9-5 1.9z"/></svg>Gratis</button>
+    <button class="tab" data-t="mem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5l3.5 3.5v12a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M9 3.8v3.7M11.5 3.8v3.7M14 3.8v3.7"/><rect x="8.5" y="12" width="7" height="5" rx="1"/></svg>Partidas</button>
     <button class="tab" id="btnSettings" data-t="set"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
   </nav>
 
@@ -513,7 +571,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 35 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 41 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -613,9 +671,13 @@
 <div id="pause">
   <div class="panel">
     <button class="pri" id="pContinue">Continuar</button>
-    <button id="pQSave">Guardar partida</button>
-    <button id="pQLoad">Cargar partida</button>
-    <button class="danger" id="pExit">Salir a la biblioteca</button>
+    <div id="pStat"></div>
+    <div class="pgrid">
+      <button class="ptile" id="pQLoad"><div class="pc"></div><b>Cargar partida</b><small>—</small></button>
+      <button class="ptile" id="pALoad"><div class="pc"><span class="tag">AUTO</span></div><b>Autoguardado</b><small>—</small></button>
+      <button class="ptile" id="pQSave"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h11.5l3 3V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5z"/><path d="M7.5 3.5v5h8v-5M13 5.2v1.6"/><rect x="7" y="13" width="10" height="7.5" rx="1"/></svg><b>Guardar partida</b></button>
+      <button class="ptile danger" id="pExit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5H6.5A1.5 1.5 0 0 0 5 6v12a1.5 1.5 0 0 0 1.5 1.5H14"/><path d="M10.5 12h10M17 8.5l3.5 3.5-3.5 3.5"/></svg><b>Salir</b></button>
+    </div>
   </div>
 </div>
 <button id="ejsclose">Cerrar menú del emulador</button>
@@ -851,8 +913,9 @@
     $('pCons').style.display = t === 'cons' ? 'flex' : 'none';
     $('pLib').style.display = t === 'lib' ? 'block' : 'none';
     $('pFree').style.display = t === 'free' ? 'block' : 'none';
+    $('pMem').style.display = t === 'mem' ? 'block' : 'none';
     Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) { b.classList.toggle('on', b.getAttribute('data-t') === t); });
-    if (t === 'lib') renderLib(); else if (t === 'free') renderFree();
+    if (t === 'lib') renderLib(); else if (t === 'free') renderFree(); else if (t === 'mem') { memConsole = null; renderMem(); }
     window.scrollTo(0, 0);
     if (t === 'cons' && slideEls.length) requestAnimationFrame(recenter);
   }
@@ -1255,6 +1318,113 @@
     el.appendChild(g2);
   }
 
+
+  /* ====== Pestaña Partidas: tarjeta de memoria ======
+     Junta lo que hay guardado de cada juego en el almacén 'auto': la partida guardada a mano ('quick:<id>'),
+     la partida automática ('<id>') y la copia del guardado interno del juego ('sav:<id>'). */
+  var memConsole = null, memSel = null;
+  function memData() {
+    return openDB().then(function (db) {
+      return new Promise(function (res, rej) {
+        var out = {}, rq = db.transaction('auto', 'readonly').objectStore('auto').openCursor();
+        rq.onsuccess = function () {
+          var c = rq.result; if (!c) { res(out); return; }
+          var v = c.value, id = String(v.id), kind = 'auto', m = /^(quick|sav):(.*)$/.exec(id);
+          if (m) { kind = m[1]; id = m[2]; }
+          if (byId[id] && v.state) {
+            var e = out[id] || (out[id] = { id: id, size: 0, t: 0 });
+            e[kind] = v.t || 0; e.size += v.state.length || v.state.byteLength || 0; if ((v.t || 0) > e.t) e.t = v.t || 0;
+          }
+          c.continue();
+        };
+        rq.onerror = function () { rej(rq.error); };
+      });
+    });
+  }
+  function fmtSize(n) { return n >= 1000 * 1024 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  function fmtWhen(t) {
+    if (!t) return '';
+    var d = new Date(t), now = new Date(), p2 = function (x) { return (x < 10 ? '0' : '') + x; }, hm = p2(d.getHours()) + ':' + p2(d.getMinutes());
+    if (d.toDateString() === now.toDateString()) return 'hoy, ' + hm;
+    var y = new Date(now); y.setDate(now.getDate() - 1);
+    if (d.toDateString() === y.toDateString()) return 'ayer, ' + hm;
+    return d.getDate() + '/' + (d.getMonth() + 1) + '/' + String(d.getFullYear()).slice(2) + ', ' + hm;
+  }
+  function renderMem() {
+    var el = $('pMem');
+    memData().then(function (data) {
+      if (TAB !== 'mem') return;
+      el.innerHTML = '';
+      var list = Object.keys(data).map(function (id) { return data[id]; });
+      if (memConsole) { renderMemList(el, list.filter(function (e) { return byId[e.id].console === memConsole; })); return; }
+      var card = document.createElement('div'); card.className = 'mcard';
+      var total = list.reduce(function (a, e) { return a + e.size; }, 0);
+      var head = document.createElement('div'); head.className = 'mhead';
+      head.innerHTML = '<b><svg class="sd" viewBox="0 0 24 24" aria-label="Memoria"><path d="M7 3.5h7.5l3.5 3.5v12a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M9 3.8v3.7M11.5 3.8v3.7M14 3.8v3.7"/><rect x="8.5" y="12" width="7" height="5" rx="1"/></svg><small></small></b><div class="sel"></div>';
+      head.querySelector('small').textContent = list.length ? fmtSize(total) : '';
+      card.appendChild(head);
+      var by = {}; list.forEach(function (e) { var c = byId[e.id].console; (by[c] = by[c] || []).push(e); });
+      var cids = Object.keys(CONSOLES).filter(function (c) { return by[c]; });
+      if (!cids.length) {
+        var em = document.createElement('div'); em.className = 'mempty';
+        em.innerHTML = 'Aún no hay partidas guardadas.<br>En un juego, abre el menú y pulsa «Guardar partida».';
+        card.appendChild(em); el.appendChild(card); return;
+      }
+      var grid = document.createElement('div'); grid.className = 'mgrid';
+      var sel = head.querySelector('.sel');
+      function pick(c) {
+        Array.prototype.forEach.call(grid.children, function (x) { x.classList.toggle('on', x.getAttribute('data-c') === c); });
+        var n = by[c].length, last = Math.max.apply(null, by[c].map(function (e) { return e.t; }));
+        sel.innerHTML = ''; sel.appendChild(document.createTextNode(CONSOLES[c].name));
+        var sp = document.createElement('span'); sp.textContent = (n === 1 ? '1 partida' : n + ' partidas') + ' · ' + fmtWhen(last); sel.appendChild(sp);
+      }
+      cids.forEach(function (c) {
+        var b = document.createElement('button'); b.className = 'micon'; b.setAttribute('data-c', c);
+        var im = document.createElement('img'); im.alt = ''; im.src = LOGOS[c]; b.appendChild(im);
+        var t = document.createElement('div'); t.textContent = CONSOLES[c].short; b.appendChild(t);
+        var n = document.createElement('div'); n.className = 'n'; n.textContent = by[c].length === 1 ? '1 partida' : by[c].length + ' partidas'; b.appendChild(n);
+        b.onclick = function () { memConsole = c; memSel = null; renderMem(); window.scrollTo(0, 0); };
+        b.onpointerenter = function () { pick(c); };
+        grid.appendChild(b);
+      });
+      card.appendChild(grid);
+      el.appendChild(card);
+      pick(cids[0]);
+    }).catch(function (e) { el.textContent = 'No se pudo leer la memoria: ' + e.message; });
+  }
+  function renderMemList(el, list) {
+    var box = document.createElement('div'); box.className = 'mlist';
+    var lh = document.createElement('div'); lh.className = 'lh';
+    var back = document.createElement('button'); back.innerHTML = '‹ <svg class="sd" viewBox="0 0 24 24" aria-label="Memoria"><path d="M7 3.5h7.5l3.5 3.5v12a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M9 3.8v3.7M11.5 3.8v3.7M14 3.8v3.7"/><rect x="8.5" y="12" width="7" height="5" rx="1"/></svg>'; back.setAttribute('aria-label', 'Volver a la memoria'); back.onclick = function () { memConsole = null; renderMem(); };
+    var h = document.createElement('b'); h.textContent = 'Partidas guardadas · ' + CONSOLES[memConsole].short;
+    lh.appendChild(back); lh.appendChild(h); box.appendChild(lh);
+    list.sort(function (a, b) { return b.t - a.t; }).forEach(function (e) {
+      var g = byId[e.id], row = document.createElement('div'); row.className = 'mrow' + (memSel === e.id ? ' on' : '');
+      var r = document.createElement('button'); r.className = 'r';
+      r.appendChild(coverEl(g, true));
+      var tx = document.createElement('div'); tx.className = 'tx';
+      var b = document.createElement('b'); b.textContent = g.title; tx.appendChild(b);
+      var sp = document.createElement('span');
+      sp.textContent = e.quick ? 'Partida guardada ' + fmtWhen(e.quick) : (e.auto ? 'Autoguardado ' + fmtWhen(e.auto) : 'Guardado del juego ' + fmtWhen(e.sav));
+      tx.appendChild(sp); r.appendChild(tx);
+      var sz = document.createElement('div'); sz.className = 'sz'; sz.textContent = fmtSize(e.size); r.appendChild(sz);
+      r.onclick = function () {
+        var on = row.classList.contains('on');
+        Array.prototype.forEach.call(box.querySelectorAll('.mrow.on'), function (x) { x.classList.remove('on'); });
+        if (!on) { row.classList.add('on'); memSel = e.id; } else memSel = null;
+      };
+      row.appendChild(r);
+      var acts = document.createElement('div'); acts.className = 'acts';
+      var act = function (txt, url, sec, t) { var a = document.createElement('span'); a.textContent = txt; if (t) { var sm = document.createElement('small'); sm.textContent = fmtWhen(t); a.appendChild(sm); } if (sec) a.className = 'sec'; a.onclick = function () { location.href = location.pathname + '?g=' + encodeURIComponent(e.id) + url; }; acts.appendChild(a); };
+      if (e.quick) act('Cargar partida', '&l=1', false, e.quick);
+      if (e.auto) act('Autoguardado', '&r=1', !!e.quick, e.auto);
+      if (!e.quick && !e.auto) act('Jugar', '');
+      row.appendChild(acts);
+      box.appendChild(row);
+    });
+    el.appendChild(box);
+  }
+
   /* ====== Juegos gratis: homebrew con licencia libre que viene con la app (carpeta homebrew/) ====== */
   // name es la clave de guardado: no cambiarlo. Créditos y licencias en homebrew/README.md
   var HOMEBREW = [
@@ -1519,7 +1689,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 35, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 41, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2530,7 +2700,27 @@
       else { ff = !ff; toast('Avance rápido no disponible'); }
     }
   }
-  function openPause() { releaseAll(); $('pause').style.display = 'flex'; }
+  // Estado visible dentro del menú (no un aviso que desaparece): qué se ha hecho y cuándo
+  function pStat(t, err) { var e = $('pStat'); if ($('pause').style.display !== 'flex') { if (t) toast(t, err ? 4000 : 2200); return; } e.textContent = t || ''; e.className = err ? 'err' : ''; e.style.display = t ? 'block' : 'none'; }
+  function agoTxt(t) { var s = Math.max(1, Math.round((Date.now() - t) / 1000)); return 'hace ' + fmtAgo(s); }
+  function pauseInfo() {                                   // portada y fecha de cada partida en las casillas de cargar
+    var l = $('pQLoad'), al = $('pALoad');
+    [l, al].forEach(function (b) { b.classList.add('dim'); b.querySelector('small').textContent = '—'; });
+    if (!curId) return;
+    tx('meta', 'readonly', function (st) { return st.get(curId); }).catch(function () { return null; }).then(function (m) {
+      var g = { title: (m && m.title) || curName, cover: (m && m.cover) || null };
+      [l, al].forEach(function (b) { var pc = b.querySelector('.pc'), old = pc.querySelector('.cover'); if (old) old.remove(); pc.insertBefore(coverEl(g, true), pc.firstChild); });
+    });
+    getAuto('quick:' + curId).then(function (a) {
+      if (a && a.state) { l.classList.remove('dim'); l.querySelector('small').textContent = fmtWhen(a.t); }
+      else l.querySelector('small').textContent = 'Aún no hay';
+    }).catch(function () {});
+    getAuto(curId).then(function (a) {                     // la misma copia automática que sale en Partidas
+      if (a && a.state) { al.classList.remove('dim'); al.querySelector('small').textContent = fmtWhen(a.t); }
+      else al.querySelector('small').textContent = 'Aún no hay';
+    }).catch(function () {});
+  }
+  function openPause() { releaseAll(); pStat(''); pauseInfo(); $('pause').style.display = 'flex'; }
   function closePause() { $('pause').style.display = 'none'; }
   function exportSave() {
     var g = gm();
@@ -2562,8 +2752,14 @@
   }
   function exitUrl() { return location.pathname + (curConsole ? '?c=' + curConsole : ''); }
   $('pContinue').onclick = closePause;
-  $('pQSave').onclick = function () { closePause(); special('quickSave'); };
-  $('pQLoad').onclick = function () { closePause(); special('quickLoad'); };
+  $('pQSave').onclick = quickSave;
+  $('pQLoad').onclick = quickLoad;
+  $('pALoad').onclick = function () {
+    getAuto(curId).then(function (a) {
+      if (!a || !a.state) { pStat('No hay autoguardado de este juego.', 1); return; }
+      gm().loadState(a.state); closePause(); toast('Autoguardado cargado (' + fmtWhen(a.t) + ')', 3500); diag('autoguardado cargado desde el menú');
+    }).catch(function (e) { pStat('No se pudo cargar: ' + e.message, 1); });
+  };
   $('pExit').onclick = leave;
   $('ejsclose').onclick = function () {
     document.body.classList.remove('ejsmenu'); $('touch').style.pointerEvents = 'auto'; $('ejsclose').style.display = 'none';
@@ -2608,27 +2804,39 @@
   }
   function quickSave() {
     var g = gm();
-    if (!g || !curId || typeof g.getState !== 'function') { toast('Guardar no disponible'); return; }
+    if (!g || !curId || typeof g.getState !== 'function') { pStat('No se pudo guardar: el emulador aún no está listo.', 1); diag('guardar partida: emulador no listo'); return; }
+    pStat('Guardando…');
+    flushSaves();                                            // además del instante, se escribe el guardado interno del juego
     Promise.resolve(g.getState()).then(function (st) {
       if (!st || !st.length) throw new Error('estado vacío');
       var c = new Uint8Array(st.length); c.set(st);
-      return putAuto({ id: 'quick:' + curId, t: Date.now(), state: c });
-    }).then(function () { toast('Partida guardada'); }).catch(function (e) { toast('No se pudo guardar: ' + e.message); });
+      return putAuto({ id: 'quick:' + curId, t: Date.now(), state: c }).then(function () { return getAuto('quick:' + curId); }).then(function (a) {
+        if (!a || !a.state || a.state.length !== c.length) throw new Error('no se pudo comprobar la copia');
+        return c.length;
+      });
+    }).then(function (n) {
+      var d = new Date(), p2 = function (x) { return (x < 10 ? '0' : '') + x; };
+      pStat('✓ Partida guardada a las ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ' (' + Math.round(n / 1024) + ' KB)'); pauseInfo();
+      diag('partida guardada (' + n + ' bytes)');
+    }).catch(function (e) { pStat('No se pudo guardar: ' + e.message, 1); diag('guardar partida falló: ' + e.message); });
   }
-  function quickLoad() {
+  function quickLoad(silent) {
+    var fromMenu = $('pause').style.display === 'flex';
     getAuto('quick:' + curId).then(function (a) {
-      if (!a || !a.state) { toast('Aún no has guardado la partida'); return; }
-      gm().loadState(a.state); toast('Partida cargada');
-    }).catch(function (e) { toast('No se pudo cargar: ' + e.message); });
+      if (!a || !a.state) { if (fromMenu) pStat('Aún no has guardado ninguna partida en este juego.', 1); else toast('Aún no has guardado la partida'); return; }
+      gm().loadState(a.state); closePause(); toast('Partida cargada (guardada ' + agoTxt(a.t) + ')', 3500); diag('partida cargada (' + a.state.length + ' bytes)');
+    }).catch(function (e) { if (fromMenu) pStat('No se pudo cargar: ' + e.message, 1); else toast('No se pudo cargar: ' + e.message); diag('cargar partida falló: ' + e.message); });
   }
   // A: Salir espera a que se escriban los guardados antes de cambiar de página
   var leaving = false;
   function leave() {
-    if (leaving) return; leaving = true; toast('Guardando…', 4000);
+    if (leaving) return; leaving = true;
+    $('pause').style.display = 'flex'; ['pContinue', 'pQSave', 'pQLoad', 'pALoad', 'pExit'].forEach(function (id) { $(id).style.display = 'none'; });
+    pStat('Guardando tu partida antes de salir…');
     callGm('saveSaveFiles');
     var go = function () { cleanExit(); location.href = exitUrl(); };
-    var t = setTimeout(go, 3000);
-    Promise.all([backupSav(), autoSave()]).catch(function () {}).then(function () { clearTimeout(t); setTimeout(go, 400); });
+    var t = setTimeout(go, 4000);
+    Promise.all([backupSav(), autoSave()]).catch(function () {}).then(function () { clearTimeout(t); pStat('✓ Partida guardada'); setTimeout(go, 600); });
   }
   function isPlaying() { return document.body.classList.contains('playing'); }
 
@@ -2820,7 +3028,7 @@
           } else {
             $('wrap').style.display = 'block';
             $('exit').style.display = 'block';
-            $('exit').onclick = leave;
+            $('exit').textContent = '☰'; $('exit').setAttribute('aria-label', 'Menú'); $('exit').onclick = openPause;
           }
           startEmulator(g, data, !!sk, skin && skin.menu);
         });
