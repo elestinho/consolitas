@@ -334,6 +334,10 @@
   #pause button { background:#1e2130; color:#fff; border:0; border-radius:12px; padding:14px; font-size:16px; font-weight:600; text-align:left; }
   #pause button.pri { background:var(--acc); text-align:center; }
   #pause button.danger { color:#ff9a9a; }
+  #pause button small { display:block; font-size:12px; font-weight:500; color:#9aa0bd; margin-top:2px; }
+  #pause button.dim { opacity:.55; }
+  #pStat { display:none; border-radius:12px; padding:11px 12px; font-size:14px; font-weight:600; line-height:1.35; background:#1b3326; color:#9be8b4; }
+  #pStat.err { background:#3a1e26; color:#ff9a9a; }
   #ejsclose { display:none; position:fixed; top:calc(env(safe-area-inset-top) + 8px); right:10px; z-index:100002;
     background:var(--acc); color:#fff; border:0; border-radius:999px; padding:8px 14px; font-weight:600; }
   .pill { height:42px; padding:0 16px 0 12px; border-radius:21px; border:0; background:var(--card2); color:var(--txt);
@@ -513,7 +517,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 35 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 36 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -613,6 +617,7 @@
 <div id="pause">
   <div class="panel">
     <button class="pri" id="pContinue">Continuar</button>
+    <div id="pStat"></div>
     <button id="pQSave">Guardar partida</button>
     <button id="pQLoad">Cargar partida</button>
     <button class="danger" id="pExit">Salir a la biblioteca</button>
@@ -1519,7 +1524,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 35, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 36, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2530,7 +2535,19 @@
       else { ff = !ff; toast('Avance rápido no disponible'); }
     }
   }
-  function openPause() { releaseAll(); $('pause').style.display = 'flex'; }
+  // Estado visible dentro del menú (no un aviso que desaparece): qué se ha hecho y cuándo
+  function pStat(t, err) { var e = $('pStat'); if ($('pause').style.display !== 'flex') { if (t) toast(t, err ? 4000 : 2200); return; } e.textContent = t || ''; e.className = err ? 'err' : ''; e.style.display = t ? 'block' : 'none'; }
+  function agoTxt(t) { var s = Math.max(1, Math.round((Date.now() - t) / 1000)); return 'hace ' + fmtAgo(s); }
+  function pauseInfo() {                                   // pone en los botones cuándo se guardó la partida
+    var l = $('pQLoad'), sv = $('pQSave');
+    sv.innerHTML = 'Guardar partida'; l.innerHTML = 'Cargar partida'; l.classList.remove('dim');
+    if (!curId) return;
+    getAuto('quick:' + curId).then(function (a) {
+      if (a && a.state) l.innerHTML = 'Cargar partida<small>Guardada ' + agoTxt(a.t) + '</small>';
+      else { l.innerHTML = 'Cargar partida<small>Aún no has guardado ninguna</small>'; l.classList.add('dim'); }
+    }).catch(function () {});
+  }
+  function openPause() { releaseAll(); pStat(''); pauseInfo(); $('pause').style.display = 'flex'; }
   function closePause() { $('pause').style.display = 'none'; }
   function exportSave() {
     var g = gm();
@@ -2562,8 +2579,8 @@
   }
   function exitUrl() { return location.pathname + (curConsole ? '?c=' + curConsole : ''); }
   $('pContinue').onclick = closePause;
-  $('pQSave').onclick = function () { closePause(); special('quickSave'); };
-  $('pQLoad').onclick = function () { closePause(); special('quickLoad'); };
+  $('pQSave').onclick = quickSave;
+  $('pQLoad').onclick = quickLoad;
   $('pExit').onclick = leave;
   $('ejsclose').onclick = function () {
     document.body.classList.remove('ejsmenu'); $('touch').style.pointerEvents = 'auto'; $('ejsclose').style.display = 'none';
@@ -2608,27 +2625,39 @@
   }
   function quickSave() {
     var g = gm();
-    if (!g || !curId || typeof g.getState !== 'function') { toast('Guardar no disponible'); return; }
+    if (!g || !curId || typeof g.getState !== 'function') { pStat('No se pudo guardar: el emulador aún no está listo.', 1); diag('guardar partida: emulador no listo'); return; }
+    pStat('Guardando…');
+    flushSaves();                                            // además del instante, se escribe el guardado interno del juego
     Promise.resolve(g.getState()).then(function (st) {
       if (!st || !st.length) throw new Error('estado vacío');
       var c = new Uint8Array(st.length); c.set(st);
-      return putAuto({ id: 'quick:' + curId, t: Date.now(), state: c });
-    }).then(function () { toast('Partida guardada'); }).catch(function (e) { toast('No se pudo guardar: ' + e.message); });
+      return putAuto({ id: 'quick:' + curId, t: Date.now(), state: c }).then(function () { return getAuto('quick:' + curId); }).then(function (a) {
+        if (!a || !a.state || a.state.length !== c.length) throw new Error('no se pudo comprobar la copia');
+        return c.length;
+      });
+    }).then(function (n) {
+      var d = new Date(), p2 = function (x) { return (x < 10 ? '0' : '') + x; };
+      pStat('✓ Partida guardada a las ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ' (' + Math.round(n / 1024) + ' KB)'); pauseInfo();
+      diag('partida guardada (' + n + ' bytes)');
+    }).catch(function (e) { pStat('No se pudo guardar: ' + e.message, 1); diag('guardar partida falló: ' + e.message); });
   }
-  function quickLoad() {
+  function quickLoad(silent) {
+    var fromMenu = $('pause').style.display === 'flex';
     getAuto('quick:' + curId).then(function (a) {
-      if (!a || !a.state) { toast('Aún no has guardado la partida'); return; }
-      gm().loadState(a.state); toast('Partida cargada');
-    }).catch(function (e) { toast('No se pudo cargar: ' + e.message); });
+      if (!a || !a.state) { if (fromMenu) pStat('Aún no has guardado ninguna partida en este juego.', 1); else toast('Aún no has guardado la partida'); return; }
+      gm().loadState(a.state); closePause(); toast('Partida cargada (guardada ' + agoTxt(a.t) + ')', 3500); diag('partida cargada (' + a.state.length + ' bytes)');
+    }).catch(function (e) { if (fromMenu) pStat('No se pudo cargar: ' + e.message, 1); else toast('No se pudo cargar: ' + e.message); diag('cargar partida falló: ' + e.message); });
   }
   // A: Salir espera a que se escriban los guardados antes de cambiar de página
   var leaving = false;
   function leave() {
-    if (leaving) return; leaving = true; toast('Guardando…', 4000);
+    if (leaving) return; leaving = true;
+    $('pause').style.display = 'flex'; ['pContinue', 'pQSave', 'pQLoad', 'pExit'].forEach(function (id) { $(id).style.display = 'none'; });
+    pStat('Guardando tu partida antes de salir…');
     callGm('saveSaveFiles');
     var go = function () { cleanExit(); location.href = exitUrl(); };
-    var t = setTimeout(go, 3000);
-    Promise.all([backupSav(), autoSave()]).catch(function () {}).then(function () { clearTimeout(t); setTimeout(go, 400); });
+    var t = setTimeout(go, 4000);
+    Promise.all([backupSav(), autoSave()]).catch(function () {}).then(function () { clearTimeout(t); pStat('✓ Partida guardada'); setTimeout(go, 600); });
   }
   function isPlaying() { return document.body.classList.contains('playing'); }
 
@@ -2820,7 +2849,7 @@
           } else {
             $('wrap').style.display = 'block';
             $('exit').style.display = 'block';
-            $('exit').onclick = leave;
+            $('exit').textContent = '☰'; $('exit').setAttribute('aria-label', 'Menú'); $('exit').onclick = openPause;
           }
           startEmulator(g, data, !!sk, skin && skin.menu);
         });
