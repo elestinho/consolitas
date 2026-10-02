@@ -560,7 +560,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 39 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 40 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -663,6 +663,7 @@
     <div id="pStat"></div>
     <button id="pQSave">Guardar partida</button>
     <button id="pQLoad">Cargar partida</button>
+    <button id="pALoad" style="display:none">Cargar autoguardado</button>
     <button class="danger" id="pExit">Salir a la biblioteca</button>
   </div>
 </div>
@@ -1675,7 +1676,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 39, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 40, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2697,6 +2698,10 @@
       if (a && a.state) l.innerHTML = 'Cargar partida<small>Guardada ' + agoTxt(a.t) + '</small>';
       else { l.innerHTML = 'Cargar partida<small>Aún no has guardado ninguna</small>'; l.classList.add('dim'); }
     }).catch(function () {});
+    var al = $('pALoad'); al.style.display = 'none';
+    getAuto(curId).then(function (a) {                     // la misma copia automática que sale en Partidas
+      if (a && a.state) { al.innerHTML = 'Cargar autoguardado<small>' + fmtWhen(a.t) + '</small>'; al.style.display = 'block'; }
+    }).catch(function () {});
   }
   function openPause() { releaseAll(); pStat(''); pauseInfo(); $('pause').style.display = 'flex'; }
   function closePause() { $('pause').style.display = 'none'; }
@@ -2732,6 +2737,12 @@
   $('pContinue').onclick = closePause;
   $('pQSave').onclick = quickSave;
   $('pQLoad').onclick = quickLoad;
+  $('pALoad').onclick = function () {
+    getAuto(curId).then(function (a) {
+      if (!a || !a.state) { pStat('No hay autoguardado de este juego.', 1); return; }
+      gm().loadState(a.state); closePause(); toast('Autoguardado cargado (' + fmtWhen(a.t) + ')', 3500); diag('autoguardado cargado desde el menú');
+    }).catch(function (e) { pStat('No se pudo cargar: ' + e.message, 1); });
+  };
   $('pExit').onclick = leave;
   $('ejsclose').onclick = function () {
     document.body.classList.remove('ejsmenu'); $('touch').style.pointerEvents = 'auto'; $('ejsclose').style.display = 'none';
@@ -2803,7 +2814,7 @@
   var leaving = false;
   function leave() {
     if (leaving) return; leaving = true;
-    $('pause').style.display = 'flex'; ['pContinue', 'pQSave', 'pQLoad', 'pExit'].forEach(function (id) { $(id).style.display = 'none'; });
+    $('pause').style.display = 'flex'; ['pContinue', 'pQSave', 'pQLoad', 'pALoad', 'pExit'].forEach(function (id) { $(id).style.display = 'none'; });
     pStat('Guardando tu partida antes de salir…');
     callGm('saveSaveFiles');
     var go = function () { cleanExit(); location.href = exitUrl(); };
