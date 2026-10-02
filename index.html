@@ -63,6 +63,9 @@
     background:radial-gradient(120% 90% at 50% 0%,#5c5d63 0%,#38393e 45%,#1d1e22 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,.08); }
   .mhead { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:0 4px 14px; color:#eceef4; text-shadow:0 1px 2px rgba(0,0,0,.6); }
   .mhead b { font-size:19px; font-weight:700; letter-spacing:-.2px; }
+  .mhead b { display:flex; align-items:center; }
+  .mhead .sd, .mlist .sd { width:34px; height:34px; fill:none; stroke:#eceef4; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+  .mlist .lh .sd { width:20px; height:20px; stroke:#fff; vertical-align:-4px; margin-left:4px; filter:none; }
   .mhead b small { font-size:12px; font-weight:600; opacity:.7; margin-left:6px; }
   .mhead .sel { text-align:right; font-size:14px; font-weight:600; line-height:1.3; color:#f4e9b8; }
   .mhead .sel span { display:block; font-size:12px; font-weight:500; color:#d6d8e2; }
@@ -95,6 +98,7 @@
   .mrow .acts { display:none; gap:8px; padding:4px 16px 12px 80px; flex-wrap:wrap; }
   .mrow.on .acts { display:flex; }
   .mrow .acts span { background:rgba(255,255,255,.92); color:#0b2357; border-radius:10px; padding:9px 12px; font-size:13px; font-weight:700; }
+  .mrow .acts span small { display:block; font-size:11px; font-weight:500; opacity:.75; margin-top:1px; }
   .mrow .acts span.sec { background:rgba(255,255,255,.18); color:#fff; }
   /* Avisos discretos bajo el carrusel */
   .foot { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:0 16px 22px; min-height:58px; align-items:flex-end; }
@@ -470,7 +474,6 @@
   <nav class="tabbar" id="tabbar">
     <button class="tab on" data-t="cons"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9a4.5 4.5 0 0 1 4.4 5.4l-.9 4.3a2.4 2.4 0 0 1-4.1 1.2L13.6 16h-3.2l-2.3 2.4A2.4 2.4 0 0 1 4 17.2l-.9-4.3a4.5 4.5 0 0 1 4.4-5.4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11.2" r=".6" class="f"/><circle cx="17" cy="12.9" r=".6" class="f"/></svg>Consolas</button>
     <button class="tab" data-t="lib"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Juegos</button>
-    <button class="tab" data-t="free"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="4" rx="1.2"/><path d="M5 12.5v6.5a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-6.5M12 8.5v12M12 8.5C10.5 5 7 4.6 7 6.6S10 8.5 12 8.5zM12 8.5c1.5-3.5 5-3.9 5-1.9s-3 1.9-5 1.9z"/></svg>Gratis</button>
     <button class="tab" data-t="mem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5l3.5 3.5v12a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M9 3.8v3.7M11.5 3.8v3.7M14 3.8v3.7"/><rect x="8.5" y="12" width="7" height="5" rx="1"/></svg>Partidas</button>
     <button class="tab" id="btnSettings" data-t="set"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
   </nav>
@@ -559,7 +562,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 37 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 38 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1345,7 +1348,7 @@
       var card = document.createElement('div'); card.className = 'mcard';
       var total = list.reduce(function (a, e) { return a + e.size; }, 0);
       var head = document.createElement('div'); head.className = 'mhead';
-      head.innerHTML = '<b>Tarjeta de memoria<small></small></b><div class="sel"></div>';
+      head.innerHTML = '<b><svg class="sd" viewBox="0 0 24 24" aria-label="Memoria"><path d="M7 3.5h7.5l3.5 3.5v12a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M9 3.8v3.7M11.5 3.8v3.7M14 3.8v3.7"/><rect x="8.5" y="12" width="7" height="5" rx="1"/></svg><small></small></b><div class="sel"></div>';
       head.querySelector('small').textContent = list.length ? fmtSize(total) : '';
       card.appendChild(head);
       var by = {}; list.forEach(function (e) { var c = byId[e.id].console; (by[c] = by[c] || []).push(e); });
@@ -1381,7 +1384,7 @@
   function renderMemList(el, list) {
     var box = document.createElement('div'); box.className = 'mlist';
     var lh = document.createElement('div'); lh.className = 'lh';
-    var back = document.createElement('button'); back.textContent = '‹ Memoria'; back.onclick = function () { memConsole = null; renderMem(); };
+    var back = document.createElement('button'); back.innerHTML = '‹ <svg class="sd" viewBox="0 0 24 24" aria-label="Memoria"><path d="M7 3.5h7.5l3.5 3.5v12a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M9 3.8v3.7M11.5 3.8v3.7M14 3.8v3.7"/><rect x="8.5" y="12" width="7" height="5" rx="1"/></svg>'; back.setAttribute('aria-label', 'Volver a la memoria'); back.onclick = function () { memConsole = null; renderMem(); };
     var h = document.createElement('b'); h.textContent = 'Partidas guardadas · ' + CONSOLES[memConsole].short;
     lh.appendChild(back); lh.appendChild(h); box.appendChild(lh);
     list.sort(function (a, b) { return b.t - a.t; }).forEach(function (e) {
@@ -1401,9 +1404,9 @@
       };
       row.appendChild(r);
       var acts = document.createElement('div'); acts.className = 'acts';
-      var act = function (txt, url, sec) { var a = document.createElement('span'); a.textContent = txt; if (sec) a.className = 'sec'; a.onclick = function () { location.href = location.pathname + '?g=' + encodeURIComponent(e.id) + url; }; acts.appendChild(a); };
-      if (e.quick) act('Cargar partida', '&l=1');
-      if (e.auto) act('Seguir donde lo dejé', '&r=1', !!e.quick);
+      var act = function (txt, url, sec, t) { var a = document.createElement('span'); a.textContent = txt; if (t) { var sm = document.createElement('small'); sm.textContent = fmtWhen(t); a.appendChild(sm); } if (sec) a.className = 'sec'; a.onclick = function () { location.href = location.pathname + '?g=' + encodeURIComponent(e.id) + url; }; acts.appendChild(a); };
+      if (e.quick) act('Cargar partida', '&l=1', false, e.quick);
+      if (e.auto) act('Autoguardado', '&r=1', !!e.quick, e.auto);
       if (!e.quick && !e.auto) act('Jugar', '');
       row.appendChild(acts);
       box.appendChild(row);
@@ -1677,7 +1680,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 37, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 38, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
