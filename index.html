@@ -133,12 +133,22 @@
     background:radial-gradient(closest-side, rgba(255,255,255,.26), rgba(255,255,255,0) 72%); }
   .art img { position:relative; max-width:100%; max-height:100%; object-fit:contain; filter:drop-shadow(0 16px 22px rgba(0,0,0,.5));
     -webkit-user-drag:none; user-select:none; }
-  /* La consola del centro flota despacio y su halo respira a la vez (como los logos de Partidas) */
-  .slide.active .art img { animation:cfloat 4s ease-in-out infinite; }
-  .slide.active .art::before { animation:chalo 4s ease-in-out infinite; }
-  @keyframes cfloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
-  @keyframes chalo { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.75; transform:scale(.95); } }
-  @media (prefers-reduced-motion: reduce) { .slide.active .art img, .slide.active .art::before { animation:none; } }
+  /* La consola del centro flota (sube, se inclina un pelín y baja), su halo respira y su sombra en el suelo
+     se encoge cuando sube, como si estuviera viva */
+  .art::after { content:""; position:absolute; left:22%; right:22%; bottom:var(--sb, 0px); height:16px; border-radius:50%; pointer-events:none;
+    background:radial-gradient(closest-side, rgba(0,0,0,.5), rgba(0,0,0,0)); opacity:.8; }
+  .slide.active .art img { animation:cfloat 3.6s ease-in-out infinite; }
+  .slide.active .art::before { animation:chalo 3.6s ease-in-out infinite; }
+  .slide.active .art::after { animation:cshadow 3.6s ease-in-out infinite; }
+  @keyframes cfloat { 0%,100% { transform:translateY(0) rotate(0); } 50% { transform:translateY(-16px) rotate(-1.2deg); } }
+  @keyframes chalo { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.6; transform:scale(.92); } }
+  @keyframes cshadow { 0%,100% { opacity:.8; transform:scale(1); } 50% { opacity:.4; transform:scale(.72); } }
+  /* Brillo que cruza el nombre de izquierda a derecha de vez en cuando */
+  .slide .sn .nm { background:linear-gradient(105deg, #dedee8 0%, #dedee8 36%, #fff 45%, #fffbe8 50%, #fff 55%, #dedee8 64%, #dedee8 100%);
+    background-size:300% 100%; background-position:100% 0; -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .slide.active .sn .nm { animation:nshine 4.5s ease-in-out 1s infinite; }
+  @keyframes nshine { 0% { background-position:100% 0; } 45%, 100% { background-position:0 0; } }
+  @media (prefers-reduced-motion: reduce) { .slide.active .art img, .slide.active .art::before, .slide.active .art::after, .slide.active .sn .nm { animation:none; } }
   .slide .sn { margin-top:14px; font-size:22px; font-weight:800; letter-spacing:-.3px;
     display:flex; align-items:center; justify-content:center; gap:8px; }
   .slide .sn::before { content:""; flex:0 0 30px; }   /* contrapeso de la estrella: el nombre queda centrado */
@@ -496,7 +506,6 @@
       </div>
       <!-- Aviso discreto: solo en Safari -->
       <div class="foot">
-        <button class="chip" id="a2hs" style="display:none"><span class="cdot"></span>Jugar a pantalla completa<span class="go">›</span></button>
         <button class="chip" id="updChip" style="display:none"><span class="cdot"></span><span id="updTxt">Hay una versión nueva</span><span class="go">›</span></button>
         <button class="chip warn" id="prevChip" style="display:none"><span class="cdot"></span>Enlace de prueba: tus juegos no están aquí<span class="go">›</span></button>
       </div>
@@ -602,7 +611,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 47 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 48 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1081,9 +1090,11 @@
       var cid = CAR[pos % NC], c = CONSOLES[cid], main = pos >= MIDC && pos < MIDC + NC;
       var b = document.createElement('button'); b.className = 'slide'; b.setAttribute('data-c', cid);
       if (!main) { b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1; }
-      b.innerHTML = '<div class="art"><img alt="" decoding="async"></div><div class="sn"><span></span>' +
+      b.innerHTML = '<div class="art"><img alt="" decoding="async"></div><div class="sn"><span class="nm"></span>' +
         '<span class="fav" role="button"><img alt=""></span></div><div class="sc"></div>';
-      b.querySelector('.art img').src = LOGOS[cid];
+      var aimg = b.querySelector('.art img');
+      aimg.onload = function () { shadowAt(aimg); };
+      aimg.src = LOGOS[cid];
       b.querySelector('.sn span').textContent = c.name;
       var f = b.querySelector('.fav'), isFav = FAVS.indexOf(cid) >= 0;
       f.querySelector('img').src = FAV_IMG[cid] || STAR_IMG;
@@ -1112,6 +1123,14 @@
       $('glows').appendChild(g);
     })(p);
   }
+  // La sombra del suelo va justo debajo de la consola (cada imagen ocupa un alto distinto dentro de su recuadro)
+  function shadowAt(img) {
+    var art = img.parentNode, W = art.clientWidth, H = art.clientHeight;
+    if (!W || !H || !img.naturalWidth) return;
+    var h = Math.min(H, W * img.naturalHeight / img.naturalWidth);
+    art.style.setProperty('--sb', Math.max(0, (H - h) / 2 - 6) + 'px');
+  }
+  window.addEventListener('resize', function () { Array.prototype.forEach.call(document.querySelectorAll('.slide .art img'), shadowAt); });
   /* Personalizar (GBA y N64): hoja con las skins para elegir */
   var SKIN_NOTE = {
     gba: 'Elige el color de tu consola. Se verá así al jugar.',
@@ -1766,12 +1785,11 @@
   }
   function openBackup() { closeSheets(); updateProt(); $('bd').style.display = 'block'; $('backup').style.display = 'block'; }
   $('btnBackup').onclick = openBackup;
-  $('a2hs').onclick = function () { $('bd').style.display = 'block'; $('a2hsSheet').style.display = 'block'; };
   $('a2hsBk').onclick = openBackup;
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 47, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 48, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -3336,7 +3354,6 @@
   var qs = new URLSearchParams(location.search);
   diag('— inicio (' + (navigator.standalone ? 'app instalada' : 'navegador') + (qs.get('g') ? ', juego' : ', biblioteca') + ')');
   // En Safari no se pueden ocultar las barras: se explica cómo instalarla en la pantalla de inicio
-  if (!navigator.standalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) $('a2hs').style.display = '';
   if (!isOfficial && !isLocal) {
     $('prevChip').style.display = '';
     if (navigator.standalone) {                    // icono añadido desde un enlace de prueba: nunca se actualizaría
