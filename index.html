@@ -90,7 +90,7 @@
   .mrow { display:block; width:100%; text-align:left; border:0; background:none; color:#fff; padding:0; }
   .mrow .r { width:100%; background:none; color:#fff; text-align:left; font:inherit; border-radius:4px; display:flex; align-items:center; gap:12px; padding:8px 16px; border:2px solid transparent; }
   .mrow.on .r { border-color:#7fd4ff; background:linear-gradient(90deg,rgba(255,255,255,.16),rgba(255,255,255,.04)); box-shadow:0 0 18px rgba(127,212,255,.35); }
-  .mrow .cover { width:52px; height:52px; flex:none; aspect-ratio:auto; border-radius:6px; box-shadow:0 3px 8px rgba(0,0,0,.4); --cb:6px; --cr:3px; }
+  .mrow .cover { width:52px; height:52px; flex:none; aspect-ratio:auto; border-radius:6px; box-shadow:0 3px 8px rgba(0,0,0,.4); --cr:5px; }
   .mrow .cover .ini { font-size:17px; }
   .mrow .tx { flex:1; min-width:0; }
   .mrow .tx b { display:block; font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -214,13 +214,12 @@
   .cover { position:relative; width:100%; aspect-ratio:1/1; border-radius:18px; overflow:hidden;
     background:var(--card2); box-shadow:0 8px 20px rgba(0,0,0,.4); transition:transform .12s; }
   .cover img { width:100%; height:100%; object-fit:cover; display:block; }
-  /* Portadas no cuadradas (N64, Mega Drive, PS1…): proporción real dentro del marco, sobre la misma imagen difuminada */
-  .cover .cbg { position:absolute; inset:-14%; width:128%; height:128%; object-fit:cover; filter:blur(var(--cb,16px)) saturate(1.35) brightness(.6);
-    transform:translateZ(0); pointer-events:none; }
-  .cover.fit::before { content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
-    background:radial-gradient(ellipse at 50% 40%, rgba(255,255,255,.10), rgba(0,0,0,.28) 75%); }
-  .cover.fit .cimg { position:absolute; left:50%; top:50%; z-index:1; transform:translate(-50%,-50%); object-fit:cover;
-    border-radius:var(--cr,9px); box-shadow:0 8px 20px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.10); }
+  /* Portadas no cuadradas (N64, Mega Drive, PS1…): solo la portada, con su proporción real y sin fondo detrás */
+  .cover.fit { background:none; box-shadow:none; overflow:visible; }
+  .cover.fit .cimg { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); object-fit:cover;
+    border-radius:var(--cr,18px); box-shadow:0 8px 20px rgba(0,0,0,.4); }
+  #ovfly:has(.cover.fit) { background:none; }
+  #ovfly .cover.fit .cimg { border-radius:0; box-shadow:none; }
   .cover .ph { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     color:#fff; text-align:center; padding:12px; }
   .ph .ini { font-size:44px; font-weight:800; letter-spacing:-1px; opacity:.95; }
@@ -311,7 +310,7 @@
   @keyframes up { from { transform:translateY(40px); opacity:0; } to { transform:none; opacity:1; } }
   .sheet .grab { width:40px; height:5px; border-radius:3px; background:#3a3f57; margin:-6px auto 14px; }
   .shead { display:flex; gap:14px; align-items:center; margin-bottom:16px; }
-  .shead .cover { width:104px; flex:none; border-radius:14px; --cb:10px; --cr:6px; }
+  .shead .cover { width:104px; flex:none; border-radius:14px; --cr:12px; }
   .shead .st { min-width:0; }
   .shead .st b { display:block; font-size:19px; line-height:1.2; }
   .shead .st span { color:var(--mut); font-size:13px; }
@@ -432,7 +431,7 @@
   #pause .ptile svg { width:38px; height:38px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; margin-bottom:4px; }
   #pause .ptile.danger { background:#2a1820; color:#ff9a9a; }
   #pause .ptile .pc { position:relative; width:58px; height:58px; }
-  #pause .ptile .pc .cover { width:58px; height:58px; aspect-ratio:auto; border-radius:9px; box-shadow:0 4px 10px rgba(0,0,0,.45); --cb:6px; --cr:4px; }
+  #pause .ptile .pc .cover { width:58px; height:58px; aspect-ratio:auto; border-radius:9px; box-shadow:0 4px 10px rgba(0,0,0,.45); --cr:7px; }
   #pause .ptile .pc .cover .ini { font-size:18px; }
   #pause .ptile .tag { position:absolute; right:-6px; bottom:-5px; z-index:1; background:var(--acc); color:#fff; font-size:9px; font-weight:800; letter-spacing:.4px; padding:2px 5px; border-radius:6px; }
   #pause .ptile.dim { opacity:.45; }
@@ -619,7 +618,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 50 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 51 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1236,14 +1235,13 @@
     var d = document.createElement('div'); d.className = 'cover';
     if (g.cover) {
       var im = document.createElement('img'); im.alt = '';
-      im.onload = function () {                    // no cuadrada: se ve entera, centrada sobre ella misma difuminada
+      im.onload = function () {                    // no cuadrada: se ve entera, sin recortar y sin fondo
         var ar = im.naturalWidth / im.naturalHeight;
         if (!(Math.abs(ar - 1) > 0.14) || d.classList.contains('fit')) return;
-        var bg = document.createElement('img'); bg.alt = ''; bg.className = 'cbg'; bg.src = im.src;
-        d.insertBefore(bg, im); d.classList.add('fit'); im.className = 'cimg';
-        var k = 86;                                // % del marco que ocupa el lado largo
-        if (ar > 1) { im.style.width = k + '%'; im.style.height = (k / ar).toFixed(2) + '%'; }
-        else { im.style.height = k + '%'; im.style.width = (k * ar).toFixed(2) + '%'; }
+        d.classList.add('fit'); im.className = 'cimg'; d.setAttribute('data-ar', ar.toFixed(4));
+        d.style.aspectRatio = ar.toFixed(4);       // donde el marco crece con su ancho (lista, ficha) toma la forma de la portada
+        im.style.aspectRatio = ar.toFixed(4);
+        if (ar > 1) im.style.width = '100%'; else im.style.height = '100%';
       };
       im.src = g.cover; d.appendChild(im);
     } else {
@@ -1662,14 +1660,16 @@
     $('ovt').textContent = g.title;
     $('ovload').style.display = 'none';
     getAuto('quick:' + id).then(function (a) { if (a && a.state && ovId === id) $('ovload').style.display = 'block'; }).catch(function () {});
-    fly.style.left = t.left + 'px'; fly.style.top = t.top + 'px'; fly.style.width = t.size + 'px'; fly.style.height = t.size + 'px';
-    info.style.left = t.left + 'px'; info.style.width = t.size + 'px'; info.style.top = (t.top + t.size + 20) + 'px';
+    var ar = srcEl ? parseFloat(srcEl.getAttribute('data-ar')) || 1 : 1;   // portada no cuadrada: la ficha toma su forma
+    var fw = ar > 1 ? t.size : t.size * ar, fh = ar > 1 ? t.size / ar : t.size, fl = t.left + (t.size - fw) / 2, ft = t.top + (t.size - fh) / 2;
+    fly.style.left = fl + 'px'; fly.style.top = ft + 'px'; fly.style.width = fw + 'px'; fly.style.height = fh + 'px';
+    info.style.left = t.left + 'px'; info.style.width = t.size + 'px'; info.style.top = (ft + fh + 20) + 'px';
     [fly, info, bg].forEach(cancelAnims);
     ov.style.display = 'block';
     try { history.pushState({ ov: 1 }, '', location.href); ovPushed = true; } catch (e) { ovPushed = false; }
     if (!canAnimate()) return;
     var r = srcEl ? srcEl.getBoundingClientRect() : { left: t.left, top: t.top + 40, width: t.size * 0.9 };
-    var sc = r.width / t.size, dx = r.left - t.left, dy = r.top - t.top;
+    var sc = r.width / fw, dx = r.left - fl, dy = r.top - ft;
     if (srcEl) srcEl.style.visibility = 'hidden';
     bg.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, fill: 'both' });
     fly.animate([
@@ -1836,7 +1836,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 50, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 51, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
