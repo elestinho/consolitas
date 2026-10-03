@@ -447,12 +447,12 @@
     font-size:15px; font-weight:600; flex:none; }
   #diagText { background:#0b0c10; color:#b8f2c4; font:11px/1.45 ui-monospace,Menlo,monospace; padding:10px; border-radius:10px;
     max-height:42vh; overflow:auto; white-space:pre-wrap; word-break:break-word; margin:0 0 10px; }
-  #recover { display:none; position:fixed; inset:0; z-index:100004; background:rgba(0,0,0,.65);
+  #recover, #updDone { display:none; position:fixed; inset:0; z-index:100004; background:rgba(0,0,0,.65);
     align-items:center; justify-content:center; padding:24px; }
-  #recover .panel { background:#161822; border-radius:20px; padding:18px; width:100%; max-width:320px; display:flex; flex-direction:column; gap:10px; }
-  #recover p { margin:0; color:#c8cbe0; font-size:14px; line-height:1.5; }
-  #recover button { background:#1e2130; color:#fff; border:0; border-radius:12px; padding:14px; font-size:16px; font-weight:600; }
-  #recover button.pri { background:var(--acc); }
+  #updDone .panel, #recover .panel { background:#161822; border-radius:20px; padding:18px; width:100%; max-width:320px; display:flex; flex-direction:column; gap:10px; }
+  #updDone p, #recover p { margin:0; color:#c8cbe0; font-size:14px; line-height:1.5; }
+  #updDone button, #recover button { background:#1e2130; color:#fff; border:0; border-radius:12px; padding:14px; font-size:16px; font-weight:600; }
+  #updDone button.pri, #recover button.pri { background:var(--acc); }
   /* ---- Ficha animada y eliminación por pulsación larga ---- */
   .gcard { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; transition:transform .2s ease; }
   .gcard.pressing { transform:scale(.94); }
@@ -647,7 +647,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 54 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 55 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -728,6 +728,12 @@
   <p id="recText"></p>
   <button class="pri" id="rRes">Reanudar</button>
   <button id="rNew">Empezar de cero</button>
+</div></div>
+
+<div id="updDone"><div class="panel">
+  <b id="updDoneT">App actualizada</b>
+  <p>Para terminar, cierra la app del todo: desliza hacia arriba desde abajo, quítala de la lista de apps abiertas y vuelve a abrirla. Así se cargan bien tus juegos y partidas.</p>
+  <button class="pri" id="updDoneOk">Entendido</button>
 </div></div>
 
 <!-- modo marco simple -->
@@ -1872,7 +1878,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 54, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 55, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -1894,7 +1900,15 @@
   function applyUpdate() {                         // recarga la página en el mismo sitio: ROMs y partidas se quedan
     diag('actualizando a la versión ' + newVer);
     var go = function () { location.replace(location.pathname + '?v=' + newVer); };
+    dbReset();                                     // soltar la base de datos antes de recargar
     fetch(location.pathname, { cache: 'reload' }).then(go, go);
+  }
+  // Tras actualizar, iPhone a veces no ve las partidas hasta cerrar la app del todo: se avisa una vez
+  if (new URLSearchParams(location.search).get('v')) {
+    history.replaceState({}, '', location.pathname);
+    $('updDoneT').textContent = 'Ya tienes la Versión ' + APP_VER;
+    $('updDone').style.display = 'flex';
+    $('updDoneOk').onclick = function () { $('updDone').style.display = 'none'; };
   }
   $('updChip').onclick = applyUpdate;
   $('updCheck').onclick = function () { if (newVer) applyUpdate(); else checkUpdate(true); };
@@ -2246,8 +2260,9 @@
     autoCover(id, false).then(function (res) {
       if (res) { toast('Portada encontrada: ' + baseTitle(res.name)); if (ctxConsole) renderGames(); }
     }).catch(function (e) {
-      diag('portada: error ' + e.message);
-      toast(/fetch|network|Load failed|offline|Failed/i.test(e.message) ? 'Sin conexión: no pude buscar portadas' : 'Portada: ' + e.message, 3200);
+      diag('portada: error ' + e.message + (g ? ' (' + g.title + ')' : ''));
+      if (/fetch|network|Load failed|offline|Failed/i.test(e.message)) toast('Sin conexión: no pude buscar portadas', 3200);
+      else if (g) { g.ct = Date.now(); putMeta({ id: id, title: g.title, cover: g.cover || null, ct: g.ct }).catch(function () {}); }   // imagen rota: no se reintenta en cada arranque
     }).then(runCoverQueue);
   }
 
@@ -3107,7 +3122,7 @@
       return Promise.resolve(g.getSaveFile()).then(function (d) {
         if (!d || !d.length) return;
         var c = new Uint8Array(d.length); c.set(d);
-        return putAuto({ id: 'sav:' + curId, t: Date.now(), state: c });
+        return putAuto({ id: 'sav:' + curId, t: Date.now(), state: c }).then(function () { diag('copia del guardado del juego (' + Math.round(c.length / 1024) + ' KB)'); });
       }).catch(function () {});
     } catch (e) { return Promise.resolve(); }
   }
@@ -3194,7 +3209,7 @@
       return Promise.resolve(g.getState()).then(function (st) {
         if (!st || !st.length) return;
         var c = new Uint8Array(st.length); c.set(st);        // copia propia: no arrastramos la memoria del emulador
-        return putAuto({ id: curId, t: Date.now(), state: c });
+        return putAuto({ id: curId, t: Date.now(), state: c }).then(function () { diag('autoguardado (' + Math.round(c.length / 1024) + ' KB)'); });
       }).catch(function (e) { fail('falló ' + e.message); });
     } catch (e) { fail('falló ' + e.message); }
   }
@@ -3466,7 +3481,8 @@
     document.addEventListener('visibilitychange', function () { if (!document.hidden) checkUpdate(false); });
   }
   if (qs.get('g')) launch(qs.get('g'));
-  else refresh().then(function () { updateProt(); show(qs.get('c'), false); queueCovers(games.filter(function (g) { return !g.cover && !g.ct; }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
+  else if (CONSOLES[qs.get('c')]) { $('home').style.display = 'none'; $('tabbar').style.display = 'none'; }   // al salir de un juego: sin carrusel mientras carga su consola
+  if (!qs.get('g')) refresh().then(function () { updateProt(); show(qs.get('c'), false); queueCovers(games.filter(function (g) { return !g.cover && !g.ct; }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
 })();
 </script>
 </body>
