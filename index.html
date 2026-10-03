@@ -480,6 +480,7 @@
   #home { position:fixed; top:0; bottom:0; left:0; right:0; min-height:0; overflow-x:hidden; overflow-y:auto;
     -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; scrollbar-gutter:stable;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(64px + env(safe-area-inset-bottom)) env(safe-area-inset-left); }
+  .tlogo { display:none; }
   /* Móvil en horizontal: la barra pasa a ser vertical en el borde derecho */
   @media (orientation:landscape) and (max-height:540px) {
     .tabbar { top:0; bottom:0; left:auto; right:0; width:calc(76px + env(safe-area-inset-right)); max-width:none; margin:0;
@@ -488,8 +489,15 @@
     .tab { flex:0 0 auto; padding:9px 0; }
     #home { right:calc(76px + env(safe-area-inset-right)); padding-right:0; padding-bottom:calc(4px + env(safe-area-inset-bottom)); }
     #toast { bottom:calc(env(safe-area-inset-bottom) + 20px); }
-    #home.t-cons .brandbar { padding-top:4px; }
-    .art { height:min(30vh, 290px); }
+    /* sin el título «Consolitas»: el logo va arriba en la barra lateral */
+    #home:not(.t-lib) .brandbar { display:none; }
+    #home .brandbar h1.brand { visibility:hidden; }
+    .tlogo { display:flex; justify-content:center; position:absolute; left:0; right:env(safe-area-inset-right);
+      top:calc(env(safe-area-inset-top) + 14px); pointer-events:none; }
+    .tlogo .logo { width:40px; height:40px; filter:drop-shadow(0 4px 10px rgba(124,108,255,.45)); }
+    .art { height:min(38vh, 290px); }
+    #pCons { padding-top:0; }
+    .car { padding-top:24px; }
     .slide .sn { margin-top:6px; }
   }
 </style>
@@ -1051,6 +1059,8 @@
     $('home').scrollTop = 0;
     if (t === 'cons' && slideEls.length) requestAnimationFrame(recenter);
   }
+  // logo para la barra lateral en horizontal (allí no se muestra el título)
+  $('tabbar').insertAdjacentHTML('afterbegin', '<div class="tlogo" aria-hidden="true">' + document.querySelector('.brand .logo').outerHTML.replace(/lg(Body|Scr)/g, 'tl$1') + '</div>');
   Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
     if (b.id !== 'btnSettings') b.onclick = function () { setTab(b.getAttribute('data-t')); };
   });
