@@ -491,21 +491,23 @@
   .tlogo { display:none; }
   /* Móvil en horizontal: la barra pasa a ser vertical en el borde derecho */
   @media (orientation:landscape) and (max-height:540px) {
-    .tabbar { top:0; bottom:0; left:auto; right:0; width:calc(76px + env(safe-area-inset-right)); max-width:none; margin:0;
+    .tabbar { top:0; bottom:0; left:auto; right:0; width:76px; max-width:none; margin:0;
       flex-direction:column; justify-content:center; gap:4px; border-top:0; border-left:1px solid rgba(255,255,255,.07);
-      padding:calc(env(safe-area-inset-top) + 72px) env(safe-area-inset-right) calc(env(safe-area-inset-bottom) + 8px) 0; }
+      padding:calc(env(safe-area-inset-top) + 72px) 0 calc(env(safe-area-inset-bottom) + 8px) 0; }
     .tab { flex:0 0 auto; padding:9px 0; }
-    #home { right:calc(76px + env(safe-area-inset-right)); padding-right:0; padding-bottom:calc(4px + env(safe-area-inset-bottom)); }
+    /* todo el ancho hasta la barra: el carrusel ya no se corta a los lados (sin la columna de 640 px) */
+    #home { right:76px; max-width:none; margin:0; padding-left:0; padding-right:0; padding-bottom:calc(4px + env(safe-area-inset-bottom)); }
+    #home .brandbar, #pLib, #pMem { width:100%; max-width:640px; margin-left:auto; margin-right:auto; }
     #toast { bottom:calc(env(safe-area-inset-bottom) + 20px); }
     /* sin el título «Consolitas»: el logo va arriba en la barra lateral */
     #home:not(.t-lib) .brandbar { display:none; }
     #home .brandbar h1.brand { visibility:hidden; }
-    .tlogo { display:flex; justify-content:center; position:absolute; left:0; right:env(safe-area-inset-right);
+    .tlogo { display:flex; justify-content:center; position:absolute; left:0; right:0;
       top:calc(env(safe-area-inset-top) + 14px); pointer-events:none; }
     .tlogo .logo { width:40px; height:40px; filter:drop-shadow(0 4px 10px rgba(124,108,255,.45)); }
     .art { height:min(38vh, 290px); }
     /* el carrusel centrado en todo el alto: los avisos de abajo van encima, sin reservar hueco */
-    #pCons { padding-top:0; position:relative; }
+    #pCons { padding-top:36px; position:relative; }
     #pCons .foot { position:absolute; left:0; right:0; bottom:0; min-height:0; padding-bottom:8px; pointer-events:none; }
     #pCons .foot .chip { pointer-events:auto; }
     .car { padding-top:16px; }
@@ -654,7 +656,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 58 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 59 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1892,7 +1894,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 58, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 59, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
