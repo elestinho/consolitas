@@ -647,7 +647,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 54 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 54 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -884,12 +884,13 @@
   function saveSess() { if (sess) lsSet(SESS, JSON.stringify(sess)); }
   function beginSession(id) { sess = { game: id, playing: true, clean: false, start: Date.now(), hb: Date.now(), vis: 'visible', ph: 0, up: 0 }; saveSess(); }
   function cleanExit() { if (sess) { sess.clean = true; sess.playing = false; saveSess(); } diag('salida limpia (Salir)'); }
+  var prevWhy = '';
   if (prevUnclean) {
+    prevWhy = prevSess.ph ? 'La página se recargó o navegó por sí misma.'
+      : (prevSess.vis === 'hidden' ? 'Estaba en segundo plano o con la pantalla bloqueada: el sistema la descartó.'
+        : 'Estaba en primer plano: cierre inesperado (memoria o fallo del navegador).');
     diag('⚠ La sesión anterior no se cerró con Salir. Último latido: ' + fmtT(prevSess.hb) + ' (hace ' + fmtAgo(Math.round((Date.now() - prevSess.hb) / 1000)) +
-      '), tras ' + (prevSess.up || 0) + ' s de juego. ' +
-      (prevSess.ph ? 'La página se recargó o navegó por sí misma.'
-        : (prevSess.vis === 'hidden' ? 'Estaba en segundo plano o con la pantalla bloqueada: el sistema la descartó.'
-          : 'Estaba en primer plano: cierre inesperado (memoria o fallo del navegador).')));
+      '), tras ' + (prevSess.up || 0) + ' s de juego. ' + prevWhy);
   }
 
   /* ====== IndexedDB: 'roms' (ROM completa) y 'meta' (título, portada; ligero) ====== */
@@ -2675,6 +2676,7 @@
     pre.scrollTop = pre.scrollHeight;
   }
   $('diagClose').onclick = closeSheets;
+  $('diagOpen').onclick = showDiag;
   $('diagClear').onclick = function () { lsSet(DIAG, '[]'); showDiag(); };
   $('diagCopy').onclick = function () {
     try { navigator.clipboard.writeText($('diagText').textContent).then(function () { toast('Copiado'); }); }
@@ -2696,6 +2698,8 @@
   var bootAt = 0, bootTimer = 0, bootHidden = true;
   var bootMs = BOOT_MS;
   function showBoot() {
+    // el GIF solo al entrar en un juego, no cuando la página se ha reabierto sola (se cerró sin «Salir»)
+    if (resumeMode || (prevUnclean && prevSess.game === curId)) { diag('arranque sin GIF (reapertura)'); return; }
     var b = $('boot'), gb = curConsole === 'gb', ds = curConsole === 'nds'; bootHidden = false; bootAt = Date.now();
     bootMs = gb ? 3510 : (ds ? 3000 : BOOT_MS);
     b.style.transition = 'none'; b.style.opacity = '1'; b.style.display = 'block';
@@ -3201,7 +3205,7 @@
       if (!a || !a.state) { autoOk = true; diag('recuperación: no había partida automática'); return; }
       var mins = Math.max(1, Math.round((Date.now() - a.t) / 60000));
       $('recText').textContent = 'La sesión anterior no se cerró con "Salir". Hay una partida automática de hace ' +
-        (mins < 90 ? mins + ' min' : Math.round(mins / 60) + ' h') + '.';
+        (mins < 90 ? mins + ' min' : Math.round(mins / 60) + ' h') + '. Tras ' + (prevSess.up || 0) + ' s de juego. ' + prevWhy;
       $('recover').style.display = 'flex';
       $('rRes').onclick = function () {
         $('recover').style.display = 'none';
