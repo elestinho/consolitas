@@ -21,7 +21,7 @@
   /* App de inicio del iPhone (barra de estado translúcida): si la página no hace scroll, iOS deja el alto
      corto y la barra fija de abajo flota más arriba. Con esto la página es un poco más alta que la pantalla
      y la barra queda pegada abajo del todo, como pasaba antes en Juegos */
-  html { min-height:calc(100% + env(safe-area-inset-top)); }
+  html { min-height:calc(100% + var(--sa-t, env(safe-area-inset-top))); }
   body { padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     background:radial-gradient(1200px 500px at 50% -120px, #23204a 0%, transparent 70%), var(--bg); background-attachment:fixed; }
   button { font-family:inherit; }
@@ -42,10 +42,10 @@
   #home.t-cons .brandbar { padding-top:max(64px, 9vh); }
   #home:not(.t-lib) #btnAddHome { visibility:hidden; pointer-events:none; }   /* el ＋ de arriba solo en Juegos */
   #home .pane { flex:1; display:flex; flex-direction:column; }
-  #home { padding-bottom:calc(64px + env(safe-area-inset-bottom)); }
+  #home { padding-bottom:calc(64px + var(--sa-b, env(safe-area-inset-bottom))); }
   /* Barra inferior */
   .tabbar { position:fixed; left:0; right:0; bottom:0; z-index:50; display:flex; max-width:640px; margin:0 auto;
-    padding:6px 6px calc(env(safe-area-inset-bottom) + 4px); background:rgba(12,13,20,.78);
+    padding:6px 6px calc(var(--sa-b, env(safe-area-inset-bottom)) + 4px); background:rgba(12,13,20,.78);
     -webkit-backdrop-filter:blur(22px) saturate(1.5); backdrop-filter:blur(22px) saturate(1.5); border-top:1px solid rgba(255,255,255,.07); }
   .tab { flex:1; border:0; background:none; color:#7a7e96; display:flex; flex-direction:column; align-items:center; gap:3px;
     font-size:10.5px; font-weight:600; padding:4px 0 2px; transition:color .2s ease; }
@@ -117,7 +117,7 @@
 
   /* ---------- Carrusel de consolas ---------- */
   #home { display:flex; flex-direction:column; width:100%; position:relative;
-    min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+    min-height:calc(100dvh - var(--sa-t, env(safe-area-inset-top)) - var(--sa-b, env(safe-area-inset-bottom))); }
   #home > * { position:relative; z-index:1; }
   #home > #glows { position:fixed; inset:0; z-index:0; pointer-events:none; }
   .glow { position:absolute; inset:0; opacity:0; transition:opacity .5s ease;
@@ -279,9 +279,9 @@
   #cview.sel .gcard .cover { transition:transform .15s ease, opacity .15s ease; }
   #cview.sel .gcard:not(.picked) .cover { opacity:.72; }
   #cview.sel .gcard.picked .cover { transform:scale(.94); }
-  #cview.sel { padding-bottom:calc(84px + env(safe-area-inset-bottom)); }
+  #cview.sel { padding-bottom:calc(84px + var(--sa-b, env(safe-area-inset-bottom))); }
   #selbar { display:none; position:fixed; left:0; right:0; bottom:0; z-index:60; max-width:640px; margin:0 auto; gap:8px;
-    padding:10px 14px calc(env(safe-area-inset-bottom) + 10px); background:rgba(12,13,20,.82);
+    padding:10px 14px calc(var(--sa-b, env(safe-area-inset-bottom)) + 10px); background:rgba(12,13,20,.82);
     -webkit-backdrop-filter:blur(22px) saturate(1.5); backdrop-filter:blur(22px) saturate(1.5); border-top:1px solid rgba(255,255,255,.07); }
   #cview.sel #selbar { display:flex; }
   #selbar button { border:0; border-radius:14px; height:48px; font-size:15px; font-weight:600; background:#262a3c; color:var(--txt); padding:0 14px; }
@@ -309,7 +309,7 @@
   /* ---------- Hojas (fichas y ajustes) ---------- */
   .backdrop { display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.6); }
   .sheet { display:none; position:fixed; left:0; right:0; bottom:0; z-index:1001; background:var(--card);
-    border-radius:26px 26px 0 0; padding:18px 18px calc(env(safe-area-inset-bottom) + 18px); max-width:640px; margin:0 auto;
+    border-radius:26px 26px 0 0; padding:18px 18px calc(var(--sa-b, env(safe-area-inset-bottom)) + 18px); max-width:640px; margin:0 auto;
     max-height:88vh; overflow:auto; animation:up .22s ease; }
   @keyframes up { from { transform:translateY(40px); opacity:0; } to { transform:none; opacity:1; } }
   .sheet .grab { width:40px; height:5px; border-radius:3px; background:#3a3f57; margin:-6px auto 14px; }
@@ -363,15 +363,15 @@
 
   /* ---------- Modo marco simple (sin skin) ---------- */
   #wrap { display:none; position:fixed; top:0; left:0; right:0; bottom:0;
-    padding:calc(env(safe-area-inset-top) + 40px) 0 env(safe-area-inset-bottom);
+    padding:calc(var(--sa-t, env(safe-area-inset-top)) + 40px) 0 var(--sa-b, env(safe-area-inset-bottom));
     background:linear-gradient(160deg,#5b4fc4 0%,#40358f 100%);
     overflow:hidden; touch-action:none; overscroll-behavior:none;
     -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   #game { width:100%; height:100%; padding:0 14px; touch-action:none; }
   #game canvas { border-radius:4px; box-shadow:0 0 0 7px #17171f, 0 0 0 9px #0a0a0f, 0 6px 18px rgba(0,0,0,.45); }
-  #exit { position:fixed; top:calc(env(safe-area-inset-top) + 6px); left:10px; z-index:99999; width:30px; height:30px;
+  #exit { position:fixed; top:calc(var(--sa-t, env(safe-area-inset-top)) + 6px); left:10px; z-index:99999; width:30px; height:30px;
     background:rgba(0,0,0,.28); color:#fff; border:0; border-radius:50%; font-size:14px; line-height:30px; padding:0; opacity:.55; }
-  #bar { display:none; position:fixed; top:calc(env(safe-area-inset-top) + 6px); left:0; right:0; z-index:99998;
+  #bar { display:none; position:fixed; top:calc(var(--sa-t, env(safe-area-inset-top)) + 6px); left:0; right:0; z-index:99998;
     text-align:center; font-size:13px; font-weight:600; letter-spacing:.5px; color:rgba(255,255,255,.75);
     line-height:28px; pointer-events:none; padding:0 90px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   body.playing { position:fixed; width:100%; overflow:hidden; overscroll-behavior:none; padding:0; background:#40358f; }
@@ -401,7 +401,7 @@
   #sticks { position:absolute; left:0; top:0; width:100%; height:100%; z-index:2; pointer-events:none; }
   #sticks img { position:absolute; pointer-events:none; -webkit-user-drag:none; will-change:transform; }
   #skinwrap.tl #skinimg, #skinwrap.tl #sticks { opacity:.75; }
-  #hud { display:none; position:fixed; z-index:60; top:calc(env(safe-area-inset-top, 0px) + 4px); right:8px; pointer-events:none;
+  #hud { display:none; position:fixed; z-index:60; top:calc(var(--sa-t, env(safe-area-inset-top, 0px)) + 4px); right:8px; pointer-events:none;
     font:600 10px/1.3 ui-monospace, Menlo, monospace; color:rgba(255,255,255,.75); text-shadow:0 0 2px #000; text-align:right; white-space:pre; }
   body.skin #game [class*="ejs_virtualGamepad"] { display:none !important; }
   /* Mando táctil de la Nintendo 64: los colores del mando de verdad (A azul, B verde, C amarillos, Start rojo) */
@@ -445,7 +445,7 @@
   #pause .ptile.wide svg { width:24px; height:24px; margin:0; }
   #pStat { display:none; border-radius:12px; padding:11px 12px; font-size:14px; font-weight:600; line-height:1.35; background:#1b3326; color:#9be8b4; }
   #pStat.err { background:#3a1e26; color:#ff9a9a; }
-  #ejsclose { display:none; position:fixed; top:calc(env(safe-area-inset-top) + 8px); right:10px; z-index:100002;
+  #ejsclose { display:none; position:fixed; top:calc(var(--sa-t, env(safe-area-inset-top)) + 8px); right:10px; z-index:100002;
     background:var(--acc); color:#fff; border:0; border-radius:999px; padding:8px 14px; font-weight:600; }
   .pill { height:42px; padding:0 16px 0 12px; border-radius:21px; border:0; background:var(--card2); color:var(--txt);
     font-size:15px; font-weight:600; flex:none; }
@@ -479,7 +479,7 @@
   #delpanel p { margin:0 0 16px; color:var(--mut); font-size:13px; line-height:1.4; }
   #delYes { display:block; width:100%; border:0; border-radius:14px; padding:15px; margin-bottom:8px; font-size:16px; font-weight:700; background:#3a1e26; color:#ff8f8f; }
   #delNo { display:block; width:100%; border:0; border-radius:14px; padding:15px; font-size:16px; font-weight:600; background:#262a3c; color:var(--txt); }
-  #toast { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 84px); transform:translateX(-50%);
+  #toast { position:fixed; left:50%; bottom:calc(var(--sa-b, env(safe-area-inset-bottom)) + 84px); transform:translateX(-50%);
     z-index:100003; background:rgba(0,0,0,.85); color:#fff; padding:9px 15px; border-radius:999px;
     font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90%; text-align:center; }
   #toast.show { opacity:1; }
@@ -487,23 +487,23 @@
      queda exactamente en el mismo sitio en Consolas, Juegos y Partidas */
   #home { position:fixed; top:0; bottom:0; left:0; right:0; min-height:0; overflow-x:hidden; overflow-y:auto;
     -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; scrollbar-gutter:stable;
-    padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(64px + env(safe-area-inset-bottom)) env(safe-area-inset-left); }
+    padding:var(--sa-t, env(safe-area-inset-top)) var(--sa-r, env(safe-area-inset-right)) calc(64px + var(--sa-b, env(safe-area-inset-bottom))) var(--sa-l, env(safe-area-inset-left)); }
   .tlogo { display:none; }
   /* Móvil en horizontal: la barra pasa a ser vertical en el borde derecho */
   @media (orientation:landscape) and (max-height:540px) {
     .tabbar { top:0; bottom:0; left:auto; right:0; width:76px; max-width:none; margin:0;
       flex-direction:column; justify-content:center; gap:4px; border-top:0; border-left:1px solid rgba(255,255,255,.07);
-      padding:calc(env(safe-area-inset-top) + 72px) 0 calc(env(safe-area-inset-bottom) + 8px) 0; }
+      padding:calc(var(--sa-t, env(safe-area-inset-top)) + 72px) 0 calc(var(--sa-b, env(safe-area-inset-bottom)) + 8px) 0; }
     .tab { flex:0 0 auto; padding:9px 0; }
     /* todo el ancho hasta la barra: el carrusel ya no se corta a los lados (sin la columna de 640 px) */
-    #home { right:76px; max-width:none; margin:0; padding-left:0; padding-right:0; padding-bottom:calc(4px + env(safe-area-inset-bottom)); }
+    #home { right:76px; max-width:none; margin:0; padding-left:0; padding-right:0; padding-bottom:calc(4px + var(--sa-b, env(safe-area-inset-bottom))); }
     #home .brandbar, #pLib, #pMem { width:100%; max-width:640px; margin-left:auto; margin-right:auto; }
-    #toast { bottom:calc(env(safe-area-inset-bottom) + 20px); }
+    #toast { bottom:calc(var(--sa-b, env(safe-area-inset-bottom)) + 20px); }
     /* sin el título «Consolitas»: el logo va arriba en la barra lateral */
     #home:not(.t-lib) .brandbar { display:none; }
     #home .brandbar h1.brand { visibility:hidden; }
     .tlogo { display:flex; justify-content:center; position:absolute; left:0; right:0;
-      top:calc(env(safe-area-inset-top) + 14px); pointer-events:none; }
+      top:calc(var(--sa-t, env(safe-area-inset-top)) + 14px); pointer-events:none; }
     .tlogo .logo { width:40px; height:40px; filter:drop-shadow(0 4px 10px rgba(124,108,255,.45)); }
     .art { height:min(38vh, 290px); }
     /* el carrusel centrado en todo el alto: los avisos de abajo van encima, sin reservar hueco */
@@ -653,10 +653,11 @@
     <span class="go">›</span>
   </button>
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
+  <div class="row"><span>Relevo anticierres (prueba: el juego se reinicia cada 50 s)</span><input type="checkbox" id="relevoSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 64 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 65 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -775,11 +776,75 @@
 </div>
 <button id="ejsclose">Cerrar menú del emulador</button>
 <div id="toast"></div>
-<div id="log" style="position:fixed;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 8px);z-index:99998;font-size:12px;color:#ffb4b4;pointer-events:none;white-space:pre-wrap;background:rgba(0,0,0,.6);padding:4px 6px;border-radius:6px"></div>
+<div id="log" style="position:fixed;left:8px;right:8px;bottom:calc(var(--sa-b, env(safe-area-inset-bottom)) + 8px);z-index:99998;font-size:12px;color:#ffb4b4;pointer-events:none;white-space:pre-wrap;background:rgba(0,0,0,.6);padding:4px 6px;border-radius:6px"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function () {
+  /* ====== Relevo (prueba contra los cierres a los ~70 s en iPhone) ======
+     Con «Relevo» activado, el juego corre dentro de un marco. Cada 50 s se guarda la partida, se abre un
+     emulador nuevo en otro marco que la carga, y se quita el viejo. Sirve para saber si iOS deja de cerrar
+     la app cuando el emulador se destruye y se crea de nuevo. */
+  var QS0 = new URLSearchParams(location.search);
+  var EMB = window.parent !== window && QS0.get('emb') === '1';
+  if (QS0.get('relevo')) { relevoShell(); return; }
+  if (QS0.get('g') && !EMB && lsGet('relevo', '0') === '1') {
+    location.replace(location.pathname + '?relevo=' + encodeURIComponent(QS0.get('g')) + (QS0.get('l') ? '&l=1' : '') + (QS0.get('r') ? '&r=1' : ''));
+    return;
+  }
+  function relevoShell() {
+    // Cada 50 s: el emulador nuevo ya arrancó escondido detrás y en pausa; el viejo se para, le pasa su
+    // partida en memoria, el nuevo la carga y sigue, y el viejo se quita. El salto dura una fracción de segundo.
+    var id = QS0.get('relevo'), n = 0, cur = null, next = null, ready = false, due = false, t0 = Date.now(), tSwap = 0, armT = 0, preT = 0;
+    var note = function (m) {
+      try { var a = JSON.parse(localStorage.getItem('retro-diag') || '[]'); a.push({ t: Date.now(), m: m }); localStorage.setItem('retro-diag', JSON.stringify(a.slice(-60))); } catch (e) {}
+    };
+    document.body.innerHTML = ''; document.body.style.cssText = 'margin:0;background:#000;overflow:hidden';
+    var probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+    document.body.appendChild(probe);
+    function sa() { var c = getComputedStyle(probe); return [c.paddingTop, c.paddingRight, c.paddingBottom, c.paddingLeft].map(function (v) { return parseFloat(v) || 0; }).join(','); }
+    function frame(first) {
+      var f = document.createElement('iframe');
+      f.src = location.pathname + '?g=' + encodeURIComponent(id) + '&emb=1&n=' + (++n) + '&sa=' + sa() +
+        (first ? (QS0.get('l') ? '&l=1' : '') + (QS0.get('r') ? '&r=1' : '') : '&pre=1');
+      f.setAttribute('allow', 'autoplay; screen-wake-lock');
+      f.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:0;background:#000;z-index:' + (first ? 2 : 1);
+      document.body.appendChild(f);
+      return f;
+    }
+    function arm() {
+      clearTimeout(armT); clearTimeout(preT); ready = false; due = false;
+      preT = setTimeout(function () { if (!next) next = frame(false); }, 35000);     // el nuevo arranca con tiempo
+      armT = setTimeout(function () { due = true; swap(); }, 50000);
+    }
+    function swap() { if (due && ready && cur && next) { due = false; tSwap = Date.now(); cur.contentWindow.postMessage({ relevo: 'handoff' }, '*'); } }
+    window.addEventListener('resize', function () { setTimeout(function () { [cur, next].forEach(function (f) { if (f) f.contentWindow.postMessage({ relevo: 'sa', v: sa() }, '*'); }); }, 100); });
+    window.addEventListener('message', function (e) {
+      var m = e.data && e.data.relevo; if (!m) return;
+      if (cur && e.source === cur.contentWindow) {
+        if (m === 'started' && n === 1) arm();
+        if (m === 'state' && next) next.contentWindow.postMessage({ relevo: 'go', st: e.data.st }, '*', [e.data.st.buffer]);
+        if (m === 'exit') location.href = e.data.url;
+      } else if (next && e.source === next.contentWindow) {
+        if (m === 'ready') { ready = true; swap(); }
+        if (m === 'running') {
+          next.style.zIndex = 3; cur.remove(); cur = next; next = null; cur.style.zIndex = 2; cur.focus();
+          note('relevo ' + (n - 1) + ': cambio en ' + (Date.now() - tSwap) + ' ms, a los ' + Math.round((Date.now() - t0) / 1000) + ' s de app');
+          arm();
+        }
+      }
+    });
+    note('relevo: empieza (' + id + ')');
+    cur = frame(true);
+    history.replaceState({}, '', location.pathname + '?relevo=' + encodeURIComponent(id));   // si iOS recarga, que no repita l=1/r=1
+  }
+  var PRE = EMB && QS0.get('pre') === '1';          // emulador de relevo: arranca en pausa y espera la partida
+  function setSa(v) {
+    var a = String(v || '').split(',');
+    if (a.length === 4) ['t', 'r', 'b', 'l'].forEach(function (k, i) { document.documentElement.style.setProperty('--sa-' + k, (parseFloat(a[i]) || 0) + 'px'); });
+  }
+  if (EMB) setSa(QS0.get('sa'));
   /* ====== Consolas (núcleo de EmulatorJS y extensiones de ROM) ====== */
   var CONSOLES = {
     gba:  { name: 'Game Boy Advance',   short: 'GBA',        core: 'gba',    exts: ['gba', 'agb'],          c1: '#7c6cff', c2: '#3b2fb8' },
@@ -930,7 +995,7 @@
   /* Sesión de juego: sirve para saber cómo terminó la anterior */
   var SESS = 'retro-session', sess = null, prevSess = null;
   try { prevSess = JSON.parse(lsGet(SESS, 'null')); } catch (e) { prevSess = null; }
-  var prevUnclean = !!(prevSess && prevSess.playing && !prevSess.clean);
+  var prevUnclean = !PRE && !!(prevSess && prevSess.playing && !prevSess.clean);   // el de relevo ve la sesión viva del otro
   function saveSess() { if (sess) lsSet(SESS, JSON.stringify(sess)); }
   function beginSession(id) { sess = { game: id, playing: true, clean: false, start: Date.now(), hb: Date.now(), vis: 'visible', ph: 0, up: 0 }; saveSess(); }
   function cleanExit() { if (sess) { sess.clean = true; sess.playing = false; saveSess(); } diag('salida limpia (Salir)'); }
@@ -1922,7 +1987,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 64, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 65, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2726,6 +2791,8 @@
   });
   $('resumeSw').checked = lsGet('resume-game', '1') === '1';
   $('resumeSw').addEventListener('change', function () { lsSet('resume-game', $('resumeSw').checked ? '1' : '0'); });
+  $('relevoSw').checked = lsGet('relevo', '0') === '1';
+  $('relevoSw').addEventListener('change', function () { lsSet('relevo', $('relevoSw').checked ? '1' : '0'); });
   $('btnSettings').onclick = function () { offRender(); $('bd').style.display = 'block'; $('settings').style.display = 'block'; };
   $('setClose').onclick = closeSheets;
   function showDiag() {
@@ -2758,6 +2825,7 @@
   var bootMs = BOOT_MS;
   function showBoot() {
     // el GIF solo al entrar en un juego, no cuando la página se ha reabierto sola (se cerró sin «Salir»)
+    if (PRE) return;
     if (resumeMode || (prevUnclean && prevSess.game === curId)) { diag('arranque sin GIF (reapertura)'); return; }
     var b = $('boot'), gb = curConsole === 'gb', ds = curConsole === 'nds'; bootHidden = false; bootAt = Date.now();
     bootMs = gb ? 3510 : (ds ? 3000 : BOOT_MS);
@@ -3220,7 +3288,7 @@
     $('pause').style.display = 'flex'; ['pContinue', 'pQSave', 'pQLoad', 'pALoad', 'pExit'].forEach(function (id) { $(id).style.display = 'none'; });
     pStat('Guardando tu partida antes de salir…');
     callGm('saveSaveFiles');
-    var go = function () { cleanExit(); location.href = exitUrl(); };
+    var go = function () { cleanExit(); if (EMB) parent.postMessage({ relevo: 'exit', url: exitUrl() }, '*'); else location.href = exitUrl(); };
     var t = setTimeout(go, 4000);
     Promise.all([backupSav(), autoSave()]).catch(function () {}).then(function () { clearTimeout(t); pStat('✓ Partida guardada'); setTimeout(go, 600); });
   }
@@ -3230,6 +3298,11 @@
      Mide el ritmo de requestAnimationFrame, que es el que mueve el bucle del emulador; no
      toca nada del juego y solo corre si se activa en Ajustes. Es una aproximación. */
   var hudOn = false;
+  function gameTimers() {
+    if (!flushTimer) flushTimer = setInterval(flushSaves, 30000);
+    if (!autoTimer) autoTimer = setInterval(autoSave, 45000);
+    keepAwake();
+  }
   function startHud() {
     if (hudOn || lsGet('perf-hud', '0') !== '1') return; hudOn = true;
     var el = document.createElement('div'); el.id = 'hud'; el.style.display = 'block'; document.body.appendChild(el);
@@ -3289,6 +3362,24 @@
       gm().loadState(a.state); toast('Sigues donde lo dejaste'); diag('vuelta al juego: estado cargado');
     }).catch(function (e) { diag('vuelta al juego falló: ' + (e && e.message)); }).then(function () { autoOk = true; });
   }
+  if (EMB) window.addEventListener('message', function (e) {
+    var d = e.data; if (e.source !== parent || !d) return;
+    if (d.relevo === 'sa') setSa(d.v);
+    if (d.relevo === 'handoff') {                         // el viejo: se para y entrega la partida que tiene en memoria
+      emuPause(true);
+      var st = null; try { st = gm().getState(); } catch (x) {}
+      var c = new Uint8Array(st && st.length ? st.length : 0); if (st) c.set(st);
+      if (sess) { sess.clean = true; sess.playing = false; saveSess(); }   // el relevo no cuenta como cierre inesperado
+      autoOk = false; clearInterval(autoTimer); clearInterval(flushTimer); clearInterval(hbTimer);
+      parent.postMessage({ relevo: 'state', st: c }, '*', [c.buffer]);
+    }
+    if (d.relevo === 'go' && PRE) {                       // el nuevo: carga la partida y sigue
+      try { if (d.st && d.st.length) gm().loadState(d.st); } catch (x) { diag('relevo: no se pudo cargar (' + x.message + ')'); }
+      PRE = false; emuPause(false); autoOk = true;
+      beginSession(curId); startHeartbeat(); gameTimers(); startHud();
+      parent.postMessage({ relevo: 'running' }, '*');
+    }
+  });
   var lastCv = '';
   function startHeartbeat() {
     if (hbTimer) return;
@@ -3327,7 +3418,7 @@
   window.addEventListener('pagehide', function (e) {
     diag('pagehide (persistente=' + !!e.persisted + ')');
     if (sess) { sess.ph = Date.now(); saveSess(); }
-    if (isPlaying()) { flushSaves(); autoSave(); }
+    if (isPlaying() && autoOk && !PRE) { flushSaves(); autoSave(); }
   });
   window.addEventListener('pageshow', function (e) { if (e.persisted && sess) { sess.ph = 0; saveSess(); diag('pageshow desde caché'); } });
 
@@ -3441,10 +3532,11 @@
       ? new File([data], g.name.replace(/[\/#?]/g, '_') + '.' + (g.ext || CONSOLES[curConsole].exts[0]))
       : URL.createObjectURL(data) + '#' + encodeURIComponent(g.name) + '.' + (g.ext || 'gba');
     window.EJS_onGameStart = function () {
-      log(''); diag('juego iniciado'); hideBoot(false); startHud(); offMark(curConsole); lsSet('thr-try-' + curConsole, '');
-      if (!flushTimer) flushTimer = setInterval(flushSaves, 30000);
-      if (!autoTimer) autoTimer = setInterval(autoSave, 45000);
-      keepAwake();
+      hideBoot(false);
+      if (PRE) { emuPause(true); autoOk = false; parent.postMessage({ relevo: 'ready' }, '*'); return; }   // espera detrás, en pausa
+      if (EMB) parent.postMessage({ relevo: 'started' }, '*');
+      log(''); diag('juego iniciado'); startHud(); offMark(curConsole); lsSet('thr-try-' + curConsole, '');
+      gameTimers();
       setTimeout(restoreSav, 1000);
       if (wantQuick) setTimeout(quickLoad, 2200);
       setTimeout(resumeMode ? autoResume : offerResume, 1500);
@@ -3468,7 +3560,7 @@
     getRom(id).then(function (g) {
       if (!g) { location.href = location.pathname; return; }
       curId = id; curConsole = g.console || 'gba'; curName = prettify(g.name);
-      beginSession(id); startHeartbeat();
+      if (!PRE) { beginSession(id); startHeartbeat(); }   // el de relevo no toca la sesión hasta tomar el relevo
       wantQuick = new URLSearchParams(location.search).get('l') === '1';
       if (wantQuick) history.replaceState({}, '', location.pathname + '?g=' + encodeURIComponent(id));   // si iOS recarga la página, que no vuelva a cargar la partida
       if (new URLSearchParams(location.search).get('r') === '1') {   // vuelta automática: se quita la marca de la dirección
