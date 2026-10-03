@@ -26,6 +26,18 @@ function save(c, url, p) {
   });
 }
 
+/* Varios núcleos del procesador (DS y PS1): el emulador solo puede usar hilos si la página del juego está «aislada».
+   GitHub Pages no deja poner esas cabeceras, así que las añade aquí el propio service worker, solo en la página del juego
+   (?g=…). Con el aislamiento, lo que llega de otro dominio tiene que decir que se puede usar: se marca lo del emulador. */
+function isGame(url) { return /[?&]g=/.test(url); }
+function withHeaders(r, set) {
+  if (!r || r.type === 'opaque' || r.type === 'opaqueredirect') return r;
+  var h = new Headers(r.headers); Object.keys(set).forEach(function (k) { h.set(k, set[k]); });
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: h });
+}
+function isolate(r) { return withHeaders(r, { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp' }); }
+function shareable(r) { return withHeaders(r, { 'Cross-Origin-Resource-Policy': 'cross-origin' }); }
+
 function offline(r) {                                                 // la app servida desde la caché lo dice (para «Buscar actualización»)
   var h = new Headers(r.headers); h.set('X-Consolitas-Offline', '1');
   return new Response(r.body, { status: r.status, statusText: r.statusText, headers: h });
@@ -36,6 +48,7 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
   var app = isApp(url) || (req.mode === 'navigate' && url.indexOf(SCOPE) === 0);
   if (!app && url.indexOf(EJS) !== 0 && url !== JSZIP) return;       // portadas, skins, juegos gratis…: como siempre
+  var game = app && req.mode === 'navigate' && isGame(url);
   e.respondWith(caches.open(CACHE).then(function (c) {
     var key = app ? SCOPE : keyOf(url);
     return c.match(key, { ignoreSearch: app, ignoreVary: true }).then(function (hit) {
@@ -48,6 +61,6 @@ self.addEventListener('fetch', function (e) {
         var t = setTimeout(function () { ok(hit); }, SLOW);
         net.then(function (r) { clearTimeout(t); ok(r.ok ? r : hit); }, function () { clearTimeout(t); ok(hit); });
       });
-    });
+    }).then(function (r) { return game ? isolate(r) : app ? r : shareable(r); });
   }));
 });
