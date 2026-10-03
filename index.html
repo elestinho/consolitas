@@ -656,7 +656,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 59 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 60 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -865,21 +865,49 @@
         }
         get currentTime() { this._sync(); return this._on ? super.currentTime + this._off : this._fv + (performance.now() - this._fa) / 1000; }
         get state() { var st = super.state; return st === 'suspended' ? 'running' : st; }   // sin el aviso «Click to resume» de EmulatorJS
+        /* Sonido por una sola salida. El emulador crea ~170 trozos de sonido por segundo (un AudioBuffer y un
+           AudioBufferSourceNode cada uno). En el iPhone esa memoria no se liberaba a tiempo y la app se cerraba a los
+           60-70 s de juego. Ahora los trozos son objetos normales y sus muestras van a un anillo que lee un único nodo. */
+        createBuffer(ch, len, rate) {
+          var d = []; for (var i = 0; i < ch; i++) d.push(new Float32Array(len));
+          return { numberOfChannels: ch, length: len, sampleRate: rate, duration: len / rate, _d: d, getChannelData: function (i) { return this._d[i]; } };
+        }
         createBufferSource() {
-          var n = super.createBufferSource(), c = this, start = n.start, stop = n.stop;
-          n.start = function (when, offset, dur) {      // parado: no se programa nada (no sonaría); sonando: a la hora real
-            c._sync();
-            // Sin sonar, el trozo no se arranca: se desconecta para que el iPhone lo pueda tirar. Conectado y sin arrancar,
-            // Safari lo guarda para siempre, y el emulador crea ~170 por segundo: en un minuto se llenaba la memoria
-            if (!c._on) { try { n.disconnect(); } catch (e) {} return; }
-            var t = Math.max(0, (when || 0) - c._off);
-            return dur === undefined ? start.call(n, t, offset || 0) : start.call(n, t, offset || 0, dur);
+          var c = this, n = {
+            buffer: null, playbackRate: { value: 1 }, loop: false, loopStart: 0, loopEnd: 0, onended: null, _g: null,
+            connect: function (d) { n._g = d; return d; }, disconnect: function () {}, stop: function () {},
+            addEventListener: function () {}, removeEventListener: function () {},
+            start: function (when, offset) { c._push(n, offset || 0); }
           };
-          n.stop = function () { try { return stop.apply(n, arguments); } catch (e) {} };
-          // al acabar se desconecta: el emulador nunca lo hace y Safari guarda los trozos conectados aunque ya hayan
-          // sonado (~170 por segundo: la app se cerraba a los 60-70 s de juego)
-          n.addEventListener('ended', function () { try { n.disconnect(); } catch (e) {} });
           return n;
+        }
+        _out() {
+          if (this._sp) return true;
+          var me = this, N = 1 << 15;
+          try { this._sp = super.createScriptProcessor(2048, 0, 2); } catch (e) { return false; }
+          this._rl = new Float32Array(N); this._rr = new Float32Array(N); this._rm = N - 1; this._w = 0; this._r = 0;
+          this._sp.onaudioprocess = function (e) {
+            var L = e.outputBuffer.getChannelData(0), R = e.outputBuffer.getChannelData(1), k = Math.min(L.length, me._w - me._r);
+            for (var i = 0; i < L.length; i++) {
+              if (i < k) { var j = (me._r + i) & me._rm; L[i] = me._rl[j]; R[i] = me._rr[j]; } else L[i] = R[i] = 0;
+            }
+            me._r += k;
+          };
+          this._sp.connect(this.destination);
+          return true;
+        }
+        _push(n, off) {
+          this._sync();
+          var b = n.buffer; if (!this._on || !b || !b._d || !this._out()) return;   // parado: no se guarda nada
+          var sr = super.sampleRate, step = b.sampleRate / sr * (n.playbackRate.value || 1), g = n._g && n._g.gain ? n._g.gain.value : 1;
+          var L = b._d[0], R = b._d[1] || L, p0 = Math.floor(off * b.sampleRate), len = b.length, cnt = Math.floor((len - p0) / step);
+          if (cnt <= 0) return;
+          var max = Math.floor(sr * 0.3); if (this._w - this._r > max) this._r = this._w - max;   // nunca más de 0,3 s de retraso
+          for (var i = 0; i < cnt; i++) {
+            var p = p0 + i * step, a = p | 0, f = p - a, z = a + 1 < len ? a + 1 : a, k = (this._w + i) & this._rm;
+            this._rl[k] = (L[a] + (L[z] - L[a]) * f) * g; this._rr[k] = (R[a] + (R[z] - R[a]) * f) * g;
+          }
+          this._w += cnt;
         }
       };
       window.AudioContext = W; window.webkitAudioContext = W;
@@ -1894,7 +1922,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 59, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 60, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -3225,7 +3253,7 @@
       return Promise.resolve(g.getState()).then(function (st) {
         if (!st || !st.length) return;
         var c = new Uint8Array(st.length); c.set(st);        // copia propia: no arrastramos la memoria del emulador
-        return putAuto({ id: curId, t: Date.now(), state: c }).then(function () { diag('autoguardado (' + Math.round(c.length / 1024) + ' KB)'); });
+        return putAuto({ id: curId, t: Date.now(), state: c }).then(function () { var hp = window.EJS_emulator && EJS_emulator.Module && EJS_emulator.Module.HEAPU8; diag('autoguardado (' + Math.round(c.length / 1024) + ' KB' + (hp ? ', memoria del emulador ' + Math.round(hp.length / 1048576) + ' MB' : '') + ')'); });
       }).catch(function (e) { fail('falló ' + e.message); });
     } catch (e) { fail('falló ' + e.message); }
   }
