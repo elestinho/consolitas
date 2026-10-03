@@ -280,6 +280,7 @@
   .addbig { display:inline-block; margin-top:16px; background:var(--acc); color:#fff; border:0; border-radius:14px;
     padding:14px 22px; font-size:16px; font-weight:700; }
   #status { color:var(--mut); font-size:13px; padding:0 18px; min-height:18px; }
+#home:not(.t-lib) #status { display:none; }   /* «Procesando…» y compañía solo en Juegos, no en el carrusel ni en Partidas */
   /* Juegos gratis (homebrew con licencia libre) */
   #hbrew { padding:0 16px 40px; }
   #hbrew h2 { font-size:19px; margin:4px 2px 2px; }
@@ -611,7 +612,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 48 · <a id="updCheck">Buscar actualización</a></p>
+  <p class="ver">Consolitas · Versión 49 · <a id="updCheck">Buscar actualización</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -877,14 +878,40 @@
     });
     return dbPromise;
   }
-  function tx(store, mode, fn) {
-    return openDB().then(function (db) {
-      return new Promise(function (res, rej) {
-        var t = db.transaction(store, mode), s = t.objectStore(store), out = fn(s);
-        t.oncomplete = function () { res(out && out.result !== undefined ? out.result : undefined); };
-        t.onerror = function () { rej(t.error); };
-      });
+  /* En iPhone la base de datos a veces se queda sin responder: la app se quedaba en «Procesando…» y Partidas en blanco
+     hasta cerrarla. Si no contesta a tiempo se abre otra conexión y se repite (solo las lecturas); si tampoco, se avisa
+     en vez de esperar para siempre. */
+  var DB_STUCK = 'el almacenamiento del móvil no responde. Cierra la app del todo y vuelve a abrirla';
+  function dbReset() {
+    var p = dbPromise; dbPromise = null;
+    if (p) p.then(function (db) { try { db.close(); } catch (e) {} }, function () {});
+  }
+  function dbWatch(run, ms, retry) {
+    return new Promise(function (res, rej) {
+      var done = false, t = setTimeout(function () {
+        if (done) return;
+        diag('base de datos sin respuesta (' + ms + ' ms)');
+        dbReset();
+        if (retry) dbWatch(run, ms, false).then(fin(res), fin(rej)); else fin(rej)(new Error(DB_STUCK));
+      }, ms);
+      function fin(f) { return function (v) { if (done) return; done = true; clearTimeout(t); f(v); }; }
+      run().catch(function (e) {                   // conexión cerrada por el sistema: se abre otra y se repite una vez
+        if (!e || e.name !== 'InvalidStateError') throw e;
+        dbReset(); return run();
+      }).then(fin(res), fin(rej));
     });
+  }
+  function tx(store, mode, fn) {
+    return dbWatch(function () {
+      return openDB().then(function (db) {
+        return new Promise(function (res, rej) {
+          var t = db.transaction(store, mode), s = t.objectStore(store), out = fn(s);
+          t.oncomplete = function () { res(out && out.result !== undefined ? out.result : undefined); };
+          t.onerror = function () { rej(t.error); };
+          t.onabort = function () { rej(t.error || new Error('no se pudo guardar en el móvil')); };
+        });
+      });
+    }, mode === 'readonly' ? 15000 : 45000, mode === 'readonly');
   }
   var putRom = function (o) { return tx('roms', 'readwrite', function (s) { return s.put(o); }); };
   var delRom = function (id) { return tx('roms', 'readwrite', function (s) { return s.delete(id); }); };
@@ -900,20 +927,22 @@
   function romSize(g) { return g.buf ? g.buf.byteLength : (g.blob ? g.blob.size : 0); }
   // Lista ligera: recorre las ROM una a una sin retenerlas en memoria
   function listRoms() {
-    return openDB().then(function (db) {
-      return new Promise(function (res, rej) {
-        var out = [], t = db.transaction('roms', 'readonly'), rq = t.objectStore('roms').openCursor();
-        rq.onsuccess = function () {
-          var c = rq.result;
-          if (c) {
-            var v = c.value;
-            out.push({ id: v.id, name: v.name, ext: v.ext || 'gba', console: v.console || 'gba', size: romSize(v) });
-            c.continue();
-          } else res(out);
-        };
-        rq.onerror = function () { rej(rq.error); };
+    return dbWatch(function () {
+      return openDB().then(function (db) {
+        return new Promise(function (res, rej) {
+          var out = [], t = db.transaction('roms', 'readonly'), rq = t.objectStore('roms').openCursor();
+          rq.onsuccess = function () {
+            var c = rq.result;
+            if (c) {
+              var v = c.value;
+              out.push({ id: v.id, name: v.name, ext: v.ext || 'gba', console: v.console || 'gba', size: romSize(v) });
+              c.continue();
+            } else res(out);
+          };
+          rq.onerror = function () { rej(rq.error); };
+        });
       });
-    });
+    }, 30000, true);
   }
   function romBuf(g) {
     if (g.buf) return Promise.resolve(g.buf);
@@ -1425,6 +1454,9 @@
      la partida automática ('<id>') y la copia del guardado interno del juego ('sav:<id>'). */
   var memConsole = null, memSel = null;
   function memData() {
+    return dbWatch(function () { return memRead(); }, 20000, true);
+  }
+  function memRead() {
     return openDB().then(function (db) {
       return new Promise(function (res, rej) {
         var out = {}, rq = db.transaction('auto', 'readonly').objectStore('auto').openCursor();
@@ -1789,7 +1821,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 48, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 49, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2137,7 +2169,7 @@
     if (!g || (!force && (g.cover || g.ct))) return Promise.resolve(null);
     // Un disco de PS1 pesa cientos de MB: no se lee entero para la huella, se busca por el nombre
     return (g.console === 'psx' ? Promise.resolve(null) : getRom(id).then(romBuf)).then(function (buf) {
-      var hint = /europe/i.test(g.name) ? 'europe' : /japan/i.test(g.name) ? 'japan' : /usa/i.test(g.name) ? 'usa' : '';
+      var n = g.name, hint = /europe|\(E\)/i.test(n) ? 'europe' : /japan|\(J\)/i.test(n) ? 'japan' : /usa|\((U|JU|UE)\)/i.test(n) ? 'usa' : '';
       return findCover(g.console, g.ext, [g.title, prettify(g.name)], buf, hint);
     }).then(function (res) {
       if (!res) return null;
@@ -2516,7 +2548,8 @@
       last = r.c;
       var id = String(Date.now()) + Math.floor(Math.random() * 1000);
       var rec = { id: id, name: saveKeyOf(r.base), ext: r.ext, console: r.c };
-      if (r.blob || r.c === 'psx') rec.blob = r.blob || new Blob([r.buf]); else rec.buf = r.buf;   // los discos van como Blob
+      // Los discos y las ROM grandes (N64…) van como Blob: el iPhone los guarda aparte sin copiarlos enteros en memoria
+      if (r.blob || r.c === 'psx' || r.buf.byteLength > 16 * 1048576) rec.blob = r.blob || new Blob([r.buf]); else rec.buf = r.buf;
       return putRom(rec)
         .then(function () { return putMeta({ id: id, title: titleFromFile(r.base) }); })
         .then(function () { ok++; newIds.push(id); });
