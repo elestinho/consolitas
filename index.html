@@ -654,7 +654,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 56 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 57 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -850,6 +850,7 @@
       var W = class extends AC {
         constructor(a) {
           super(a); audioCtxs.push(this);
+          var me = this; this.addEventListener('statechange', function () { try { diag('audio: ' + me.realState()); } catch (e) {} });
           this._off = 0; this._fv = 0; this._fa = performance.now(); this._on = super.state === 'running';
         }
         realState() { return super.state; }
@@ -865,7 +866,10 @@
         createBufferSource() {
           var n = super.createBufferSource(), c = this, start = n.start, stop = n.stop;
           n.start = function (when, offset, dur) {      // parado: no se programa nada (no sonaría); sonando: a la hora real
-            c._sync(); if (!c._on) return;
+            c._sync();
+            // Sin sonar, el trozo no se arranca: se desconecta para que el iPhone lo pueda tirar. Conectado y sin arrancar,
+            // Safari lo guarda para siempre, y el emulador crea ~170 por segundo: en un minuto se llenaba la memoria
+            if (!c._on) { try { n.disconnect(); } catch (e) {} return; }
             var t = Math.max(0, (when || 0) - c._off);
             return dur === undefined ? start.call(n, t, offset || 0) : start.call(n, t, offset || 0, dur);
           };
@@ -1885,7 +1889,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 56, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 57, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
