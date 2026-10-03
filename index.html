@@ -656,7 +656,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 63 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 64 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1922,7 +1922,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 63, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 64, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -3100,8 +3100,13 @@
       else al.querySelector('small').textContent = 'Aún no hay';
     }).catch(function () {});
   }
-  function openPause() { releaseAll(); pStat(''); pauseInfo(); ffInfo(); $('pause').style.display = 'flex'; }
-  function closePause() { $('pause').style.display = 'none'; }
+  // El menú de pausa para de verdad el emulador (antes el juego seguía corriendo debajo)
+  function emuPause(on) {
+    var e = window.EJS_emulator;
+    try { if (e && e.started && typeof e.pause === 'function' && !!e.paused !== on) { if (on) e.pause(); else e.play(); diag(on ? 'pausa: emulador parado' : 'pausa: emulador en marcha'); } } catch (x) {}
+  }
+  function openPause() { releaseAll(); pStat(''); pauseInfo(); ffInfo(); $('pause').style.display = 'flex'; emuPause(true); }
+  function closePause() { $('pause').style.display = 'none'; emuPause(false); }
   function exportSave() {
     var g = gm();
     if (!g || typeof g.getSaveFile !== 'function') { toast('Exportar no disponible en esta versión'); return; }
@@ -3284,12 +3289,15 @@
       gm().loadState(a.state); toast('Sigues donde lo dejaste'); diag('vuelta al juego: estado cargado');
     }).catch(function (e) { diag('vuelta al juego falló: ' + (e && e.message)); }).then(function () { autoOk = true; });
   }
+  var lastCv = '';
   function startHeartbeat() {
     if (hbTimer) return;
     hbTimer = setInterval(function () {
       if (!sess) return;
       sess.hb = Date.now(); sess.vis = document.hidden ? 'hidden' : 'visible'; sess.up = Math.round((Date.now() - sess.start) / 1000);
       saveSess();
+      var cv = document.querySelector('#game canvas.ejs_canvas'), sz = cv ? cv.width + 'x' + cv.height : '';
+      if (sz && sz !== lastCv) { lastCv = sz; diag('lienzo del emulador ' + sz + (window.EJS_emulator && EJS_emulator.paused ? ' (en pausa)' : '')); }
     }, 5000);
   }
 
