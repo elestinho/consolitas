@@ -18,6 +18,10 @@
   /* Reservar siempre el hueco de la barra de scroll: si no, la barra de abajo (centrada) se desplaza
      unos píxeles a un lado en las pestañas que hacen scroll, como Juegos */
   html { scrollbar-gutter:stable; }
+  /* App de inicio del iPhone (barra de estado translúcida): si la página no hace scroll, iOS deja el alto
+     corto y la barra fija de abajo flota más arriba. Con esto la página es un poco más alta que la pantalla
+     y la barra queda pegada abajo del todo, como pasaba antes en Juegos */
+  html { min-height:calc(100% + env(safe-area-inset-top)); }
   body { padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     background:radial-gradient(1200px 500px at 50% -120px, #23204a 0%, transparent 70%), var(--bg); background-attachment:fixed; }
   button { font-family:inherit; }
