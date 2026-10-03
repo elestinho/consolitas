@@ -500,8 +500,11 @@
       top:calc(env(safe-area-inset-top) + 14px); pointer-events:none; }
     .tlogo .logo { width:40px; height:40px; filter:drop-shadow(0 4px 10px rgba(124,108,255,.45)); }
     .art { height:min(38vh, 290px); }
-    #pCons { padding-top:0; }
-    .car { padding-top:24px; }
+    /* el carrusel centrado en todo el alto: los avisos de abajo van encima, sin reservar hueco */
+    #pCons { padding-top:0; position:relative; }
+    #pCons .foot { position:absolute; left:0; right:0; bottom:0; min-height:0; padding-bottom:8px; pointer-events:none; }
+    #pCons .foot .chip { pointer-events:auto; }
+    .car { padding-top:16px; }
     .slide .sn { margin-top:6px; }
   }
 </style>
@@ -647,7 +650,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 55 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 56 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1878,7 +1881,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 55, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 56, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
