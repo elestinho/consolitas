@@ -653,10 +653,11 @@
     <span class="go">›</span>
   </button>
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
+  <div class="row"><span>Relevo anticierres (prueba: el juego se reinicia cada 50 s)</span><input type="checkbox" id="relevoSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 64 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 65 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -780,6 +781,49 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function () {
+  /* ====== Relevo (prueba contra los cierres a los ~70 s en iPhone) ======
+     Con «Relevo» activado, el juego corre dentro de un marco. Cada 50 s se guarda la partida, se abre un
+     emulador nuevo en otro marco que la carga, y se quita el viejo. Sirve para saber si iOS deja de cerrar
+     la app cuando el emulador se destruye y se crea de nuevo. */
+  var QS0 = new URLSearchParams(location.search);
+  var EMB = window.parent !== window && QS0.get('emb') === '1';
+  if (QS0.get('relevo')) { relevoShell(); return; }
+  if (QS0.get('g') && !EMB && lsGet('relevo', '0') === '1') {
+    location.replace(location.pathname + '?relevo=' + encodeURIComponent(QS0.get('g')) + (QS0.get('l') ? '&l=1' : '') + (QS0.get('r') ? '&r=1' : ''));
+    return;
+  }
+  function relevoShell() {
+    var id = QS0.get('relevo'), n = 0, cur = null, next = null, timer = 0, t0 = Date.now();
+    var note = function (m) {
+      try { var a = JSON.parse(localStorage.getItem('retro-diag') || '[]'); a.push({ t: Date.now(), m: m }); localStorage.setItem('retro-diag', JSON.stringify(a.slice(-60))); } catch (e) {}
+    };
+    document.body.innerHTML = ''; document.body.style.cssText = 'margin:0;background:#000;overflow:hidden';
+    function frame(first) {
+      var f = document.createElement('iframe');
+      f.src = location.pathname + '?g=' + encodeURIComponent(id) + '&emb=1&n=' + (++n) +
+        (first ? (QS0.get('l') ? '&l=1' : '') + (QS0.get('r') ? '&r=1' : '') : '&r=1');
+      f.setAttribute('allow', 'autoplay; screen-wake-lock');
+      f.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:0;background:#000;z-index:' + (first ? 2 : 1);
+      document.body.appendChild(f);
+      return f;
+    }
+    function arm() { clearTimeout(timer); timer = setTimeout(function () { if (cur && !next) cur.contentWindow.postMessage({ relevo: 'save' }, '*'); }, 50000); }
+    window.addEventListener('message', function (e) {
+      var m = e.data && e.data.relevo; if (!m) return;
+      if (cur && e.source === cur.contentWindow) {
+        if (m === 'started' && n === 1) arm();
+        if (m === 'saved') next = frame(false);
+        if (m === 'exit') location.href = e.data.url;
+      } else if (next && e.source === next.contentWindow && m === 'resumed') {
+        cur.remove(); cur = next; next = null; cur.style.zIndex = 2; cur.focus();
+        note('relevo ' + (n - 1) + ': emulador nuevo a los ' + Math.round((Date.now() - t0) / 1000) + ' s de app');
+        arm();
+      }
+    });
+    note('relevo: empieza (' + id + ')');
+    cur = frame(true);
+    history.replaceState({}, '', location.pathname + '?relevo=' + encodeURIComponent(id));   // si iOS recarga, que no repita l=1/r=1
+  }
   /* ====== Consolas (núcleo de EmulatorJS y extensiones de ROM) ====== */
   var CONSOLES = {
     gba:  { name: 'Game Boy Advance',   short: 'GBA',        core: 'gba',    exts: ['gba', 'agb'],          c1: '#7c6cff', c2: '#3b2fb8' },
@@ -1922,7 +1966,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 64, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 65, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2726,6 +2770,8 @@
   });
   $('resumeSw').checked = lsGet('resume-game', '1') === '1';
   $('resumeSw').addEventListener('change', function () { lsSet('resume-game', $('resumeSw').checked ? '1' : '0'); });
+  $('relevoSw').checked = lsGet('relevo', '0') === '1';
+  $('relevoSw').addEventListener('change', function () { lsSet('relevo', $('relevoSw').checked ? '1' : '0'); });
   $('btnSettings').onclick = function () { offRender(); $('bd').style.display = 'block'; $('settings').style.display = 'block'; };
   $('setClose').onclick = closeSheets;
   function showDiag() {
@@ -3220,7 +3266,7 @@
     $('pause').style.display = 'flex'; ['pContinue', 'pQSave', 'pQLoad', 'pALoad', 'pExit'].forEach(function (id) { $(id).style.display = 'none'; });
     pStat('Guardando tu partida antes de salir…');
     callGm('saveSaveFiles');
-    var go = function () { cleanExit(); location.href = exitUrl(); };
+    var go = function () { cleanExit(); if (EMB) parent.postMessage({ relevo: 'exit', url: exitUrl() }, '*'); else location.href = exitUrl(); };
     var t = setTimeout(go, 4000);
     Promise.all([backupSav(), autoSave()]).catch(function () {}).then(function () { clearTimeout(t); pStat('✓ Partida guardada'); setTimeout(go, 600); });
   }
@@ -3287,8 +3333,16 @@
     getAuto(curId).then(function (a) {
       if (!a || !a.state) { diag('vuelta al juego: no había partida automática'); return; }
       gm().loadState(a.state); toast('Sigues donde lo dejaste'); diag('vuelta al juego: estado cargado');
-    }).catch(function (e) { diag('vuelta al juego falló: ' + (e && e.message)); }).then(function () { autoOk = true; });
+    }).catch(function (e) { diag('vuelta al juego falló: ' + (e && e.message)); }).then(function () { autoOk = true; if (EMB) parent.postMessage({ relevo: 'resumed' }, '*'); });
   }
+  if (EMB) window.addEventListener('message', function (e) {
+    if (e.source !== parent || !e.data || e.data.relevo !== 'save') return;
+    emuPause(true);
+    Promise.all([backupSav(), autoSave()]).catch(function () {}).then(function () {
+      if (sess) { sess.clean = true; sess.playing = false; saveSess(); }   // el relevo no cuenta como cierre inesperado
+      parent.postMessage({ relevo: 'saved' }, '*');
+    });
+  });
   var lastCv = '';
   function startHeartbeat() {
     if (hbTimer) return;
@@ -3441,6 +3495,7 @@
       ? new File([data], g.name.replace(/[\/#?]/g, '_') + '.' + (g.ext || CONSOLES[curConsole].exts[0]))
       : URL.createObjectURL(data) + '#' + encodeURIComponent(g.name) + '.' + (g.ext || 'gba');
     window.EJS_onGameStart = function () {
+      if (EMB) parent.postMessage({ relevo: 'started' }, '*');
       log(''); diag('juego iniciado'); hideBoot(false); startHud(); offMark(curConsole); lsSet('thr-try-' + curConsole, '');
       if (!flushTimer) flushTimer = setInterval(flushSaves, 30000);
       if (!autoTimer) autoTimer = setInterval(autoSave, 45000);
