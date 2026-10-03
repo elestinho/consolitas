@@ -2260,8 +2260,9 @@
     autoCover(id, false).then(function (res) {
       if (res) { toast('Portada encontrada: ' + baseTitle(res.name)); if (ctxConsole) renderGames(); }
     }).catch(function (e) {
-      diag('portada: error ' + e.message);
-      toast(/fetch|network|Load failed|offline|Failed/i.test(e.message) ? 'Sin conexión: no pude buscar portadas' : 'Portada: ' + e.message, 3200);
+      diag('portada: error ' + e.message + (g ? ' (' + g.title + ')' : ''));
+      if (/fetch|network|Load failed|offline|Failed/i.test(e.message)) toast('Sin conexión: no pude buscar portadas', 3200);
+      else if (g) { g.ct = Date.now(); putMeta({ id: id, title: g.title, cover: g.cover || null, ct: g.ct }).catch(function () {}); }   // imagen rota: no se reintenta en cada arranque
     }).then(runCoverQueue);
   }
 
@@ -3121,7 +3122,7 @@
       return Promise.resolve(g.getSaveFile()).then(function (d) {
         if (!d || !d.length) return;
         var c = new Uint8Array(d.length); c.set(d);
-        return putAuto({ id: 'sav:' + curId, t: Date.now(), state: c });
+        return putAuto({ id: 'sav:' + curId, t: Date.now(), state: c }).then(function () { diag('copia del guardado del juego (' + Math.round(c.length / 1024) + ' KB)'); });
       }).catch(function () {});
     } catch (e) { return Promise.resolve(); }
   }
@@ -3208,7 +3209,7 @@
       return Promise.resolve(g.getState()).then(function (st) {
         if (!st || !st.length) return;
         var c = new Uint8Array(st.length); c.set(st);        // copia propia: no arrastramos la memoria del emulador
-        return putAuto({ id: curId, t: Date.now(), state: c });
+        return putAuto({ id: curId, t: Date.now(), state: c }).then(function () { diag('autoguardado (' + Math.round(c.length / 1024) + ' KB)'); });
       }).catch(function (e) { fail('falló ' + e.message); });
     } catch (e) { fail('falló ' + e.message); }
   }
@@ -3480,7 +3481,8 @@
     document.addEventListener('visibilitychange', function () { if (!document.hidden) checkUpdate(false); });
   }
   if (qs.get('g')) launch(qs.get('g'));
-  else refresh().then(function () { updateProt(); show(qs.get('c'), false); queueCovers(games.filter(function (g) { return !g.cover && !g.ct; }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
+  else if (CONSOLES[qs.get('c')]) { $('home').style.display = 'none'; $('tabbar').style.display = 'none'; }   // al salir de un juego: sin carrusel mientras carga su consola
+  if (!qs.get('g')) refresh().then(function () { updateProt(); show(qs.get('c'), false); queueCovers(games.filter(function (g) { return !g.cover && !g.ct; }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
 })();
 </script>
 </body>
