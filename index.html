@@ -852,6 +852,7 @@
       var W = class extends AC {
         constructor(a) {
           super(a); audioCtxs.push(this);
+          var me = this; this.addEventListener('statechange', function () { try { diag('audio: ' + me.realState()); } catch (e) {} });
           this._off = 0; this._fv = 0; this._fa = performance.now(); this._on = super.state === 'running';
         }
         realState() { return super.state; }
@@ -867,7 +868,10 @@
         createBufferSource() {
           var n = super.createBufferSource(), c = this, start = n.start, stop = n.stop;
           n.start = function (when, offset, dur) {      // parado: no se programa nada (no sonaría); sonando: a la hora real
-            c._sync(); if (!c._on) return;
+            c._sync();
+            // Sin sonar, el trozo no se arranca: se desconecta para que el iPhone lo pueda tirar. Conectado y sin arrancar,
+            // Safari lo guarda para siempre, y el emulador crea ~170 por segundo: en un minuto se llenaba la memoria
+            if (!c._on) { try { n.disconnect(); } catch (e) {} return; }
             var t = Math.max(0, (when || 0) - c._off);
             return dur === undefined ? start.call(n, t, offset || 0) : start.call(n, t, offset || 0, dur);
           };
