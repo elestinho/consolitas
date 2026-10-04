@@ -758,7 +758,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 79 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 80 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2215,7 +2215,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 79, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 80, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -3526,16 +3526,17 @@
       gm().loadState(a.state); closePause(); toast('Partida cargada (guardada ' + agoTxt(a.t) + ')', 3500); diag('partida cargada (' + a.state.length + ' bytes)');
     }).catch(function (e) { if (fromMenu) pStat('No se pudo cargar: ' + e.message, 1); else toast('No se pudo cargar: ' + e.message); diag('cargar partida falló: ' + e.message); });
   }
-  // A: Salir espera a que se escriban los guardados antes de cambiar de página
+  // A: Salir ya no hace autoguardado (Versión 80): quedan el guardado manual y el de cada 60 s.
+  // Solo se escribe el guardado interno del juego (lo que el juego guardó por sí mismo), para no perderlo.
   var leaving = false;
   function leave() {
     if (leaving) return; leaving = true;
     $('pause').style.display = 'flex'; ['pContinue', 'pQSave', 'pQLoad', 'pALoad', 'pExit'].forEach(function (id) { $(id).style.display = 'none'; });
-    pStat('Guardando tu partida antes de salir…');
+    pStat('Saliendo…');
     callGm('saveSaveFiles');
     var go = function () { cleanExit(); location.href = exitUrl(); };
-    var t = setTimeout(go, 4000);
-    Promise.all([backupSav(), autoSave()]).catch(function () {}).then(function () { clearTimeout(t); pStat('✓ Partida guardada'); setTimeout(go, 600); });
+    var t = setTimeout(go, 3000);
+    backupSav().catch(function () {}).then(function () { clearTimeout(t); go(); });
   }
   function isPlaying() { return document.body.classList.contains('playing'); }
 
