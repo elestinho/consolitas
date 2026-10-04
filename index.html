@@ -653,10 +653,11 @@
     <span class="go">›</span>
   </button>
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
+  <div class="row"><span>GBA con el emulador anticierres (prueba)</span><input type="checkbox" id="gbaCoreSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 66 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 67 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1922,7 +1923,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 66, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 67, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2726,6 +2727,8 @@
   });
   $('resumeSw').checked = lsGet('resume-game', '1') === '1';
   $('resumeSw').addEventListener('change', function () { lsSet('resume-game', $('resumeSw').checked ? '1' : '0'); });
+  $('gbaCoreSw').checked = lsGet('gba-core', '1') === '1';
+  $('gbaCoreSw').addEventListener('change', function () { lsSet('gba-core', $('gbaCoreSw').checked ? '1' : '0'); });
   $('btnSettings').onclick = function () { offRender(); $('bd').style.display = 'block'; $('settings').style.display = 'block'; };
   $('setClose').onclick = closeSheets;
   function showDiag() {
@@ -3458,6 +3461,31 @@
     var sc = document.createElement('script');
     sc.src = window.EJS_pathtodata + 'loader.js';
     sc.onerror = function () { log('No se pudo descargar el emulador. ¿Hay conexión?'); hideBoot(true); };
+    // GBA con el núcleo mGBA propio (memoria fija, sin OpenAL): prueba contra los cierres de Safari a los ~70 s.
+    // Se quita la copia del núcleo que guarda EmulatorJS para que no use la de la otra versión.
+    var ownCore = curConsole === 'gba' && lsGet('gba-core', '1') === '1';
+    if (ownCore) {
+      var base = new URL('cores/mgba/', location.href).href;
+      window.EJS_paths = { 'mgba-legacy-wasm.data': base + 'mgba-legacy-wasm.data', 'mgba-wasm.data': base + 'mgba-wasm.data' };
+    }
+    if (curConsole === 'gba') {
+      diag('núcleo de GBA: ' + (ownCore ? 'propio (memoria fija)' : 'el de EmulatorJS'));
+      var addLoader = function () { if (!sc.parentNode) document.body.appendChild(sc); };
+      setTimeout(addLoader, 1500);
+      try {
+        var cr = indexedDB.open('EmulatorJS-core', 1);
+        cr.onupgradeneeded = function () { if (!cr.result.objectStoreNames.contains('core')) cr.result.createObjectStore('core'); };
+        cr.onsuccess = function () {
+          try {
+            var t = cr.result.transaction(['core'], 'readwrite'), os = t.objectStore('core');
+            os.delete('mgba-legacy-wasm.data'); os.delete('mgba-wasm.data');
+            t.oncomplete = t.onerror = t.onabort = function () { cr.result.close(); addLoader(); };
+          } catch (x) { addLoader(); }
+        };
+        cr.onerror = addLoader;
+      } catch (x) { addLoader(); }
+      return;
+    }
     document.body.appendChild(sc);
   }
 

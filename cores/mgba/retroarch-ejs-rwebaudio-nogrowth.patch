@@ -1,0 +1,137 @@
+diff --git a/Makefile.common b/Makefile.common
+index 91c7917194..b483a59e9e 100644
+--- a/Makefile.common
++++ b/Makefile.common
+@@ -784,6 +784,9 @@ endif
+ ifeq ($(EMULATORJS), 1)
+    OBJ += input/drivers/emulatorjs_input.o \
+           frontend/drivers/platform_emulatorjs.o
++   ifeq ($(HAVE_RWEBAUDIO), 1)
++      OBJ += audio/drivers/rwebaudio.o
++   endif
+    ifeq ($(HAVE_AUDIOWORKLET), 1)
+       OBJ += audio/drivers/audioworklet.o
+    endif
+diff --git a/Makefile.emulatorjs b/Makefile.emulatorjs
+index fbf6fa57c0..d3c9e6c211 100644
+--- a/Makefile.emulatorjs
++++ b/Makefile.emulatorjs
+@@ -57,6 +57,12 @@ HAVE_NETPLAYDISCOVERY ?= 0
+ 
+ HAVE_AL ?= 1
+ 
++# 1 = default upstream behaviour; 0 = fixed INITIAL_MEMORY (custom iOS build)
++AUTO_MEMORY_GROWTH ?= 1
++
++# rwebaudio without asyncify: 1 = non-blocking 'fake block' via main loop timing, 0 = busywait
++RWEBAUDIO_FAKE_BLOCK ?= 1
++
+ # enables pthreads, requires special headers on the web server:
+ # see https://web.dev/articles/coop-coep
+ HAVE_THREADS ?= 0
+@@ -134,7 +140,10 @@ EXPORTED_FUNCTIONS = _main,_malloc,_free,_load_state, \
+                      _toggle_slow_motion,_set_sm_ratio,_toggle_rewind,_set_rewind_granularity,_get_current_frame_count,_ejs_set_keyboard_enabled, \
+                      _set_vsync,_set_video_rotation,_get_video_dimensions,EmscriptenSendCommand,EmscriptenReceiveCommandReply
+ 
+-EXPORTS := Browser,callMain,cwrap,getValue,HEAPU8,FS,PATH,ERRNO_CODES,AL,abort,ENV,stringToNewUTF8,UTF8ToString,Browser,EmscriptenSendCommand,EmscriptenReceiveCommandReply
++EXPORTS := Browser,callMain,cwrap,getValue,HEAPU8,FS,PATH,ERRNO_CODES,abort,ENV,stringToNewUTF8,UTF8ToString,Browser,EmscriptenSendCommand,EmscriptenReceiveCommandReply
++ifeq ($(HAVE_AL), 1)
++   EXPORTS := $(EXPORTS),AL
++endif
+ 
+ LIBS   := -s USE_ZLIB=1
+ CFLAGS := -s USE_ZLIB=1
+@@ -171,7 +180,7 @@ endif
+ 
+ LDFLAGS := -L. --no-heap-copy $(LIBS) -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(INITIAL_HEAP) -s NO_EXIT_RUNTIME=1 \
+            -s EXPORTED_RUNTIME_METHODS=$(EXPORTS) \
+-           -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
++           -s ALLOW_MEMORY_GROWTH=$(AUTO_MEMORY_GROWTH) -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
+            -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+            -lidbfs.js \
+            -s MODULARIZE=1 -s EXPORT_NAME="EJS_Runtime" \
+@@ -205,6 +214,13 @@ endif
+ ifeq ($(HAVE_RWEBAUDIO), 1)
+    LDFLAGS += --js-library emscripten/library_rwebaudio.js
+    DEFINES += -DHAVE_RWEBAUDIO
++   ifeq ($(ASYNC), 0)
++   ifeq ($(HAVE_THREADS), 0)
++   ifeq ($(RWEBAUDIO_FAKE_BLOCK), 1)
++      DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_BLOCK -DEMSCRIPTEN_AUDIO_FAKE_BLOCK -DEMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
++   endif
++   endif
++   endif
+ endif
+ 
+ ifeq ($(HAVE_AUDIOWORKLET), 1)
+diff --git a/emscripten/library_rwebaudio.js b/emscripten/library_rwebaudio.js
+index d97bfead0b..705a5ed562 100644
+--- a/emscripten/library_rwebaudio.js
++++ b/emscripten/library_rwebaudio.js
+@@ -10,6 +10,8 @@ var LibraryRWebAudio = {
+       PLATFORM_EMSCRIPTEN_BROWSER_CHROMIUM: 1,
+       context: null,
+       contextRunning: false,
++      gain: null,
++      gestureHooked: false,
+       nonblock: false,
+       endTime: 0,
+       latency: 0,
+@@ -47,6 +49,19 @@ var LibraryRWebAudio = {
+       RWebAudioStateChangeCB();
+       RWA.extraLatencySec = (_platform_emscripten_get_browser() == RWA.PLATFORM_EMSCRIPTEN_BROWSER_CHROMIUM) ? RWA.EXTRA_LATENCY_SEC_CHROME : RWA.EXTRA_LATENCY_SEC_NONCHROME;
+ 
++      /* EmulatorJS compatibility: route all audio through one GainNode and expose an
++       * OpenAL-like shim (Module.AL.currentCtx.{audioCtx,sources[].gain}) so the EJS
++       * volume slider, "click to resume" check and recording keep working. */
++      RWA.gain = RWA.context.createGain();
++      RWA.gain.connect(RWA.context.destination);
++      Module["AL"] = { currentCtx: { audioCtx: RWA.context, sources: [ { gain: RWA.gain } ] } };
++      /* resume the context on the first user gesture (Safari/iOS autoplay policy) */
++      if (!RWA.gestureHooked && typeof document != "undefined") {
++         RWA.gestureHooked = true;
++         var resume = function() { if (RWA.context && RWA.context.state != "running" && RWA.context.state != "closed") RWA.context.resume(); };
++         ["touchstart", "touchend", "mousedown", "click", "keydown"].forEach(function(ev) { document.addEventListener(ev, resume, true); });
++      }
++
+       return 1;
+    },
+ 
+@@ -64,7 +79,7 @@ var LibraryRWebAudio = {
+       buffer.getChannelData(1).set(HEAPF32.subarray(right >> 2, (right >> 2) + num_frames));
+       var bufferSource = RWA.context.createBufferSource();
+       bufferSource.buffer = buffer;
+-      bufferSource.connect(RWA.context.destination);
++      bufferSource.connect(RWA.gain || RWA.context.destination);
+ 
+       var currentTime = RWebAudioGetCurrentTime();
+       /* when empty, start rounded up to nearest 1 ms, add MIN_START_OFFSET_SEC */
+@@ -92,6 +107,7 @@ var LibraryRWebAudio = {
+       RWA.context.removeEventListener("statechange", RWebAudioStateChangeCB);
+       RWA.context.close();
+       RWA.contextRunning = false;
++      RWA.gain = null;
+    },
+ 
+    RWebAudioBufferSizeFrames: function() {
+diff --git a/frontend/drivers/platform_emulatorjs.c b/frontend/drivers/platform_emulatorjs.c
+index 7f3f4501d2..5cb8916f5d 100644
+--- a/frontend/drivers/platform_emulatorjs.c
++++ b/frontend/drivers/platform_emulatorjs.c
+@@ -316,6 +316,16 @@ unsigned platform_emscripten_get_min_sleep_ms(void)
+    return 5;
+ }
+ 
++enum platform_emscripten_browser platform_emscripten_get_browser(void)
++{
++   return emscripten_platform_data->browser;
++}
++
++enum platform_emscripten_os platform_emscripten_get_os(void)
++{
++   return emscripten_platform_data->os;
++}
++
+ bool platform_emscripten_has_async_atomics(void)
+ {
+    return emscripten_platform_data->has_async_atomics;
