@@ -238,28 +238,35 @@
   /* Editar la lista de una consola: ordenar, buscar y eliminar varios */
   .ibtn svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   #btnEdit.on { background:rgba(124,108,255,.28); color:#d9d3ff; }
-  #ebar { display:none; padding:2px 16px 6px; }
-  #ebar.on { display:block; animation:ebIn .22s ease; }
-  @keyframes ebIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
-  .etools { display:flex; gap:8px; }
-  .etool { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; height:38px; border:0; border-radius:12px;
-    background:rgba(255,255,255,.07); color:#d6d8e6; font-size:13.5px; font-weight:600; padding:0 8px; white-space:nowrap; }
-  .etool svg { width:17px; height:17px; flex:none; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
-  .etool.on { background:rgba(124,108,255,.24); color:#e2ddff; }
-  .etool.del { color:#ff9b9b; }
-  .etool.del.on { background:rgba(255,110,110,.18); }
-  #sortMenu { display:none; margin-top:8px; background:#161822; border-radius:14px; overflow:hidden; }
-  #sortMenu.on { display:block; }
+  #btnEdit.on { background:rgba(255,110,110,.2); color:#ff9b9b; }
+  /* Buscar y Ordenar: iconos a los lados del selector de vista; el menú y el buscador flotan por encima, sin mover nada */
+  #vbar { position:relative; display:flex; justify-content:center; align-items:center; gap:6px; padding:2px 16px 2px; z-index:30; }
+  #vbar > .vico, #vbar > .vseg { transition:opacity .18s ease; }
+  #vbar.q > .vico, #vbar.q > .vseg { opacity:0; pointer-events:none; }
+  .vico { width:40px; height:38px; border:0; border-radius:12px; background:none; color:var(--mut); display:flex; align-items:center; justify-content:center; position:relative; }
+  .vico svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .vico.on { color:#e6e2ff; background:rgba(255,255,255,.07); }
+  .vico.mod::after { content:""; position:absolute; top:8px; right:8px; width:6px; height:6px; border-radius:50%; background:var(--acc); }
+  #sortMenu { position:absolute; top:calc(100% + 6px); right:16px; min-width:230px; border-radius:16px; overflow:hidden;
+    background:rgba(30,32,46,.62); -webkit-backdrop-filter:blur(24px) saturate(1.6); backdrop-filter:blur(24px) saturate(1.6);
+    border:1px solid rgba(255,255,255,.09); box-shadow:0 18px 40px rgba(0,0,0,.45);
+    opacity:0; transform:scale(.92) translateY(-6px); transform-origin:top right; pointer-events:none; transition:opacity .18s ease, transform .2s ease; }
+  #sortMenu.on { opacity:1; transform:none; pointer-events:auto; }
   #sortMenu button { display:flex; width:100%; align-items:center; justify-content:space-between; border:0; background:none; color:var(--txt);
     font-size:15px; padding:13px 16px; text-align:left; }
-  #sortMenu button + button { border-top:1px solid rgba(255,255,255,.06); }
+  #sortMenu button + button { border-top:1px solid rgba(255,255,255,.07); }
   #sortMenu button::after { content:''; width:16px; height:16px; }
   #sortMenu button.on { color:#c9c1ff; font-weight:600; }
   #sortMenu button.on::after { content:'✓'; width:auto; height:auto; }
-  #eQ { display:none; width:100%; margin-top:8px; height:40px; border:0; border-radius:12px; background:#161822; color:var(--txt);
-    font-size:16px; padding:0 14px; outline:none; -webkit-appearance:none; appearance:none; }
-  #eQ.on { display:block; }
+  #qbar { position:absolute; left:16px; right:16px; top:2px; bottom:2px; display:flex; align-items:center; gap:8px; padding:0 4px 0 12px;
+    border-radius:13px; background:rgba(26,28,40,.94); -webkit-backdrop-filter:blur(24px); backdrop-filter:blur(24px); border:1px solid rgba(255,255,255,.09);
+    opacity:0; pointer-events:none; transition:opacity .18s ease; }
+  #qbar.on { opacity:1; pointer-events:auto; }
+  #qbar svg { width:17px; height:17px; flex:none; fill:none; stroke:var(--mut); stroke-width:1.8; stroke-linecap:round; }
+  #eQ { flex:1; min-width:0; height:36px; border:0; background:none; color:var(--txt); font-size:16px; padding:0; outline:none; -webkit-appearance:none; appearance:none; }
   #eQ::placeholder { color:#6f7390; }
+  #eQ::-webkit-search-cancel-button { display:none; }
+  #eQx { border:0; background:none; color:#c9c1ff; font-size:15px; font-weight:600; padding:0 10px; height:36px; }
   .gcard .chk { position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:2px solid rgba(255,255,255,.85);
     background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:800; }
   #cview.sel .gcard .chk { display:flex; z-index:2; }
@@ -275,13 +282,17 @@
   .gfav.unpop img { animation:favDrop .3s ease; }
   #cview.sel .gfav { display:none; }
   #cview.sel .gcard.picked .chk { background:#ff6b6b; border-color:#ff6b6b; }
-  #cview.sel .gcard.picked .chk::before { content:'✓'; }
+  #cview.sel .gcard.picked .chk::before, #cview.sel .gs.picked .chk::before { content:'✓'; }
+  .gs .chk { position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:2px solid rgba(255,255,255,.85); box-sizing:border-box;
+    background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:800; z-index:3; }
+  #cview.sel .gs .chk { display:flex; }
+  #cview.sel .gs.picked .chk { background:#ff6b6b; border-color:#ff6b6b; }
+  #cview.sel .gs:not(.picked) .bf::before { background:rgba(0,0,0,calc(var(--dim, 0) + .3)); }
   #cview.sel .gcard .cover { transition:transform .15s ease, opacity .15s ease; }
   #cview.sel .gcard:not(.picked) .cover { opacity:.72; }
   #cview.sel .gcard.picked .cover { transform:scale(.94); }
   #cview.sel { padding-bottom:calc(84px + env(safe-area-inset-bottom)); }
   /* Juegos en carrusel 3D (vista por defecto dentro de cada consola) o en cuadrícula */
-  #vbar { display:flex; justify-content:center; padding:2px 16px 2px; }
   .vseg { display:flex; gap:2px; padding:3px; border-radius:13px; background:rgba(255,255,255,.07); }
   .vseg button { display:flex; align-items:center; justify-content:center; border:0; background:none; color:var(--mut);
     width:44px; height:32px; padding:0; border-radius:10px; transition:background .2s ease, color .2s ease; }
@@ -302,33 +313,33 @@
   /* Cada juego es una caja de plástico en 3D: la portada delante, cantos a los lados y arriba, brillo y reflejo en el suelo */
   .gs .bx { --d:calc(var(--gw) * .13); position:relative; flex:none; transform-style:preserve-3d; transition:transform .2s ease;
     width:calc(var(--gw) * min(1, var(--ar, 1))); height:calc(var(--gw) / max(1, var(--ar, 1))); }
-  .gs .bx > * { position:absolute; -webkit-backface-visibility:hidden; backface-visibility:hidden; }
-  .gs .bf { inset:0; transform:translateZ(calc(var(--d) / 2)); border-radius:3px; }
-  .gs .bf::before, .gs .bf::after { content:""; position:absolute; inset:0; border-radius:3px; pointer-events:none; z-index:1; }
-  .gs .bf::before { background:rgba(0,0,0,var(--dim, 0)); }
-  .gs .bf::after { background:linear-gradient(112deg, rgba(255,255,255,.3) 0%, rgba(255,255,255,.08) 26%, transparent 40%, transparent 72%, rgba(255,255,255,.1) 100%);
+  .bx > * { position:absolute; -webkit-backface-visibility:hidden; backface-visibility:hidden; }
+  .bf { inset:0; transform:translateZ(calc(var(--d) / 2)); border-radius:3px; }
+  .bf::before, .bf::after { content:""; position:absolute; inset:0; border-radius:3px; pointer-events:none; z-index:1; }
+  .bf::before { background:rgba(0,0,0,var(--dim, 0)); }
+  .bf::after { background:linear-gradient(112deg, rgba(255,255,255,.3) 0%, rgba(255,255,255,.08) 26%, transparent 40%, transparent 72%, rgba(255,255,255,.1) 100%);
     box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.16), inset 0 0 0 3.5px rgba(0,0,0,.28); }
-  .gs .bf .gfav { z-index:2; }
-  .gs .cover { width:100%; height:100%; aspect-ratio:auto !important; border-radius:3px; --cr:3px; box-shadow:none; }
-  .gs .cover.fit .cimg { box-shadow:none; }
-  .gs .bsl, .gs .bsr { top:0; height:100%; width:var(--d); background:linear-gradient(90deg, var(--k0), var(--k2) 40%, var(--k1) 70%, var(--k0));
+  .bf .gfav { z-index:2; }
+  .bf .cover { width:100%; height:100%; aspect-ratio:auto !important; border-radius:3px; --cr:3px; box-shadow:none; }
+  .bf .cover.fit .cimg { box-shadow:none; }
+  .bsl, .bsr { top:0; height:100%; width:var(--d); background:linear-gradient(90deg, var(--k0), var(--k2) 40%, var(--k1) 70%, var(--k0));
     box-shadow:inset 0 0 0 999px rgba(0,0,0,var(--dim, 0)); }
-  .gs .bsl { left:calc(var(--d) / -2); transform:rotateY(-90deg); }
-  .gs .bsr { left:calc(100% - var(--d) / 2); transform:rotateY(90deg); }
-  .gs .bt { left:0; top:calc(var(--d) / -2); width:100%; height:var(--d); transform:rotateX(90deg);
+  .bsl { left:calc(var(--d) / -2); transform:rotateY(-90deg); }
+  .bsr { left:calc(100% - var(--d) / 2); transform:rotateY(90deg); }
+  .bt { left:0; top:calc(var(--d) / -2); width:100%; height:var(--d); transform:rotateX(90deg);
     background:linear-gradient(var(--k1), var(--k2) 45%, var(--k0)); box-shadow:inset 0 0 0 999px rgba(0,0,0,var(--dim, 0)); }
   .gs .brf { left:0; top:calc(100% + 4px); width:100%; height:100%; transform:translateZ(calc(var(--d) / 2)) scaleY(-1); opacity:.32;
     -webkit-mask-image:linear-gradient(transparent 55%, #000); mask-image:linear-gradient(transparent 55%, #000); pointer-events:none; }
   .gs .brf .cover .ini { display:none; }
   .gs.pressing .bx { transform:scale(.95); }
   /* Cantos de la caja según la consola: plástico oscuro (DS, Mega Drive, Game Gear, PS1), cartón claro (GB, GBA, SNES, N64) o negro (NES) */
-  #gcwrap { --k0:#101116; --k1:#23252d; --k2:#3a3d48; }
-  #gcwrap[data-c="md"], #gcwrap[data-c="gg"] { --k0:#050505; --k1:#141414; --k2:#2c2c2e; }
-  #gcwrap[data-c="psx"] { --k0:#060608; --k1:#111216; --k2:#3b3e48; }
-  #gcwrap[data-c="nes"] { --k0:#0a0a0a; --k1:#1b1b1b; --k2:#3a3a3a; }
-  #gcwrap[data-c="gba"], #gcwrap[data-c="gb"] { --k0:#a9a59b; --k1:#d8d4ca; --k2:#f6f4ee; }
-  #gcwrap[data-c="snes"] { --k0:#9c9ca4; --k1:#cfcfd6; --k2:#efeff3; }
-  #gcwrap[data-c="n64"] { --k0:#a7a7a7; --k1:#dcdcdc; --k2:#fafafa; }
+  #gcwrap, #ovfly { --k0:#101116; --k1:#23252d; --k2:#3a3d48; }
+  [data-kc="md"], [data-kc="gg"] { --k0:#050505; --k1:#141414; --k2:#2c2c2e; }
+  [data-kc="psx"] { --k0:#060608; --k1:#111216; --k2:#3b3e48; }
+  [data-kc="nes"] { --k0:#0a0a0a; --k1:#1b1b1b; --k2:#3a3a3a; }
+  [data-kc="gba"], [data-kc="gb"] { --k0:#a9a59b; --k1:#d8d4ca; --k2:#f6f4ee; }
+  [data-kc="snes"] { --k0:#9c9ca4; --k1:#cfcfd6; --k2:#efeff3; }
+  [data-kc="n64"] { --k0:#a7a7a7; --k1:#dcdcdc; --k2:#fafafa; }
   .gs img { -webkit-user-drag:none; pointer-events:none; }
   .gs:not(.on) .gfav { pointer-events:none; }
   #gcinfo { text-align:center; padding:0 26px 6px; margin-top:-8px; }
@@ -518,8 +529,16 @@
   .gcard img { -webkit-user-drag:none; pointer-events:none; }
   #ov { display:none; position:fixed; inset:0; z-index:1200; touch-action:none; }
   #ovbg { position:absolute; inset:0; background:rgba(7,8,13,.8); -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px); }
-  #ovfly { position:absolute; transform-origin:0 0; overflow:hidden; border-radius:26px; box-shadow:0 30px 70px rgba(0,0,0,.6); will-change:transform; }
-  #ovfly .cover { width:100%; height:100%; aspect-ratio:auto; border-radius:0; box-shadow:none; }
+  #ovfly { position:absolute; transform-origin:0 0; will-change:transform; }
+  #ovfly .cover { width:100%; height:100%; aspect-ratio:auto; border-radius:3px; box-shadow:none; }
+  /* Ficha: la portada es la caja 3D, girada como en el carrusel y meciéndose despacio */
+  #ovfly .bx { position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+  #ovfly.tilt .bx { transform:perspective(900px) rotateY(-24deg) rotateX(-7deg); animation:bsway 7s ease-in-out .7s infinite; }
+  @keyframes bsway { 0%, 100% { transform:perspective(900px) rotateY(-24deg) rotateX(-7deg); }
+    50% { transform:perspective(900px) rotateY(-10deg) rotateX(-3deg) translateY(-6px); } }
+  @media (prefers-reduced-motion: reduce) { #ovfly.tilt .bx { animation:none; } }
+  #ovfly::after { content:""; position:absolute; left:6%; right:6%; bottom:-22px; height:26px; border-radius:50%;
+    background:radial-gradient(closest-side, rgba(0,0,0,.6), transparent); pointer-events:none; }
   #ovinfo { position:absolute; text-align:center; }
   #ovt { font-size:15px; font-weight:600; color:#c9cce0; margin-bottom:14px; line-height:1.3; max-height:2.6em; overflow:hidden; }
   #ovplay { width:100%; border:0; border-radius:16px; padding:17px; font-size:19px; font-weight:700; color:#fff; background:var(--acc);
@@ -533,6 +552,17 @@
   #delT { font-weight:700; font-size:16px; line-height:1.3; margin-bottom:6px; }
   #delpanel p { margin:0 0 16px; color:var(--mut); font-size:13px; line-height:1.4; }
   #delYes { display:block; width:100%; border:0; border-radius:14px; padding:15px; margin-bottom:8px; font-size:16px; font-weight:700; background:#3a1e26; color:#ff8f8f; }
+  /* Pulsación larga en un juego: dos botoncitos, favorito (icono de su consola) y papelera */
+  #delIcons { display:flex; justify-content:center; gap:22px; margin:4px 0 16px; }
+  #delIcons button { width:62px; height:62px; border-radius:50%; border:0; display:flex; align-items:center; justify-content:center; transition:transform .15s ease, background .2s ease; }
+  #delIcons button:active { transform:scale(.92); }
+  #delFav { background:rgba(255,255,255,.08); }
+  #delFav img { width:30px; height:30px; object-fit:contain; filter:grayscale(1) brightness(1.7); opacity:.55; transition:filter .2s ease, opacity .2s ease; }
+  #delFav img.px { image-rendering:pixelated; }
+  #delFav.on { background:rgba(124,108,255,.28); }
+  #delFav.on img { filter:drop-shadow(0 1px 3px rgba(0,0,0,.5)); opacity:1; }
+  #delBin { background:#3a1e26; color:#ff8f8f; }
+  #delBin svg { width:27px; height:27px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   #delNo { display:block; width:100%; border:0; border-radius:14px; padding:15px; font-size:16px; font-weight:600; background:#262a3c; color:var(--txt); }
   #toast { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 84px); transform:translateX(-50%);
     z-index:100003; background:rgba(0,0,0,.85); color:#fff; padding:9px 15px; border-radius:999px;
@@ -631,31 +661,29 @@
     <div class="top">
       <button class="pill" id="btnBack" aria-label="Volver a las consolas">‹ Consolas</button>
       <h1 id="cTitle">Consola<span class="sub" id="cSub"></span></h1>
-      <button class="ibtn ghost" id="btnEdit" aria-label="Editar la lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg></button>
+      <button class="ibtn ghost" id="btnEdit" aria-label="Eliminar juegos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4.5h6V7"/></svg></button>
       <button class="ibtn acc" id="btnAddC" aria-label="Añadir juego">＋</button>
     </div>
-    <div id="ebar">
-      <div class="etools">
-        <button class="etool" id="eSort"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Ordenar</button>
-        <button class="etool" id="eFind"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>Buscar</button>
-        <button class="etool del" id="eSel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4.5h6V7"/></svg>Eliminar</button>
-      </div>
-      <div id="sortMenu">
+    <div id="cstatus" style="color:var(--mut);font-size:13px;padding:0 18px;min-height:18px"></div>
+    <div id="vbar" style="display:none">
+      <button class="vico" id="eFind" aria-label="Buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
+      <div class="vseg" id="vseg" role="group" aria-label="Cómo ver los juegos">
+      <button data-v="car" aria-label="Carrusel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="5" width="8" height="12" rx="1.6"/><path d="M5 7.5l-2 .8v7.4l2 .8M19 7.5l2 .8v7.4l-2 .8"/><path d="M8.5 20.5h7"/></svg></button>
+      <button data-v="grid" aria-label="Cuadrícula"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg></button>
+    </div>
+      <button class="vico" id="eSort" aria-label="Ordenar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg></button>
+      <div id="sortMenu" role="menu">
+        <button data-s="fav">Favoritos primero</button>
         <button data-s="az">De la A a la Z</button>
         <button data-s="za">De la Z a la A</button>
         <button data-s="rec">Jugados hace poco</button>
         <button data-s="new">Añadidos hace poco</button>
       </div>
-      <input id="eQ" type="search" placeholder="Buscar juego" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div id="qbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="eQ" type="search" placeholder="Buscar juego" autocomplete="off" autocorrect="off" spellcheck="false"><button id="eQx">Cancelar</button></div>
     </div>
-    <div id="cstatus" style="color:var(--mut);font-size:13px;padding:0 18px;min-height:18px"></div>
-    <div id="vbar" style="display:none"><div class="vseg" id="vseg" role="group" aria-label="Cómo ver los juegos">
-      <button data-v="car" aria-label="Carrusel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="5" width="8" height="12" rx="1.6"/><path d="M5 7.5l-2 .8v7.4l2 .8M19 7.5l2 .8v7.4l-2 .8"/><path d="M8.5 20.5h7"/></svg></button>
-      <button data-v="grid" aria-label="Cuadrícula"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg></button>
-    </div></div>
     <div id="gcwrap" style="display:none"><div id="gcar"></div><div id="gcinfo"><div class="gct"></div><div class="gcn"></div></div></div>
     <div id="games" class="ggrid"></div>
-    <div class="hint" id="gHint" style="display:none;padding:0 20px 30px">Toca un juego para abrirlo · mantén pulsado para eliminarlo</div>
+    <div class="hint" id="gHint" style="display:none;padding:0 20px 30px">Toca un juego para abrirlo · mantén pulsado para más opciones</div>
     <div id="hbrew" style="display:none"></div>
     <div id="selbar">
       <button id="selNo">Cancelar</button>
@@ -693,6 +721,7 @@
   <div id="delpanel">
     <div id="delT"></div>
     <p id="delP">La partida guardada del juego no se borra.</p>
+    <div id="delIcons"><button id="delFav" aria-label="Marcar como favorito"><img alt=""></button><button id="delBin" aria-label="Eliminar de la biblioteca"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4.5h6V7"/></svg></button></div>
     <button id="delYes">Eliminar de la biblioteca</button>
     <button id="delNo">Cancelar</button>
   </div>
@@ -717,7 +746,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 73 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 76 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1188,6 +1217,7 @@
     $('cview').style.display = ctxConsole ? 'block' : 'none';
     if (push) history.pushState({}, '', ctxConsole ? '?c=' + ctxConsole : location.pathname);
     if (editOn) setEdit(false);
+    if (selMode) { selMode = false; selIds = []; $('cview').classList.remove('sel'); $('btnEdit').classList.remove('on'); }
     if (ctxConsole) { renderGames(); window.scrollTo(0, 0); }
     else if (slideEls.length && TAB === 'cons') { requestAnimationFrame(recenter); }   // al volver, recolocar el carrusel
     else if (TAB === 'lib') renderLib();
@@ -1378,6 +1408,8 @@
 
   /* ====== Lista de juegos con portadas ====== */
   function hueOf(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
+  // Forma de las carátulas de cada consola, para los juegos sin portada (las cuadradas no hace falta)
+  var PH_AR = { n64: 1.38, snes: 1.38, nes: 0.72, md: 0.7, gg: 0.7 };
   function coverEl(g, small, lazy) {
     var d = document.createElement('div'); d.className = 'cover';
     if (g.cover) {
@@ -1392,7 +1424,8 @@
       };
       im.src = g.cover; d.appendChild(im);
     } else {
-      var h = hueOf(g.title);
+      var h = hueOf(g.title), par = PH_AR[g.console];
+      if (par) { d.setAttribute('data-ar', par); d.style.aspectRatio = par; }
       var ph = document.createElement('div'); ph.className = 'ph';
       ph.style.background = 'linear-gradient(140deg,hsl(' + h + ',55%,42%),hsl(' + ((h + 45) % 360) + ',55%,24%))';
       var words = g.title.split(/\s+/).filter(function (w) { return /[A-Za-z0-9]/.test(w); });
@@ -1413,11 +1446,12 @@
     $('gHint').style.display = 'none';
     $('btnEdit').style.display = list.length ? '' : 'none';
     var car = list.length && gView() === 'car' && !gridForced();
-    $('vbar').style.display = list.length && !gridForced() ? '' : 'none';
+    $('vbar').style.display = list.length ? '' : 'none';
     $('gcwrap').style.display = car ? '' : 'none'; box.style.display = car ? 'none' : '';
     if (!car) { gcEl.innerHTML = ''; gcSlides = []; }
     paintView();
     if (!list.length && editOn) setEdit(false);
+    if (!list.length && selMode) { selMode = false; selIds = []; $('cview').classList.remove('sel'); $('btnEdit').classList.remove('on'); }
     renderHomebrew();
     if (!list.length) {
       box.innerHTML = '<div class="empty">' + padImg(ctxConsole) + 'Aún no hay juegos de ' + c.short +
@@ -1429,16 +1463,18 @@
       return;
     }
     selIds = selIds.filter(function (id) { return byId[id] && byId[id].console === ctxConsole; });
-    list = favFirst(sortList(list));               // los favoritos primero; dentro de cada grupo, el orden elegido
+    list = sortList(list);                         // «Favoritos primero» es uno de los órdenes
     var q = fold($('eQ').value.trim());
     if (q && editOn) list = list.filter(function (g) { return fold(g.title).indexOf(q) >= 0; });
+    shownIds = list.map(function (g) { return g.id; });
     if (!list.length) {
       var e = document.createElement('div'); e.className = 'empty'; e.style.padding = '40px 20px';
       e.textContent = 'Ningún juego coincide con «' + $('eQ').value.trim() + '»'; box.appendChild(e);
     }
     if (car) {
-      $('gcwrap').setAttribute('data-c', ctxConsole);
+      $('gcwrap').setAttribute('data-kc', ctxConsole);
       buildGCar(list);
+      selCount();
       return;
     }
     list.forEach(function (g) {
@@ -1451,7 +1487,7 @@
       attachPress(b, g.id);
       box.appendChild(b);
     });
-    $('gHint').textContent = selMode ? 'Toca los juegos que quieras eliminar' : 'Toca un juego para abrirlo · mantén pulsado para eliminarlo';
+    $('gHint').textContent = selMode ? 'Toca los juegos que quieras eliminar' : 'Toca un juego para abrirlo · mantén pulsado para más opciones';
     $('gHint').style.display = 'block';
     selCount();
   }
@@ -1463,7 +1499,7 @@
   var gcEl = $('gcar'), gcSlides = [], gcList = [], gcN = 0, gcMid = 0, gcIdx = -1, gcCur = null, gcCurC = null;
   var gcRaf = 0, gcSettle = 0, gcTouch = false, gcLit = [];
   function gView() { return lsGet('gview', 'car') === 'grid' ? 'grid' : 'car'; }
-  function gridForced() { return selMode || $('eQ').classList.contains('on'); }
+  function gridForced() { return editOn; }     // al buscar, la cuadrícula
   function paintView() {
     var v = gView();
     Array.prototype.forEach.call($('vseg').children, function (b) { b.classList.toggle('on', b.getAttribute('data-v') === v); });
@@ -1471,6 +1507,16 @@
   Array.prototype.forEach.call($('vseg').children, function (b) {
     b.onclick = function () { if (gView() === b.getAttribute('data-v')) return; lsSet('gview', b.getAttribute('data-v')); renderGames(); };
   });
+  function boxEl(g, lazy) {                  // caja 3D: portada delante, cantos a los lados y arriba (el color lo da data-kc)
+    var bx = document.createElement('div'); bx.className = 'bx';
+    var bf = document.createElement('div'); bf.className = 'bf';
+    var cv = coverEl(g, false, lazy), im = cv.querySelector('img');
+    if (!im && cv.getAttribute('data-ar')) bx.style.setProperty('--ar', cv.getAttribute('data-ar'));
+    if (im) im.addEventListener('load', function () { if (cv.classList.contains('fit')) bx.style.setProperty('--ar', cv.getAttribute('data-ar')); });
+    bf.appendChild(cv); bx.appendChild(bf);
+    bx.insertAdjacentHTML('beforeend', '<i class="bsl"></i><i class="bsr"></i><i class="bt"></i>');
+    return bx;
+  }
   function buildGCar(list) {
     var keep = gcCurC === ctxConsole ? gcCur : lsGet('gcar-' + ctxConsole, '');
     var copies = list.length < 2 ? 1 : Math.max(3, Math.ceil(40 / list.length) | 1);
@@ -1480,16 +1526,15 @@
       var g = list[pos % gcN], b = document.createElement('button'); b.className = 'gs'; b.setAttribute('data-id', g.id);
       if (pos < gcMid || pos >= gcMid + gcN) { b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1; }
       var t = document.createElement('div'); t.className = 'g3';
-      var bx = document.createElement('div'); bx.className = 'bx';
-      var bf = document.createElement('div'); bf.className = 'bf';
-      var cv = coverEl(g, false, true), im = cv.querySelector('img');
-      if (im) im.addEventListener('load', function () { if (cv.classList.contains('fit')) bx.style.setProperty('--ar', cv.getAttribute('data-ar')); });
-      bf.appendChild(cv); bf.appendChild(gFavEl(g)); bx.appendChild(bf);
-      bx.insertAdjacentHTML('beforeend', '<i class="bsl"></i><i class="bsr"></i><i class="bt"></i>');
+      var bx = boxEl(g, true), bf = bx.firstChild, k = document.createElement('div'); k.className = 'chk';
+      bf.appendChild(gFavEl(g)); bf.appendChild(k);
+      if (selIds.indexOf(g.id) >= 0) b.classList.add('picked');
       var rf = document.createElement('div'); rf.className = 'brf'; rf.setAttribute('aria-hidden', 'true'); rf.appendChild(coverEl(g, true, true)); bx.appendChild(rf);
       t.appendChild(bx); b.appendChild(t);
       b.addEventListener('click', function (e) {     // una portada de los lados: primero se trae al centro
-        if (pos !== gcIdx) { e.stopImmediatePropagation(); e.preventDefault(); gcGo(pos, true); }
+        if (pos === gcIdx) return;
+        gcGo(pos, true);
+        if (!selMode) { e.stopImmediatePropagation(); e.preventDefault(); }   // al elegir para eliminar, se marca igualmente
       });
       attachPress(b, g.id);
       gcEl.appendChild(b); gcSlides.push(b);
@@ -1566,12 +1611,13 @@
     var p = PADS[cid];
     return p ? '<img class="pad ' + p[1] + '" alt="" src="' + p[0] + '">' : '<div class="big">🎮</div>';
   }
-  var editOn = false, selMode = false, selIds = [];
-  var SORTS = { az: 'A-Z', za: 'Z-A', rec: 'Jugados', 'new': 'Añadidos' };
-  function sortMode() { var m = lsGet('sort', 'az'); return SORTS[m] ? m : 'az'; }
+  var editOn = false, selMode = false, selIds = [], shownIds = [];   // editOn: buscando
+  var SORTS = { fav: 'Favoritos primero', az: 'A-Z', za: 'Z-A', rec: 'Jugados hace poco', 'new': 'Añadidos hace poco' };
+  function sortMode() { var m = lsGet('sort', 'fav'); return SORTS[m] ? m : 'fav'; }
   function fold(t) { return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
   function sortList(list) {
     var m = sortMode(), out = list.slice();          // games ya viene de la A a la Z
+    if (m === 'fav') return favFirst(out);
     if (m === 'za') out.reverse();
     else if (m === 'rec') {
       var rec = recentIds();
@@ -1588,70 +1634,63 @@
   function paintSort() {
     var m = sortMode();
     Array.prototype.forEach.call($('sortMenu').children, function (b) { b.classList.toggle('on', b.getAttribute('data-s') === m); });
-    $('eSort').lastChild.nodeValue = m === 'az' ? 'Ordenar' : SORTS[m];
+    $('eSort').classList.toggle('mod', m !== 'fav');   // un puntito si no es el orden de siempre
   }
-  function setEdit(on) {
+  function closeSort() { $('sortMenu').classList.remove('on'); $('eSort').classList.remove('on'); }
+  function setEdit(on) {                       // abrir o cerrar el buscador (flota sobre la fila de iconos)
     editOn = on;
-    $('btnEdit').classList.toggle('on', on);
-    $('ebar').classList.toggle('on', on);
-    if (!on) {
-      $('sortMenu').classList.remove('on'); $('eSort').classList.remove('on');
-      $('eQ').classList.remove('on'); $('eFind').classList.remove('on'); $('eQ').value = ''; $('eQ').blur();
-      setSel(false);
-    }
-    paintSort();
+    $('qbar').classList.toggle('on', on); $('eFind').classList.toggle('on', on); $('vbar').classList.toggle('q', on);
+    closeSort();
+    if (on) { $('eQ').placeholder = 'Buscar en ' + CONSOLES[ctxConsole].name; $('eQ').focus(); }
+    else { $('eQ').value = ''; $('eQ').blur(); }
   }
   function setSel(on) {
     var was = selMode;
     selMode = on; selIds = [];
     $('cview').classList.toggle('sel', on);
-    $('eSel').classList.toggle('on', on);
+    $('btnEdit').classList.toggle('on', on);
+    closeSort();
     if (on !== was && ctxConsole) renderGames();
   }
   function selCount() {
     var n = selIds.length;
     $('selDel').disabled = !n;
     $('selDel').textContent = n ? 'Eliminar (' + n + ')' : 'Eliminar';
-    var vis = document.querySelectorAll('#games .gcard');
-    $('selAll').textContent = vis.length && n >= vis.length ? 'Ninguno' : 'Todos';
+    $('selAll').textContent = shownIds.length && n >= shownIds.length ? 'Ninguno' : 'Todos';
+  }
+  function paintPicked() {                     // en la cuadrícula y en todas las copias del carrusel
+    Array.prototype.forEach.call(document.querySelectorAll('#games .gcard, #gcar .gs'), function (e) {
+      e.classList.toggle('picked', selIds.indexOf(e.getAttribute('data-id')) >= 0);
+    });
   }
   function togglePick(b, id) {
     var i = selIds.indexOf(id);
     if (i >= 0) selIds.splice(i, 1); else selIds.push(id);
-    b.classList.toggle('picked', i < 0);
-    selCount();
+    paintPicked(); selCount();
   }
-  $('btnEdit').onclick = function () { setEdit(!editOn); };
-  $('eSort').onclick = function () {
+  $('btnEdit').onclick = function () { if (editOn) setEdit(false); setSel(!selMode); };
+  $('eSort').onclick = function (e) {
+    e.stopPropagation();
     var on = !$('sortMenu').classList.contains('on');
     $('sortMenu').classList.toggle('on', on); this.classList.toggle('on', on);
   };
+  document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('#sortMenu')) closeSort(); });
   Array.prototype.forEach.call($('sortMenu').children, function (b) {
     b.onclick = function () {
-      lsSet('sort', b.getAttribute('data-s')); paintSort();
-      $('sortMenu').classList.remove('on'); $('eSort').classList.remove('on');
+      lsSet('sort', b.getAttribute('data-s')); paintSort(); closeSort();
       renderGames();
     };
   });
-  $('eFind').onclick = function () {
-    var on = !$('eQ').classList.contains('on');
-    $('eQ').classList.toggle('on', on); this.classList.toggle('on', on);
-    if (on) { $('eQ').placeholder = 'Buscar en ' + CONSOLES[ctxConsole].name; $('eQ').focus(); renderGames(); }
-    else { $('eQ').value = ''; $('eQ').blur(); renderGames(); }
-  };
+  $('eFind').onclick = function () { setEdit(!editOn); renderGames(); };
+  $('eQx').onclick = function () { setEdit(false); renderGames(); };
   $('eQ').addEventListener('input', function () { renderGames(); });
   $('eQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('eQ').blur(); });
-  $('eSel').onclick = function () { setSel(!selMode); };
   $('selNo').onclick = function () { setSel(false); };
   $('selAll').onclick = function () {
-    var cards = document.querySelectorAll('#games .gcard'), all = selIds.length >= cards.length;
-    selIds = [];
-    Array.prototype.forEach.call(cards, function (b) {
-      b.classList.toggle('picked', !all);
-      if (!all) selIds.push(b.getAttribute('data-id'));
-    });
-    selCount();
+    selIds = selIds.length >= shownIds.length ? [] : shownIds.slice();
+    paintPicked(); selCount();
   };
+  paintSort();
   $('selDel').onclick = function () { if (selIds.length) openDel(selIds.slice()); };
 
   /* ====== Juegos favoritos: el icono de su consola en la esquina de la portada; van primero en las listas ====== */
@@ -1904,6 +1943,7 @@
     for (var i = 0; i < all.length; i++) if (all[i].offsetParent) return all[i].querySelector('.cover');
     return null;
   }
+  function boxOrCover(c) { return c.closest('.bx') || c; }
   function ovTarget() {
     var W = window.innerWidth, H = window.innerHeight;
     var S = Math.min(W * 0.74, 340, H * 0.44), block = S + 20 + 44 + 14 + 56;
@@ -1914,13 +1954,16 @@
     var g = byId[id]; if (!g || ovId) return;
     var srcEl = coverOf(id), ov = $('ov'), fly = $('ovfly'), info = $('ovinfo'), bg = $('ovbg'), t = ovTarget();
     ovId = id; ovBusy = false;
-    fly.innerHTML = ''; fly.appendChild(coverEl(g, false));
+    fly.innerHTML = ''; fly.appendChild(boxEl(g, false)); fly.setAttribute('data-kc', g.console);
+    var fromCar = !!(srcEl && srcEl.closest('#gcar'));
+    fly.classList.toggle('tilt', fromCar);    // desde el carrusel ya va girada; desde la cuadrícula gira mientras sube
     $('ovt').textContent = g.title;
     $('ovload').style.display = 'none';
     getAuto('quick:' + id).then(function (a) { if (a && a.state && ovId === id) $('ovload').style.display = 'block'; }).catch(function () {});
     var ar = srcEl ? parseFloat(srcEl.getAttribute('data-ar')) || 1 : 1;   // portada no cuadrada: la ficha toma su forma
     var fw = ar > 1 ? t.size : t.size * ar, fh = ar > 1 ? t.size / ar : t.size, fl = t.left + (t.size - fw) / 2, ft = t.top + (t.size - fh) / 2;
     fly.style.left = fl + 'px'; fly.style.top = ft + 'px'; fly.style.width = fw + 'px'; fly.style.height = fh + 'px';
+    fly.style.setProperty('--d', (Math.max(fw, fh) * .1).toFixed(1) + 'px');
     info.style.left = t.left + 'px'; info.style.width = t.size + 'px'; info.style.top = (ft + fh + 20) + 'px';
     [fly, info, bg].forEach(cancelAnims);
     ov.style.display = 'block';
@@ -1928,7 +1971,8 @@
     if (!canAnimate()) return;
     var r = srcEl ? srcEl.getBoundingClientRect() : { left: t.left, top: t.top + 40, width: t.size * 0.9 };
     var sc = r.width / fw, dx = r.left - fl, dy = r.top - ft;
-    if (srcEl) srcEl.style.visibility = 'hidden';
+    if (srcEl) boxOrCover(srcEl).style.visibility = 'hidden';
+    if (!fromCar) requestAnimationFrame(function () { requestAnimationFrame(function () { if (ovId === id) fly.classList.add('tilt'); }); });
     bg.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, fill: 'both' });
     fly.animate([
       { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + sc + ')', borderRadius: (18 / sc) + 'px' },
@@ -1945,11 +1989,12 @@
     function done() {
       if (finished) return; finished = true;
       ov.style.display = 'none'; [fly, info, bg].forEach(cancelAnims);
-      var c = coverOf(id); if (c) c.style.visibility = '';
+      var c = coverOf(id); if (c) boxOrCover(c).style.visibility = '';
       ovId = null; ovBusy = false;
     }
     if (!canAnimate()) { done(); return; }
     var srcEl = coverOf(id), r = srcEl ? srcEl.getBoundingClientRect() : null;
+    if (!(srcEl && srcEl.closest('#gcar'))) fly.classList.remove('tilt');   // vuelve plana a la cuadrícula
     var sc = r ? r.width / fly.offsetWidth : 0.9, dx = r ? r.left - fly.offsetLeft : 0, dy = r ? r.top - fly.offsetTop : 40;
     var a = fly.animate([
       { transform: 'translate(0px,0px) scale(1)', borderRadius: '26px', opacity: 1 },
@@ -1971,17 +2016,17 @@
     b.addEventListener('pointerdown', function (e) {
       longDone = false; pressX = e.clientX; pressY = e.clientY;
       pressAnim = setTimeout(function () { b.classList.add('pressing'); }, 140);
-      if (selMode && b.closest('#games')) return;
+      if (selMode && b.closest('#games, #gcar')) return;
       pressT = setTimeout(function () { longDone = true; cancel(); openDel([id]); }, 520);
     });
     b.addEventListener('pointermove', function (e) {
       if (pressT && (Math.abs(e.clientX - pressX) > 10 || Math.abs(e.clientY - pressY) > 10)) cancel();
     });
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { b.addEventListener(ev, cancel); });
-    b.addEventListener('contextmenu', function (e) { e.preventDefault(); if (selMode && b.closest('#games')) return; if (!longDone) { cancel(); longDone = true; openDel([id]); } });
+    b.addEventListener('contextmenu', function (e) { e.preventDefault(); if (selMode && b.closest('#games, #gcar')) return; if (!longDone) { cancel(); longDone = true; openDel([id]); } });
     b.addEventListener('click', function (e) {
       if (longDone) { longDone = false; e.preventDefault(); return; }
-      if (selMode && b.closest('#games')) { togglePick(b, id); return; }
+      if (selMode && b.closest('#games, #gcar')) { togglePick(b, id); return; }
       lastCard = b; openOverlay(id);
     });
   }
@@ -1992,6 +2037,14 @@
     $('delT').textContent = one ? byId[ids[0]].title : '¿Eliminar ' + ids.length + ' juegos?';
     $('delP').textContent = one ? 'La partida guardada del juego no se borra.' : 'Las partidas guardadas de estos juegos no se borran.';
     $('delYes').textContent = one ? 'Eliminar de la biblioteca' : 'Eliminar ' + ids.length + ' juegos';
+    $('delIcons').style.display = one ? '' : 'none';
+    $('delYes').style.display = one ? 'none' : '';    // varios: se confirma con el botón de texto
+    if (one) {
+      var g = byId[ids[0]], on = isGFav(g), fi = $('delFav').firstChild;
+      fi.src = FAV_IMG[g.console] || STAR_IMG; fi.className = FAV_IMG[g.console] ? '' : 'px';
+      $('delFav').classList.toggle('on', on);
+      $('delFav').setAttribute('aria-label', on ? 'Quitar de favoritos' : 'Marcar como favorito');
+    }
     $('delpop').style.display = 'flex';
     if (canAnimate()) {
       $('delbg').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
@@ -2000,7 +2053,15 @@
   }
   function closeDel() { $('delpop').style.display = 'none'; delId = null; }
   $('delNo').onclick = closeDel;
+  $('delFav').onclick = function () {
+    var id = delId && delId[0]; if (!id) return;
+    closeDel();
+    var f = document.querySelector('#gcar .gs.on .gfav[data-id="' + id + '"]') || document.querySelector('.gcard .gfav[data-id="' + id + '"]') || document.createElement('span');
+    toggleGFav(id, f);
+    toast(isGFav(byId[id]) ? 'Añadido a favoritos' : 'Quitado de favoritos');
+  };
   $('delbg').onclick = closeDel;
+  $('delBin').onclick = function () { $('delYes').onclick(); };
   $('delYes').onclick = function () {
     var ids = delId; if (!ids) return;
     closeDel();
@@ -2094,7 +2155,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 73, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 76, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
