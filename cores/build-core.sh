@@ -14,7 +14,7 @@ case $core in
   fceumm)           repo=libretro-fceumm;         rev=d9d7e1412; bp=.;        mk=Makefile.libretro; lic=Copying;     heap=$((256*MB));  var="wasm legacy";;
   snes9x)           repo=snes9x;                  rev=6ca2343e5; bp=libretro; mk=Makefile;          lic=LICENSE;     heap=$((256*MB));  var="wasm legacy";;
   genesis_plus_gx)  repo=Genesis-Plus-GX;         rev=594cdf3a6; bp=.;        mk=Makefile.libretro; lic=LICENSE.txt; heap=$((1024*MB)); var="wasm legacy";;
-  melonds)          repo=melonDS;                 rev=18a057d37; bp=.;        mk=Makefile;          lic=LICENSE;     heap=$((512*MB));  var="wasm legacy thread thread-legacy";;
+  melonds)          repo=melonDS;                 rev=18a057d37; bp=.;        mk=Makefile;          lic=LICENSE;     heap=$((1024*MB)); var="wasm legacy thread thread-legacy";;
   pcsx_rearmed)     repo=pcsx_rearmed;            rev=f29871dde; bp=.;        mk=Makefile.libretro; lic=COPYING;     heap=$((1024*MB)); var="wasm legacy thread thread-legacy"; chd=0;;
   *) echo "unknown core $core"; exit 1;;
 esac
@@ -29,6 +29,8 @@ S=$C/src/$core
 if [ ! -d $S ]; then
   git clone -q --filter=blob:none https://github.com/EmulatorJS/$repo $S
   (cd $S && git checkout -q $rev && git submodule update -q --init --recursive || true)
+  # arreglos propios de un núcleo (melonds-fullpath.patch: el núcleo lee la ROM él mismo, una sola copia en memoria)
+  for p in $C/$core-*.patch; do [ -f "$p" ] && (cd $S && git apply "$p"); done
 fi
 uses_legacy=$(grep -l EMULATORJS_LEGACY $S/$bp/Makefile* 2>/dev/null | head -1 || true)
 lastcore=""
