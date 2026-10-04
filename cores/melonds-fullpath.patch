@@ -1,0 +1,62 @@
+diff --git a/src/libretro/libretro.cpp b/src/libretro/libretro.cpp
+index 2207849..4ba02af 100644
+--- a/src/libretro/libretro.cpp
++++ b/src/libretro/libretro.cpp
+@@ -39,6 +39,7 @@ retro_video_refresh_t video_cb;
+ std::string save_path;
+ 
+ retro_game_info* cached_info;
++static std::string rom_path;
+ 
+ GPU::RenderSettings video_settings;
+ 
+@@ -116,7 +117,7 @@ void retro_get_system_info(struct retro_system_info *info)
+ #define GIT_VERSION ""
+ #endif
+    info->library_version  = MELONDS_VERSION GIT_VERSION;
+-   info->need_fullpath    = false;
++   info->need_fullpath    = true;   // consolitas: the core reads the ROM itself, so it is in memory once (big ROMs like 512 MB)
+    info->valid_extensions = "nds|ids|dsi";
+ }
+ 
+@@ -230,8 +231,14 @@ void retro_set_environment(retro_environment_t cb)
+    environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK, &update_display_cb);
+ 
+    static const struct retro_system_content_info_override content_overrides[] = {
++      // consolitas: the core reads .nds/.dsi itself (one copy in memory, big ROMs fit); the GBA slot-2 ROM stays in memory as before
+       {
+-         "nds|dsi|gba",
++         "nds|dsi|ids",
++         true,
++         false
++      },
++      {
++         "gba",
+          false,
+          true
+       },
+@@ -319,7 +326,10 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
+ void retro_reset(void)
+ {
+    NDS::Reset();
+-   NDS::LoadROM((u8*)cached_info->data, cached_info->size, save_path.c_str(), Config::DirectBoot);
++   if (rom_path.empty())
++      NDS::LoadROM((u8*)cached_info->data, cached_info->size, save_path.c_str(), Config::DirectBoot);
++   else
++      NDS::LoadROM(rom_path.c_str(), save_path.c_str(), Config::DirectBoot);
+ }
+ 
+ static void check_variables(bool init)
+@@ -899,7 +909,11 @@ static bool _handle_load_game(unsigned type, const struct retro_game_info *info)
+    SPU::SetInterpolation(Config::AudioInterp);
+    NDS::SetConsoleType(Config::ConsoleType);
+    Frontend::LoadBIOS();
+-   NDS::LoadROM((u8*)info->data, info->size, save_path.c_str(), Config::DirectBoot);
++   rom_path = (!info->data && info->path) ? info->path : "";
++   if (info->data)
++      NDS::LoadROM((u8*)info->data, info->size, save_path.c_str(), Config::DirectBoot);
++   else
++      NDS::LoadROM(rom_path.c_str(), save_path.c_str(), Config::DirectBoot);
+    
+    if (type == SLOT_1_2_BOOT)
+    {

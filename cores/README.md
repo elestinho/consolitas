@@ -18,9 +18,13 @@ Se pueden desactivar en Ajustes › «Emuladores anticierres».
 | NES | fceumm | 256 MB | libretro-fceumm @d9d7e1412 | GPL-2.0 |
 | Super Nintendo | snes9x | 256 MB | snes9x @6ca2343e5 | licencia de Snes9x (uso no comercial) |
 | Mega Drive / Game Gear | genesis_plus_gx | 1024 MB | Genesis-Plus-GX @594cdf3a6 | licencia de Genesis Plus GX (uso no comercial) |
-| Nintendo DS | melonds | 512 MB | melonDS @18a057d37 | GPL-3.0 |
+| Nintendo DS | melonds | 1024 MB | melonDS @18a057d37 | GPL-3.0 |
 | PlayStation | pcsx_rearmed | 1024 MB | pcsx_rearmed @f29871dde | GPL-2.0 |
 
 Común a todos: Emscripten 4.0.8 y RetroArch del fork de EmulatorJS (`next` @6dd435393, GPL-3.0) con el
 parche `retroarch-ejs-rwebaudio-nogrowth.patch`. Cada `.data` (archivo 7z) lleva su `license.txt`,
 `build.json` y `core.json` originales. `build-core.sh <núcleo>` los vuelve a generar.
+
+melonDS lleva además `melonds-fullpath.patch`: el núcleo lee la ROM él mismo en vez de recibirla ya cargada,
+así el juego está una sola vez en memoria. Con la memoria fija, los juegos más grandes de la DS (512 MB, como
+Kingdom Hearts 358/2 Days) no cabían y salía «Failed to start game».
