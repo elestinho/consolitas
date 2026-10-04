@@ -297,10 +297,29 @@
     scroll-snap-align:center; scroll-snap-stop:always; border:0; background:none; padding:0; color:inherit;
     -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
   .gs .g3 { flex:none; width:var(--gw); height:var(--gw); display:flex; align-items:flex-end; justify-content:center;
-    transform-origin:50% 100%; visibility:hidden; will-change:transform; }
-  .gs .cover { flex:none; width:calc(var(--gw) * min(1, var(--ar, 1))); height:calc(var(--gw) / max(1, var(--ar, 1))); aspect-ratio:auto;
-    border-radius:14px; --cr:14px; -webkit-box-reflect:below 3px linear-gradient(transparent 58%, rgba(255,255,255,.28)); }
-  .gs.pressing .cover { transform:scale(.95); }
+    transform-origin:50% 100%; transform-style:preserve-3d; visibility:hidden; will-change:transform; }
+  /* Cada juego es una caja de plástico en 3D: la portada delante, cantos a los lados y arriba, brillo y reflejo en el suelo */
+  .gs .bx { --d:calc(var(--gw) * .13); position:relative; flex:none; transform-style:preserve-3d; transition:transform .2s ease;
+    width:calc(var(--gw) * min(1, var(--ar, 1))); height:calc(var(--gw) / max(1, var(--ar, 1))); }
+  .gs .bx > * { position:absolute; -webkit-backface-visibility:hidden; backface-visibility:hidden; }
+  .gs .bf { inset:0; transform:translateZ(calc(var(--d) / 2)); border-radius:3px; }
+  .gs .bf::before, .gs .bf::after { content:""; position:absolute; inset:0; border-radius:3px; pointer-events:none; z-index:1; }
+  .gs .bf::before { background:rgba(0,0,0,var(--dim, 0)); }
+  .gs .bf::after { background:linear-gradient(112deg, rgba(255,255,255,.3) 0%, rgba(255,255,255,.08) 26%, transparent 40%, transparent 72%, rgba(255,255,255,.1) 100%);
+    box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.16), inset 0 0 0 3.5px rgba(0,0,0,.28); }
+  .gs .bf .gfav { z-index:2; }
+  .gs .cover { width:100%; height:100%; aspect-ratio:auto !important; border-radius:3px; --cr:3px; box-shadow:none; }
+  .gs .cover.fit .cimg { box-shadow:none; }
+  .gs .bsl, .gs .bsr { top:0; height:100%; width:var(--d); background:linear-gradient(90deg, #15161b, #3a3d48 40%, #23252d 70%, #101116);
+    box-shadow:inset 0 0 0 999px rgba(0,0,0,var(--dim, 0)); }
+  .gs .bsl { left:calc(var(--d) / -2); transform:rotateY(-90deg); }
+  .gs .bsr { left:calc(100% - var(--d) / 2); transform:rotateY(90deg); }
+  .gs .bt { left:0; top:calc(var(--d) / -2); width:100%; height:var(--d); transform:rotateX(90deg);
+    background:linear-gradient(#2a2c34, #4a4d59 45%, #24262d); box-shadow:inset 0 0 0 999px rgba(0,0,0,var(--dim, 0)); }
+  .gs .brf { left:0; top:calc(100% + 4px); width:100%; height:100%; transform:translateZ(calc(var(--d) / 2)) scaleY(-1); opacity:.32;
+    -webkit-mask-image:linear-gradient(transparent 55%, #000); mask-image:linear-gradient(transparent 55%, #000); pointer-events:none; }
+  .gs .brf .cover .ini { display:none; }
+  .gs.pressing .bx { transform:scale(.95); }
   .gs img { -webkit-user-drag:none; pointer-events:none; }
   .gs:not(.on) .gfav { pointer-events:none; }
   #gcinfo { text-align:center; padding:0 26px 6px; margin-top:-8px; }
@@ -1453,9 +1472,14 @@
       var g = list[pos % gcN], b = document.createElement('button'); b.className = 'gs'; b.setAttribute('data-id', g.id);
       if (pos < gcMid || pos >= gcMid + gcN) { b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1; }
       var t = document.createElement('div'); t.className = 'g3';
+      var bx = document.createElement('div'); bx.className = 'bx';
+      var bf = document.createElement('div'); bf.className = 'bf';
       var cv = coverEl(g, false, true), im = cv.querySelector('img');
-      if (im) im.addEventListener('load', function () { if (cv.classList.contains('fit')) cv.style.setProperty('--ar', cv.getAttribute('data-ar')); });
-      cv.appendChild(gFavEl(g)); t.appendChild(cv); b.appendChild(t);
+      if (im) im.addEventListener('load', function () { if (cv.classList.contains('fit')) bx.style.setProperty('--ar', cv.getAttribute('data-ar')); });
+      bf.appendChild(cv); bf.appendChild(gFavEl(g)); bx.appendChild(bf);
+      bx.insertAdjacentHTML('beforeend', '<i class="bsl"></i><i class="bsr"></i><i class="bt"></i>');
+      var rf = document.createElement('div'); rf.className = 'brf'; rf.setAttribute('aria-hidden', 'true'); rf.appendChild(coverEl(g, true, true)); bx.appendChild(rf);
+      t.appendChild(bx); b.appendChild(t);
       b.addEventListener('click', function (e) {     // una portada de los lados: primero se trae al centro
         if (pos !== gcIdx) { e.stopImmediatePropagation(); e.preventDefault(); gcGo(pos, true); }
       });
@@ -1490,8 +1514,9 @@
       if (Math.abs(d) < .03) d = 0;           // la del centro, de frente del todo aunque el scroll quede a medio píxel
       var ad = Math.abs(d), t = Math.max(-1, Math.min(1, d)), el = gcSlides[i].firstChild;
       el.style.transform = 'perspective(800px) translateX(' + (t * 30 - (d - t) * 16).toFixed(2) + '%) translateZ(' +
-        (-(Math.min(ad, 1) * 150 + Math.max(0, ad - 1) * 70)).toFixed(1) + 'px) rotateY(' + (-t * 50).toFixed(2) + 'deg)';
-      el.style.filter = ad < .02 ? '' : 'brightness(' + (1 - Math.min(ad, 2) * .24).toFixed(3) + ')';
+        (-(Math.min(ad, 1) * 150 + Math.max(0, ad - 1) * 70)).toFixed(1) + 'px) rotateY(' + (-t * 50 - (1 - Math.abs(t)) * 24).toFixed(2) +
+        'deg) rotateX(-7deg)';                // la del centro algo girada: se ven el canto y la tapa de la caja
+      el.style.setProperty('--dim', (Math.min(ad, 2) * .26).toFixed(3));
       el.style.visibility = 'visible';
       gcSlides[i].style.zIndex = 50 - Math.round(ad * 10);
       lit.push(i);
