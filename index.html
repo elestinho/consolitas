@@ -96,7 +96,6 @@
   .mrow.on .r { border-color:#7fd4ff; background:linear-gradient(90deg,rgba(255,255,255,.16),rgba(255,255,255,.04)); box-shadow:0 0 18px rgba(127,212,255,.35); }
   .mrow .cover { width:52px; height:52px; flex:none; aspect-ratio:auto; border-radius:6px; box-shadow:0 3px 8px rgba(0,0,0,.4); --cr:5px; }
   .mrow .cover .ini { font-size:17px; }
-  .mrow .shot { width:70px; height:52px; max-width:none; flex:none; border-radius:5px; box-shadow:0 3px 8px rgba(0,0,0,.4); }
   .mrow .tx { flex:1; min-width:0; }
   .mrow .tx b { display:block; font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mrow .tx span { display:block; font-size:12px; color:#cfe0ff; margin-top:2px; }
@@ -506,8 +505,18 @@
   #pause .ptile .pc { position:relative; width:58px; height:58px; }
   #pause .ptile .pc .cover { width:58px; height:58px; aspect-ratio:auto; border-radius:9px; box-shadow:0 4px 10px rgba(0,0,0,.45); --cr:7px; }
   #pause .ptile .pc .cover .ini { font-size:18px; }
-  #pause .ptile .pc.hs { width:auto; }
-  .shot { display:block; height:58px; width:auto; max-width:96px; object-fit:contain; background:#000; border-radius:7px; box-shadow:0 4px 10px rgba(0,0,0,.45); image-rendering:pixelated; }
+  /* ¿Quieres cargar esta partida? (con la captura de cuando se guardó) */
+  #lconf { display:none; position:fixed; inset:0; z-index:100002; background:rgba(0,0,0,.6); align-items:center; justify-content:center; padding:24px; }
+  #lconf.ingame { background:none; }
+  #lconf .panel { background:#161822; color:#fff; border-radius:20px; padding:16px 14px 14px; width:100%; max-width:320px; display:flex; flex-direction:column; gap:8px; text-align:center; animation:up .18s ease; }
+  #lconf h3 { margin:0 0 4px; font-size:18px; }
+  #lconf .lsh { display:flex; justify-content:center; margin:4px 0; }
+  #lconf .lsh .shot { display:block; width:100%; max-height:42vh; object-fit:contain; background:#000; border-radius:12px; box-shadow:0 6px 16px rgba(0,0,0,.5); }
+  #lconf .lsh .cover { width:150px; border-radius:14px; --cr:12px; }
+  #lconf .lt { font-size:13px; color:#9aa0bd; margin-bottom:6px; }
+  #lconf .lt b { display:block; color:#fff; font-size:15px; margin-bottom:2px; }
+  #lconf button { border:0; border-radius:12px; padding:14px; font-size:16px; font-weight:600; background:#1e2130; color:#fff; text-align:center; }
+  #lconf button.pri { background:var(--acc); }
   #pause .ptile .tag { position:absolute; right:-6px; bottom:-5px; z-index:1; background:var(--acc); color:#fff; font-size:9px; font-weight:800; letter-spacing:.4px; padding:2px 5px; border-radius:6px; }
   #pause .ptile.dim { opacity:.45; }
   #pause .ptile.on { background:#2b2550; box-shadow:inset 0 0 0 2px var(--acc); }
@@ -866,6 +875,7 @@
     </div>
   </div>
 </div>
+<div id="lconf"><div class="panel"><h3>¿Quieres cargar esta partida?</h3><div class="lsh"></div><div class="lt"></div><button class="pri" id="lcYes">Cargar partida</button><button id="lcNo">Cancelar</button></div></div>
 <button id="ejsclose">Cerrar menú del emulador</button>
 <div id="toast"></div>
 <div id="log" style="position:fixed;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 8px);z-index:99998;font-size:12px;color:#ffb4b4;pointer-events:none;white-space:pre-wrap;background:rgba(0,0,0,.6);padding:4px 6px;border-radius:6px"></div>
@@ -1787,6 +1797,20 @@
       });
     });
   }
+  function shotEl(u) { var im = document.createElement('img'); im.className = 'shot'; im.alt = ''; im.src = u; return im; }
+  // «¿Quieres cargar esta partida?» con la captura de cuando se guardó (sin captura, la portada)
+  function askLoad(o, yes) {
+    var box = $('lconf'), sh = box.querySelector('.lsh'), lt = box.querySelector('.lt'), pp = $('pause').querySelector('.panel');
+    sh.innerHTML = ''; sh.appendChild(o.shot ? shotEl(o.shot) : coverEl(o.game));
+    lt.innerHTML = ''; var b = document.createElement('b'); b.textContent = o.game.title || ''; lt.appendChild(b);
+    lt.appendChild(document.createTextNode(o.label + ' · ' + fmtWhen(o.t)));
+    box.classList.toggle('ingame', !!o.ingame); if (o.ingame) pp.style.visibility = 'hidden';
+    box.style.display = 'flex';
+    var close = function () { box.style.display = 'none'; pp.style.visibility = ''; };
+    $('lcNo').onclick = close;
+    box.onclick = function (e) { if (e.target === box) close(); };
+    $('lcYes').onclick = function () { close(); yes(); };
+  }
   function fmtSize(n) { return n >= 1000 * 1024 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
   function fmtWhen(t) {
     if (!t) return '';
@@ -1847,8 +1871,7 @@
     list.sort(function (a, b) { return b.t - a.t; }).forEach(function (e) {
       var g = byId[e.id], row = document.createElement('div'); row.className = 'mrow' + (memSel === e.id ? ' on' : '');
       var r = document.createElement('button'); r.className = 'r';
-      var sh = e.quick ? e.quickShot : e.autoShot;           // la captura de la partida que se nombra debajo, si la hay
-      r.appendChild(sh ? shotEl(sh) : coverEl(g, true));
+      r.appendChild(coverEl(g, true));
       var tx = document.createElement('div'); tx.className = 'tx';
       var b = document.createElement('b'); b.textContent = g.title; tx.appendChild(b);
       var sp = document.createElement('span');
@@ -1862,9 +1885,12 @@
       };
       row.appendChild(r);
       var acts = document.createElement('div'); acts.className = 'acts';
-      var act = function (txt, url, sec, t) { var a = document.createElement('span'); a.textContent = txt; if (t) { var sm = document.createElement('small'); sm.textContent = fmtWhen(t); a.appendChild(sm); } if (sec) a.className = 'sec'; a.onclick = function () { location.href = location.pathname + '?g=' + encodeURIComponent(e.id) + url; }; acts.appendChild(a); };
-      if (e.quick) act('Cargar partida', '&l=1', false, e.quick);
-      if (e.auto) act('Autoguardado', '&r=1', !!e.quick, e.auto);
+      var act = function (txt, url, sec, t, shot) { var a = document.createElement('span'); a.textContent = txt; if (t) { var sm = document.createElement('small'); sm.textContent = fmtWhen(t); a.appendChild(sm); } if (sec) a.className = 'sec';
+        var go = function () { location.href = location.pathname + '?g=' + encodeURIComponent(e.id) + url; };
+        a.onclick = function () { if (t) askLoad({ shot: shot, game: g, label: txt === 'Cargar partida' ? 'Partida guardada' : txt, t: t }, go); else go(); };
+        acts.appendChild(a); };
+      if (e.quick) act('Cargar partida', '&l=1', false, e.quick, e.quickShot);
+      if (e.auto) act('Autoguardado', '&r=1', !!e.quick, e.auto, e.autoShot);
       if (!e.quick && !e.auto) act('Jugar', '');
       row.appendChild(acts);
       box.appendChild(row);
@@ -3355,20 +3381,15 @@
     if (!curId) return;
     tx('meta', 'readonly', function (st) { return st.get(curId); }).catch(function () { return null; }).then(function (m) {
       var g = { title: (m && m.title) || curName, cover: (m && m.cover) || null };
-      [l, al].forEach(function (b) { var pc = b.querySelector('.pc'); if (pc.querySelector('.shot')) return; var old = pc.querySelector('.cover'); if (old) old.remove(); pc.insertBefore(coverEl(g, true), pc.firstChild); });
+      pauseGame = g;
+      [l, al].forEach(function (b) { var pc = b.querySelector('.pc'), old = pc.querySelector('.cover'); if (old) old.remove(); pc.insertBefore(coverEl(g, true), pc.firstChild); });
     });
-    // con captura de la pantalla (desde la Versión 79), la casilla enseña la captura en vez de la portada
-    var putShot = function (b, a) {
-      var pc = b.querySelector('.pc'), old = pc.querySelector('.cover, .shot'); if (old) old.remove(); pc.classList.add('hs');
-      pc.insertBefore(shotEl(a.shot), pc.firstChild);
-    };
-    [l, al].forEach(function (b) { var pc = b.querySelector('.pc'), o = pc.querySelector('.shot'); if (o) o.remove(); pc.classList.remove('hs'); });
     getAuto('quick:' + curId).then(function (a) {
-      if (a && a.state) { l.classList.remove('dim'); l.querySelector('small').textContent = fmtWhen(a.t); if (a.shot) putShot(l, a); }
+      if (a && a.state) { l.classList.remove('dim'); l.querySelector('small').textContent = fmtWhen(a.t); }
       else l.querySelector('small').textContent = 'Aún no hay';
     }).catch(function () {});
     getAuto(curId).then(function (a) {                     // la misma copia automática que sale en Partidas
-      if (a && a.state) { al.classList.remove('dim'); al.querySelector('small').textContent = fmtWhen(a.t); if (a.shot) putShot(al, a); }
+      if (a && a.state) { al.classList.remove('dim'); al.querySelector('small').textContent = fmtWhen(a.t); }
       else al.querySelector('small').textContent = 'Aún no hay';
     }).catch(function () {});
   }
@@ -3419,11 +3440,20 @@
   function exitUrl() { return location.pathname + (curConsole ? '?c=' + curConsole : ''); }
   $('pContinue').onclick = closePause;
   $('pQSave').onclick = quickSave;
-  $('pQLoad').onclick = quickLoad;
+  // Cargar desde la pausa: primero «¿Quieres cargar esta partida?» con la captura, en el mismo recuadro
+  var pauseGame = null;
+  $('pQLoad').onclick = function () {
+    getAuto('quick:' + curId).then(function (a) {
+      if (!a || !a.state) { pStat('Aún no has guardado ninguna partida en este juego.', 1); return; }
+      askLoad({ shot: a.shot, game: pauseGame || { title: curName }, label: 'Partida guardada', t: a.t, ingame: true }, function () { quickLoad(); });
+    }).catch(function (e) { pStat('No se pudo cargar: ' + e.message, 1); });
+  };
   $('pALoad').onclick = function () {
     getAuto(curId).then(function (a) {
       if (!a || !a.state) { pStat('No hay autoguardado de este juego.', 1); return; }
-      gm().loadState(a.state); closePause(); toast('Autoguardado cargado (' + fmtWhen(a.t) + ')', 3500); diag('autoguardado cargado desde el menú');
+      askLoad({ shot: a.shot, game: pauseGame || { title: curName }, label: 'Autoguardado', t: a.t, ingame: true }, function () {
+        gm().loadState(a.state); closePause(); toast('Autoguardado cargado (' + fmtWhen(a.t) + ')', 3500); diag('autoguardado cargado desde el menú');
+      });
     }).catch(function (e) { pStat('No se pudo cargar: ' + e.message, 1); });
   };
   $('pFF').onclick = function () { closePause(); toggleFF(); };
@@ -3534,11 +3564,11 @@
 
   /* ====== Mini captura de la pantalla para las partidas (Versión 79) ======
      RetroArch escribe /screenshot.png en su siguiente vuelta del bucle (si el juego está parado no llega);
-     se espera como mucho ms y se reduce a una miniatura JPEG de unos pocos KB. Si no llega, se prueba con el lienzo. */
+     se espera como mucho ms y se reduce a una miniatura JPEG de unos 10 KB. Si no llega, se prueba con el lienzo. */
   var lastShot = null, shotBusy = false;
   function shotFromImg(src, w, h) {
     if (!w || !h) return null;
-    var k = Math.min(1, 160 / Math.max(w, h)), c = document.createElement('canvas');
+    var k = Math.min(1, 240 / Math.max(w, h)), c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
     var x = c.getContext('2d', { alpha: false }); x.drawImage(src, 0, 0, c.width, c.height);
     try {                                                    // un lienzo WebGL ya borrado sale todo de un color: no sirve
@@ -3546,7 +3576,7 @@
       for (var i = 0; i < d.length; i += 4 * 37) if (Math.abs(d[i] + d[i + 1] + d[i + 2] - a) > 12) { same = false; break; }
       if (same) return null;
     } catch (e) {}
-    return c.toDataURL('image/jpeg', 0.72);
+    return c.toDataURL('image/jpeg', 0.8);
   }
   function grabCanvas() {
     try { var cv = document.querySelector('#game canvas.ejs_canvas'); return cv && cv.width ? shotFromImg(cv, cv.width, cv.height) : null; } catch (e) { return null; }
@@ -3573,7 +3603,6 @@
       })();
     });
   }
-  function shotEl(u) { var im = document.createElement('img'); im.className = 'shot'; im.alt = ''; im.src = u; return im; }
   // fresh: el autoguardado periódico (juego en marcha) saca captura nueva; al salir o al irse la app usa la última
   function autoSave(fresh) {
     var g = gm();
