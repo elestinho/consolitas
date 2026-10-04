@@ -283,11 +283,12 @@
   /* Juegos en carrusel 3D (vista por defecto dentro de cada consola) o en cuadrícula */
   #vbar { display:flex; justify-content:center; padding:2px 16px 2px; }
   .vseg { display:flex; gap:2px; padding:3px; border-radius:13px; background:rgba(255,255,255,.07); }
-  .vseg button { display:flex; align-items:center; gap:6px; border:0; background:none; color:var(--mut); font-size:13px; font-weight:600;
-    padding:7px 13px; border-radius:10px; transition:background .2s ease, color .2s ease; }
+  .vseg button { display:flex; align-items:center; justify-content:center; border:0; background:none; color:var(--mut);
+    width:44px; height:32px; padding:0; border-radius:10px; transition:background .2s ease, color .2s ease; }
   .vseg button svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .vseg button.on { background:rgba(124,108,255,.3); color:#e6e2ff; }
-  #gcwrap { --gw:min(56vw, 250px, 40vh); }
+  #gcwrap { --gw:min(56vw, 250px, 40vh); display:flex; flex-direction:column; justify-content:center;
+    min-height:calc(100dvh - 170px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding-bottom:40px; box-sizing:border-box; }
   #gcar { position:relative; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
     scrollbar-width:none; overscroll-behavior-x:contain; padding:30px 0 calc(var(--gw) * .4);
     -webkit-mask-image:linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image:linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
@@ -310,16 +311,24 @@
   .gs .bf .gfav { z-index:2; }
   .gs .cover { width:100%; height:100%; aspect-ratio:auto !important; border-radius:3px; --cr:3px; box-shadow:none; }
   .gs .cover.fit .cimg { box-shadow:none; }
-  .gs .bsl, .gs .bsr { top:0; height:100%; width:var(--d); background:linear-gradient(90deg, #15161b, #3a3d48 40%, #23252d 70%, #101116);
+  .gs .bsl, .gs .bsr { top:0; height:100%; width:var(--d); background:linear-gradient(90deg, var(--k0), var(--k2) 40%, var(--k1) 70%, var(--k0));
     box-shadow:inset 0 0 0 999px rgba(0,0,0,var(--dim, 0)); }
   .gs .bsl { left:calc(var(--d) / -2); transform:rotateY(-90deg); }
   .gs .bsr { left:calc(100% - var(--d) / 2); transform:rotateY(90deg); }
   .gs .bt { left:0; top:calc(var(--d) / -2); width:100%; height:var(--d); transform:rotateX(90deg);
-    background:linear-gradient(#2a2c34, #4a4d59 45%, #24262d); box-shadow:inset 0 0 0 999px rgba(0,0,0,var(--dim, 0)); }
+    background:linear-gradient(var(--k1), var(--k2) 45%, var(--k0)); box-shadow:inset 0 0 0 999px rgba(0,0,0,var(--dim, 0)); }
   .gs .brf { left:0; top:calc(100% + 4px); width:100%; height:100%; transform:translateZ(calc(var(--d) / 2)) scaleY(-1); opacity:.32;
     -webkit-mask-image:linear-gradient(transparent 55%, #000); mask-image:linear-gradient(transparent 55%, #000); pointer-events:none; }
   .gs .brf .cover .ini { display:none; }
   .gs.pressing .bx { transform:scale(.95); }
+  /* Cantos de la caja según la consola: plástico oscuro (DS, Mega Drive, Game Gear, PS1), cartón claro (GB, GBA, SNES, N64) o negro (NES) */
+  #gcwrap { --k0:#101116; --k1:#23252d; --k2:#3a3d48; }
+  #gcwrap[data-c="md"], #gcwrap[data-c="gg"] { --k0:#050505; --k1:#141414; --k2:#2c2c2e; }
+  #gcwrap[data-c="psx"] { --k0:#060608; --k1:#111216; --k2:#3b3e48; }
+  #gcwrap[data-c="nes"] { --k0:#0a0a0a; --k1:#1b1b1b; --k2:#3a3a3a; }
+  #gcwrap[data-c="gba"], #gcwrap[data-c="gb"] { --k0:#a9a59b; --k1:#d8d4ca; --k2:#f6f4ee; }
+  #gcwrap[data-c="snes"] { --k0:#9c9ca4; --k1:#cfcfd6; --k2:#efeff3; }
+  #gcwrap[data-c="n64"] { --k0:#a7a7a7; --k1:#dcdcdc; --k2:#fafafa; }
   .gs img { -webkit-user-drag:none; pointer-events:none; }
   .gs:not(.on) .gfav { pointer-events:none; }
   #gcinfo { text-align:center; padding:0 26px 6px; margin-top:-8px; }
@@ -641,8 +650,8 @@
     </div>
     <div id="cstatus" style="color:var(--mut);font-size:13px;padding:0 18px;min-height:18px"></div>
     <div id="vbar" style="display:none"><div class="vseg" id="vseg" role="group" aria-label="Cómo ver los juegos">
-      <button data-v="car"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="5" width="8" height="12" rx="1.6"/><path d="M5 7.5l-2 .8v7.4l2 .8M19 7.5l2 .8v7.4l-2 .8"/><path d="M8.5 20.5h7"/></svg>Carrusel</button>
-      <button data-v="grid"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Cuadrícula</button>
+      <button data-v="car" aria-label="Carrusel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="5" width="8" height="12" rx="1.6"/><path d="M5 7.5l-2 .8v7.4l2 .8M19 7.5l2 .8v7.4l-2 .8"/><path d="M8.5 20.5h7"/></svg></button>
+      <button data-v="grid" aria-label="Cuadrícula"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg></button>
     </div></div>
     <div id="gcwrap" style="display:none"><div id="gcar"></div><div id="gcinfo"><div class="gct"></div><div class="gcn"></div></div></div>
     <div id="games" class="ggrid"></div>
@@ -708,7 +717,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 71 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 73 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1428,9 +1437,8 @@
       e.textContent = 'Ningún juego coincide con «' + $('eQ').value.trim() + '»'; box.appendChild(e);
     }
     if (car) {
+      $('gcwrap').setAttribute('data-c', ctxConsole);
       buildGCar(list);
-      $('gHint').textContent = (list.length > 1 ? 'Desliza para ver tus juegos · t' : 'T') + 'oca la portada para abrirla · mantén pulsado para eliminarla';
-      $('gHint').style.display = 'block';
       return;
     }
     list.forEach(function (g) {
@@ -1513,9 +1521,8 @@
       var d = pitch ? (gcSlides[i].offsetLeft + w / 2 - mid) / pitch : 0;
       if (Math.abs(d) < .03) d = 0;           // la del centro, de frente del todo aunque el scroll quede a medio píxel
       var ad = Math.abs(d), t = Math.max(-1, Math.min(1, d)), el = gcSlides[i].firstChild;
-      el.style.transform = 'perspective(800px) translateX(' + (t * 30 - (d - t) * 16).toFixed(2) + '%) translateZ(' +
-        (-(Math.min(ad, 1) * 150 + Math.max(0, ad - 1) * 70)).toFixed(1) + 'px) rotateY(' + (-t * 50 - (1 - Math.abs(t)) * 24).toFixed(2) +
-        'deg) rotateX(-7deg)';                // la del centro algo girada: se ven el canto y la tapa de la caja
+      el.style.transform = 'perspective(800px) translateX(' + (t * 40 + (d - t) * 6).toFixed(2) + '%) translateZ(' +
+        (-(Math.min(ad, 1) * 130 + Math.max(0, ad - 1) * 80)).toFixed(1) + 'px) rotateY(-24deg) rotateX(-7deg)';   // todas giradas igual: se ven el canto y la tapa
       el.style.setProperty('--dim', (Math.min(ad, 2) * .26).toFixed(3));
       el.style.visibility = 'visible';
       gcSlides[i].style.zIndex = 50 - Math.round(ad * 10);
@@ -2087,7 +2094,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 71, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 73, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
