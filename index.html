@@ -717,7 +717,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 73 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 74 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1378,6 +1378,8 @@
 
   /* ====== Lista de juegos con portadas ====== */
   function hueOf(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
+  // Forma de las carátulas de cada consola, para los juegos sin portada (las cuadradas no hace falta)
+  var PH_AR = { n64: 1.38, snes: 1.38, nes: 0.72, md: 0.7, gg: 0.7 };
   function coverEl(g, small, lazy) {
     var d = document.createElement('div'); d.className = 'cover';
     if (g.cover) {
@@ -1392,7 +1394,8 @@
       };
       im.src = g.cover; d.appendChild(im);
     } else {
-      var h = hueOf(g.title);
+      var h = hueOf(g.title), par = PH_AR[g.console];
+      if (par) { d.setAttribute('data-ar', par); d.style.aspectRatio = par; }
       var ph = document.createElement('div'); ph.className = 'ph';
       ph.style.background = 'linear-gradient(140deg,hsl(' + h + ',55%,42%),hsl(' + ((h + 45) % 360) + ',55%,24%))';
       var words = g.title.split(/\s+/).filter(function (w) { return /[A-Za-z0-9]/.test(w); });
@@ -1483,6 +1486,7 @@
       var bx = document.createElement('div'); bx.className = 'bx';
       var bf = document.createElement('div'); bf.className = 'bf';
       var cv = coverEl(g, false, true), im = cv.querySelector('img');
+      if (!im && cv.getAttribute('data-ar')) bx.style.setProperty('--ar', cv.getAttribute('data-ar'));
       if (im) im.addEventListener('load', function () { if (cv.classList.contains('fit')) bx.style.setProperty('--ar', cv.getAttribute('data-ar')); });
       bf.appendChild(cv); bf.appendChild(gFavEl(g)); bx.appendChild(bf);
       bx.insertAdjacentHTML('beforeend', '<i class="bsl"></i><i class="bsr"></i><i class="bt"></i>');
@@ -2094,7 +2098,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 73, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 74, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
