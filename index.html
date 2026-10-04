@@ -653,11 +653,11 @@
     <span class="go">›</span>
   </button>
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
-  <div class="row"><span>GBA con el emulador anticierres (prueba)</span><input type="checkbox" id="gbaCoreSw"></div>
+  <div class="row"><span>Emuladores anticierres</span><input type="checkbox" id="gbaCoreSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <div class="row"><span>DS y PS1 más fluidas (usar varios núcleos del procesador)</span><input type="checkbox" id="thrSw"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 67 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 68 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1923,7 +1923,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 67, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 68, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2043,8 +2043,11 @@
               var leg = webgl2 ? '' : '-legacy';
               // DS y PS1 con varios núcleos usan otro archivo: también se guarda (si falla, queda el normal)
               var thr = lsGet('threads', '1') === '1' && Object.keys(THREAD_CONS).some(function (k) { return EJS_CORE[k] === core && lsGet('thr-off-' + k, '') !== '1'; });
-              return grab(EJS_DATA + 'cores/' + core + leg + '-wasm.data', true).then(function () {
-                if (thr) return grab(EJS_DATA + 'cores/' + core + '-thread' + leg + '-wasm.data', false);
+              // con «Emuladores anticierres» se guarda el núcleo propio (carpeta cores/ de la app) en vez del de EmulatorJS
+              var own = lsGet('own-core', '1') === '1' && Object.keys(OWN_CORES).some(function (k) { return OWN_CORES[k] === core; });
+              var dir = own ? new URL('cores/' + core + '/', location.href).href : EJS_DATA + 'cores/';
+              return grab(dir + core + leg + '-wasm.data', true).then(function () {
+                if (thr) return grab(dir + core + '-thread' + leg + '-wasm.data', false);
               });
             }).then(function () { lsSet('off-' + core, '1'); }, function (e) { fails++; diag('sin conexión: no pude bajar ' + core + ': ' + e.message); })
               .then(function () { done++; offNow = ''; return offRender(); });
@@ -2727,8 +2730,8 @@
   });
   $('resumeSw').checked = lsGet('resume-game', '1') === '1';
   $('resumeSw').addEventListener('change', function () { lsSet('resume-game', $('resumeSw').checked ? '1' : '0'); });
-  $('gbaCoreSw').checked = lsGet('gba-core', '1') === '1';
-  $('gbaCoreSw').addEventListener('change', function () { lsSet('gba-core', $('gbaCoreSw').checked ? '1' : '0'); });
+  $('gbaCoreSw').checked = lsGet('own-core', '1') === '1';
+  $('gbaCoreSw').addEventListener('change', function () { lsSet('own-core', $('gbaCoreSw').checked ? '1' : '0'); });
   $('btnSettings').onclick = function () { offRender(); $('bd').style.display = 'block'; $('settings').style.display = 'block'; };
   $('setClose').onclick = closeSheets;
   function showDiag() {
@@ -3425,6 +3428,15 @@
     if (curConsole === 'n64') o.settings.retroarch_core = 'mupen64plus_next';   // EmulatorJS elige el núcleo con lo que haya aquí (si no, en iPhone tomaría el otro)
     lsSet(k, JSON.stringify(o));
   }
+  /* Núcleos recompilados (carpeta cores/): todas las consolas menos la N64, que no se cerraba con el suyo */
+  var OWN_CORES = { gba: 'mgba', gb: 'gambatte', nes: 'fceumm', snes: 'snes9x', md: 'genesis_plus_gx', gg: 'genesis_plus_gx', nds: 'melonds', psx: 'pcsx_rearmed' };
+  function coreFiles(c) {
+    var v = THREADED_CORES[c] ? ['', '-thread'] : [''];
+    var out = [];
+    v.forEach(function (t) { out.push(c + t + '-wasm.data', c + t + '-legacy-wasm.data'); });
+    return out;
+  }
+  var THREADED_CORES = { melonds: 1, pcsx_rearmed: 1 };
   function startEmulator(g, data, skinMode, menuHint) {
     window.EJS_player = '#game';
     window.EJS_core = CONSOLES[curConsole].core;
@@ -3461,15 +3473,16 @@
     var sc = document.createElement('script');
     sc.src = window.EJS_pathtodata + 'loader.js';
     sc.onerror = function () { log('No se pudo descargar el emulador. ¿Hay conexión?'); hideBoot(true); };
-    // GBA con el núcleo mGBA propio (memoria fija, sin OpenAL): prueba contra los cierres de Safari a los ~70 s.
+    // Núcleos propios (memoria fija, sin OpenAL ni Asyncify) contra los cierres de Safari a los ~70 s (iOS 26.2+).
     // Se quita la copia del núcleo que guarda EmulatorJS para que no use la de la otra versión.
-    var ownCore = curConsole === 'gba' && lsGet('gba-core', '1') === '1';
+    var coreName = OWN_CORES[curConsole], ownCore = !!coreName && lsGet('own-core', '1') === '1';
     if (ownCore) {
-      var base = new URL('cores/mgba/', location.href).href;
-      window.EJS_paths = { 'mgba-legacy-wasm.data': base + 'mgba-legacy-wasm.data', 'mgba-wasm.data': base + 'mgba-wasm.data' };
+      var base = new URL('cores/' + coreName + '/', location.href).href;
+      window.EJS_paths = {};
+      coreFiles(coreName).forEach(function (f) { window.EJS_paths[f] = base + f; });
     }
-    if (curConsole === 'gba') {
-      diag('núcleo de GBA: ' + (ownCore ? 'propio (memoria fija)' : 'el de EmulatorJS'));
+    if (coreName) {
+      diag('núcleo: ' + (ownCore ? 'propio (memoria fija)' : 'el de EmulatorJS'));
       var addLoader = function () { if (!sc.parentNode) document.body.appendChild(sc); };
       setTimeout(addLoader, 1500);
       try {
@@ -3478,7 +3491,7 @@
         cr.onsuccess = function () {
           try {
             var t = cr.result.transaction(['core'], 'readwrite'), os = t.objectStore('core');
-            os.delete('mgba-legacy-wasm.data'); os.delete('mgba-wasm.data');
+            coreFiles(coreName).forEach(function (f) { os.delete(f); });
             t.oncomplete = t.onerror = t.onabort = function () { cr.result.close(); addLoader(); };
           } catch (x) { addLoader(); }
         };

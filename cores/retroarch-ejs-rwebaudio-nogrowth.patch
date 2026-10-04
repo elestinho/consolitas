@@ -13,7 +13,7 @@ index 91c7917194..b483a59e9e 100644
        OBJ += audio/drivers/audioworklet.o
     endif
 diff --git a/Makefile.emulatorjs b/Makefile.emulatorjs
-index fbf6fa57c0..d3c9e6c211 100644
+index fbf6fa57c0..eed4eb9839 100644
 --- a/Makefile.emulatorjs
 +++ b/Makefile.emulatorjs
 @@ -57,6 +57,12 @@ HAVE_NETPLAYDISCOVERY ?= 0
@@ -55,7 +55,7 @@ index fbf6fa57c0..d3c9e6c211 100644
     LDFLAGS += --js-library emscripten/library_rwebaudio.js
     DEFINES += -DHAVE_RWEBAUDIO
 +   ifeq ($(ASYNC), 0)
-+   ifeq ($(HAVE_THREADS), 0)
++   ifeq ($(PROXY_TO_PTHREAD), 0)
 +   ifeq ($(RWEBAUDIO_FAKE_BLOCK), 1)
 +      DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_BLOCK -DEMSCRIPTEN_AUDIO_FAKE_BLOCK -DEMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
 +   endif
@@ -64,6 +64,18 @@ index fbf6fa57c0..d3c9e6c211 100644
  endif
  
  ifeq ($(HAVE_AUDIOWORKLET), 1)
+@@ -247,7 +263,10 @@ ifeq ($(HAVE_AL), 1)
+ endif
+ 
+ ifeq ($(HAVE_THREADS), 1)
+-   LDFLAGS += -s MAXIMUM_MEMORY=4294967296 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD_POOL_SIZE)
++   ifeq ($(AUTO_MEMORY_GROWTH), 1)
++      LDFLAGS += -s MAXIMUM_MEMORY=4294967296
++   endif
++   LDFLAGS += -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD_POOL_SIZE)
+    CFLAGS += -pthread -s SHARED_MEMORY
+ endif
+ 
 diff --git a/emscripten/library_rwebaudio.js b/emscripten/library_rwebaudio.js
 index d97bfead0b..705a5ed562 100644
 --- a/emscripten/library_rwebaudio.js
