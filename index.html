@@ -758,7 +758,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 80 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 81 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2215,7 +2215,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 80, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 81, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2543,10 +2543,18 @@
     });
     return best.score >= 0.72 ? best : null;
   }
-  function fetchArt(repo, name, folder) {
+  function fetchArt(repo, name, folder, hop) {
     var file = name.replace(/[&*\/:`<>?\\|]/g, '_') + '.png';
     return fetch(THUMB_BASE + repo + '/master/' + folder + '/' + encodeURIComponent(file))
-      .then(function (r) { return r.ok ? r.blob() : null; }, function () { return null; });
+      .then(function (r) {
+        if (!r.ok) return null;
+        if (!/^text\//i.test(r.headers.get('content-type') || '')) return r.blob();
+        // libretro-thumbnails usa enlaces (p. ej. «(USA) (Rev 1)» → «(USA)»): GitHub devuelve como texto el nombre del archivo al que apunta
+        return r.text().then(function (t) {
+          var m = /^(?:\.\.\/([^\/]+)\/)?([^\/\n]+)\.png$/.exec(t.trim());
+          return m && !hop ? fetchArt(repo, m[2], m[1] || folder, 1) : null;
+        });
+      }).catch(function () { return null; });
   }
   function findCover(consoleId, ext, titles, buf, hint) {
     var sets = coverSetsFor(consoleId, ext);
@@ -3934,7 +3942,8 @@
   }
   if (qs.get('g')) launch(qs.get('g'));
   else if (CONSOLES[qs.get('c')]) { $('home').style.display = 'none'; $('tabbar').style.display = 'none'; }   // al salir de un juego: sin carrusel mientras carga su consola
-  if (!qs.get('g')) refresh().then(function () { updateProt(); show(qs.get('c'), false); queueCovers(games.filter(function (g) { return !g.cover && !g.ct; }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
+  if (!qs.get('g')) refresh().then(function () { updateProt(); show(qs.get('c'), false); var again = false; try { again = localStorage.getItem('cover-retry') !== '81'; localStorage.setItem('cover-retry', '81'); } catch (e) {}   // v81: se reintentan una vez las que fallaron por los enlaces de libretro
+    queueCovers(games.filter(function (g) { return !g.cover && (!g.ct || again); }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
 })();
 </script>
 </body>
