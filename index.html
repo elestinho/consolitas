@@ -758,7 +758,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 81 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 82 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2215,7 +2215,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 81, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 82, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2576,7 +2576,7 @@
   }
   /* @@COVERLIB-END */
 
-  var coverQueue = [], coverBusy = false;
+  var coverQueue = [], coverBusy = false, coverForce = {};
   function autoCover(id, force) {
     var g = byId[id];
     if (!g || (!force && (g.cover || g.ct))) return Promise.resolve(null);
@@ -2605,7 +2605,7 @@
     if (!id) { coverBusy = false; coverStatus(''); return; }
     coverBusy = true;
     var g = byId[id]; coverStatus('Buscando portada de ' + (g ? g.title : '…') + '…');
-    autoCover(id, false).then(function (res) {
+    autoCover(id, !!coverForce[id]).then(function (res) {
       if (res) { toast('Portada encontrada: ' + baseTitle(res.name)); if (ctxConsole) renderGames(); }
     }).catch(function (e) {
       diag('portada: error ' + e.message + (g ? ' (' + g.title + ')' : ''));
@@ -3942,8 +3942,8 @@
   }
   if (qs.get('g')) launch(qs.get('g'));
   else if (CONSOLES[qs.get('c')]) { $('home').style.display = 'none'; $('tabbar').style.display = 'none'; }   // al salir de un juego: sin carrusel mientras carga su consola
-  if (!qs.get('g')) refresh().then(function () { updateProt(); show(qs.get('c'), false); var again = false; try { again = localStorage.getItem('cover-retry') !== '81'; localStorage.setItem('cover-retry', '81'); } catch (e) {}   // v81: se reintentan una vez las que fallaron por los enlaces de libretro
-    queueCovers(games.filter(function (g) { return !g.cover && (!g.ct || again); }).map(function (g) { return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
+  if (!qs.get('g')) refresh().then(function () { updateProt(); show(qs.get('c'), false); var again = false; try { again = localStorage.getItem('cover-retry') !== '82'; localStorage.setItem('cover-retry', '82'); } catch (e) {}   // v81: se reintentan una vez las que fallaron por los enlaces de libretro
+    queueCovers(games.filter(function (g) { return !g.cover && (!g.ct || again); }).map(function (g) { if (again) coverForce[g.id] = 1; return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
 })();
 </script>
 </body>
