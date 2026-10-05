@@ -577,6 +577,19 @@
   #delFav.on img { filter:drop-shadow(0 1px 3px rgba(0,0,0,.5)); opacity:1; }
   #delBin { background:#3a1e26; color:#ff8f8f; }
   #delBin svg { width:27px; height:27px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  #delCov { background:rgba(124,108,255,.18); color:#cfc8ff; }
+  #delCov svg { width:28px; height:28px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  #delAuto { display:none; width:100%; border:0; border-radius:14px; padding:13px; margin-bottom:8px; font-size:15px; font-weight:600; background:rgba(124,108,255,.14); color:#cfc8ff; }
+  #cropop { display:none; position:fixed; inset:0; z-index:1300; align-items:center; justify-content:center; padding:20px; touch-action:none; }
+  #cropbg { position:absolute; inset:0; background:rgba(7,8,13,.86); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
+  #croppanel { position:relative; display:flex; flex-direction:column; align-items:center; width:100%; max-width:360px; }
+  #cropT { font-weight:700; font-size:17px; margin-bottom:16px; }
+  #cropBox { position:relative; overflow:hidden; border-radius:4px; background:#000; touch-action:none; cursor:grab;
+    box-shadow:0 0 0 2px rgba(255,255,255,.85), 0 18px 50px rgba(0,0,0,.6); }
+  #cropImg { position:absolute; left:0; top:0; max-width:none; transform-origin:0 0; pointer-events:none; -webkit-user-drag:none; user-select:none; }
+  #cropP { margin:14px 0 16px; color:var(--mut); font-size:13px; text-align:center; }
+  #cropOk { width:100%; border:0; border-radius:14px; padding:15px; margin-bottom:8px; font-size:16px; font-weight:700; color:#fff; background:var(--acc); }
+  #cropNo { width:100%; border:0; border-radius:14px; padding:15px; font-size:16px; font-weight:600; background:#262a3c; color:var(--txt); }
   #delNo { display:block; width:100%; border:0; border-radius:14px; padding:15px; font-size:16px; font-weight:600; background:#262a3c; color:var(--txt); }
   #toast { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 84px); transform:translateX(-50%);
     z-index:100003; background:rgba(0,0,0,.85); color:#fff; padding:9px 15px; border-radius:999px;
@@ -735,9 +748,23 @@
   <div id="delpanel">
     <div id="delT"></div>
     <p id="delP">La partida guardada del juego no se borra.</p>
-    <div id="delIcons"><button id="delFav" aria-label="Marcar como favorito"><img alt=""></button><button id="delBin" aria-label="Eliminar de la biblioteca"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4.5h6V7"/></svg></button></div>
+    <div id="delIcons"><button id="delFav" aria-label="Marcar como favorito"><img alt=""></button><button id="delCov" aria-label="Cambiar portada"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.7"/><path d="M4 17.5l5-5 3.5 3.5 2.5-2.5 5 5"/></svg></button><button id="delBin" aria-label="Eliminar de la biblioteca"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4.5h6V7"/></svg></button></div>
+    <button id="delAuto">Volver a la portada automática</button>
     <button id="delYes">Eliminar de la biblioteca</button>
     <button id="delNo">Cancelar</button>
+  </div>
+</div>
+
+<!-- Portada propia: elegir foto y ajustarla a la forma de la carátula -->
+<input type="file" id="covFile" accept="image/*" style="display:none">
+<div id="cropop">
+  <div id="cropbg"></div>
+  <div id="croppanel">
+    <div id="cropT">Ajusta la portada</div>
+    <div id="cropBox"><img id="cropImg" alt=""></div>
+    <p id="cropP">Arrastra para mover y pellizca para acercar.</p>
+    <button id="cropOk">Usar como portada</button>
+    <button id="cropNo">Cancelar</button>
   </div>
 </div>
 
@@ -758,7 +785,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 83 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 84 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1200,6 +1227,7 @@
         g.title = m.title || prettify(g.name);
         g.cover = m.cover || null;
         g.ct = m.ct || 0;
+        g.own = !!m.own;                           // portada elegida por Álex: manda sobre la automática
         return g;
       }).sort(function (a, b) { return a.title.localeCompare(b.title); });
       byId = {}; games.forEach(function (g) { byId[g.id] = g; });
@@ -2079,6 +2107,7 @@
       $('delFav').classList.toggle('on', on);
       $('delFav').setAttribute('aria-label', on ? 'Quitar de favoritos' : 'Marcar como favorito');
     }
+    $('delAuto').style.display = one && byId[ids[0]].own ? 'block' : 'none';
     $('delpop').style.display = 'flex';
     if (canAnimate()) {
       $('delbg').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
@@ -2096,6 +2125,111 @@
   };
   $('delbg').onclick = closeDel;
   $('delBin').onclick = function () { $('delYes').onclick(); };
+
+  /* ---- Portada propia: foto del móvil recortada a la forma de la carátula de su consola ---- */
+  var covFor = null, cropSt = null;
+  function metaRec(id) { return tx('meta', 'readonly', function (st) { return st.get(id); }).then(function (m) { return m || { id: id, title: byId[id] ? byId[id].title : id }; }); }
+  $('delCov').onclick = function () {
+    var id = delId && delId[0]; if (!id) return;
+    closeDel(); covFor = id;
+    var f = $('covFile'); f.value = ''; f.click();    // dentro del toque: iOS solo abre el selector así
+  };
+  $('covFile').onchange = function () {
+    var f = this.files && this.files[0]; if (!f || !byId[covFor]) return;
+    openCrop(covFor, f);
+  };
+  function openCrop(id, file) {
+    var url = URL.createObjectURL(file), im = $('cropImg');
+    im.onerror = function () { URL.revokeObjectURL(url); toast('No se pudo leer la imagen'); };
+    im.onload = function () {
+      var ar = PH_AR[byId[id].console] || 1, nw = im.naturalWidth, nh = im.naturalHeight;
+      var mw = Math.min(innerWidth - 40, 340), mh = Math.min(innerHeight * 0.55, 440);
+      var fw = Math.min(mw, mh * ar), fh = fw / ar, box = $('cropBox');
+      box.style.width = fw + 'px'; box.style.height = fh + 'px';
+      im.style.width = nw + 'px'; im.style.height = nh + 'px';
+      var s0 = Math.max(fw / nw, fh / nh);
+      cropSt = { id: id, url: url, ar: ar, fw: fw, fh: fh, nw: nw, nh: nh, min: s0, s: s0, x: (fw - nw * s0) / 2, y: (fh - nh * s0) / 2, pts: {} };
+      drawCrop();
+      $('cropop').style.display = 'flex';
+      if (canAnimate()) $('croppanel').animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 220, easing: 'cubic-bezier(.2,.9,.3,1.2)' });
+    };
+    im.src = url;
+  }
+  function drawCrop() {
+    var c = cropSt; if (!c) return;
+    c.s = Math.min(Math.max(c.s, c.min), c.min * 6);
+    c.x = Math.min(0, Math.max(c.fw - c.nw * c.s, c.x)); c.y = Math.min(0, Math.max(c.fh - c.nh * c.s, c.y));
+    $('cropImg').style.transform = 'translate(' + c.x + 'px,' + c.y + 'px) scale(' + c.s + ')';
+  }
+  function zoomCrop(f, mx, my) {                 // acerca o aleja dejando quieto el punto (mx,my) del marco
+    var c = cropSt, s2 = Math.min(Math.max(c.s * f, c.min), c.min * 6);
+    c.x = mx - (mx - c.x) * (s2 / c.s); c.y = my - (my - c.y) * (s2 / c.s); c.s = s2; drawCrop();
+  }
+  function cropGest(pts) {                       // centro y separación de los dedos sobre el marco
+    var k = Object.keys(pts), cx = 0, cy = 0, d = 0;
+    k.forEach(function (i) { cx += pts[i].x; cy += pts[i].y; }); cx /= k.length; cy /= k.length;
+    if (k.length > 1) d = Math.hypot(pts[k[0]].x - pts[k[1]].x, pts[k[0]].y - pts[k[1]].y);
+    return { x: cx, y: cy, d: d, n: k.length };
+  }
+  $('cropBox').addEventListener('pointerdown', function (e) {
+    if (!cropSt) return; e.preventDefault();
+    try { this.setPointerCapture(e.pointerId); } catch (er) {}
+    var r = this.getBoundingClientRect(); cropSt.pts[e.pointerId] = { x: e.clientX - r.left, y: e.clientY - r.top };
+  });
+  $('cropBox').addEventListener('pointermove', function (e) {
+    var c = cropSt; if (!c || !c.pts[e.pointerId]) return;
+    var r = this.getBoundingClientRect(), a = cropGest(c.pts);
+    c.pts[e.pointerId] = { x: e.clientX - r.left, y: e.clientY - r.top };
+    var b = cropGest(c.pts);
+    c.x += b.x - a.x; c.y += b.y - a.y; drawCrop();
+    if (b.n > 1 && a.d > 0) zoomCrop(b.d / a.d, b.x, b.y);
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) {
+    $('cropBox').addEventListener(t, function (e) { if (cropSt) delete cropSt.pts[e.pointerId]; });
+  });
+  $('cropBox').addEventListener('wheel', function (e) {
+    if (!cropSt) return; e.preventDefault();
+    var r = this.getBoundingClientRect(); zoomCrop(Math.exp(-e.deltaY / 300), e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
+  function closeCrop() {
+    $('cropop').style.display = 'none';
+    if (cropSt) URL.revokeObjectURL(cropSt.url);
+    cropSt = null; $('cropImg').removeAttribute('src');
+  }
+  $('cropNo').onclick = closeCrop; $('cropbg').onclick = closeCrop;
+  $('cropOk').onclick = function () {
+    var c = cropSt; if (!c) return;
+    var W, H, url;
+    if (c.ar >= 1) { W = 560; H = Math.round(560 / c.ar); } else { H = 560; W = Math.round(560 * c.ar); }
+    try {
+      var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      var x = cv.getContext('2d'); x.imageSmoothingQuality = 'high';
+      x.drawImage($('cropImg'), -c.x / c.s, -c.y / c.s, c.fw / c.s, c.fh / c.s, 0, 0, W, H);
+      url = cv.toDataURL('image/jpeg', 0.86);
+    } catch (e) { toast('No se pudo recortar: ' + e.message); return; }
+    var id = c.id; closeCrop();
+    metaRec(id).then(function (m) {
+      if (!m.own) m.auto = m.cover || null;       // la automática se guarda para poder volver a ella
+      m.cover = url; m.own = 1;
+      if (byId[id]) byId[id].own = true;
+      return putMeta(m);
+    }).then(function () { diag('portada propia (' + (byId[id] ? byId[id].title : id) + ')'); return refresh(); })
+      .then(function () { toast('Portada cambiada'); })
+      .catch(function (e) { toast('Error: ' + e.message); });
+  };
+  $('delAuto').onclick = function () {
+    var id = delId && delId[0]; if (!id) return;
+    closeDel();
+    metaRec(id).then(function (m) {
+      var had = !!m.auto;
+      m.cover = m.auto || null; delete m.auto; delete m.own;
+      if (!had) m.ct = 0;
+      if (byId[id]) byId[id].own = false;
+      return putMeta(m).then(function () { return had; });
+    }).then(function (had) {
+      return refresh().then(function () { toast('Portada automática'); if (!had) { coverForce[id] = 1; queueCovers([id]); } });
+    }).catch(function (e) { toast('Error: ' + e.message); });
+  };
   $('delYes').onclick = function () {
     var ids = delId; if (!ids) return;
     closeDel();
@@ -2219,7 +2353,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 83, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 84, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2583,7 +2717,7 @@
   var coverQueue = [], coverBusy = false, coverForce = {};
   function autoCover(id, force) {
     var g = byId[id];
-    if (!g || (!force && (g.cover || g.ct))) return Promise.resolve(null);
+    if (!g || g.own || (!force && (g.cover || g.ct))) return Promise.resolve(null);
     // Un disco de PS1 pesa cientos de MB: no se lee entero para la huella, se busca por el nombre
     return (g.console === 'psx' ? Promise.resolve(null) : getRom(id).then(romBuf)).then(function (buf) {
       var n = g.name, hint = /europe|\(E\)/i.test(n) ? 'europe' : /japan|\(J\)/i.test(n) ? 'japan' : /usa|\((U|JU|UE)\)/i.test(n) ? 'usa' : '';
@@ -2592,6 +2726,7 @@
       if (!res) return null;
       return fileToCover(res.blob).then(function (url) { res.url = url; return res; });
     }).then(function (res) {
+      if (byId[id] && byId[id].own) return null;   // eligieron una foto mientras se buscaba
       var meta = { id: id, title: g.title, cover: res ? res.url : g.cover, ct: Date.now() };
       return putMeta(meta).then(function () { g.cover = meta.cover; g.ct = meta.ct; diag('portada ' + (res ? res.how + ': ' + res.name : 'no encontrada') + ' (' + g.title + ')'); return res; });
     });
@@ -2614,7 +2749,7 @@
     }).catch(function (e) {
       diag('portada: error ' + e.message + (g ? ' (' + g.title + ')' : ''));
       if (/fetch|network|Load failed|offline|Failed/i.test(e.message)) toast('Sin conexión: no pude buscar portadas', 3200);
-      else if (g) { g.ct = Date.now(); putMeta({ id: id, title: g.title, cover: g.cover || null, ct: g.ct }).catch(function () {}); }   // imagen rota: no se reintenta en cada arranque
+      else if (g && !(byId[id] || g).own) { g.ct = Date.now(); putMeta({ id: id, title: g.title, cover: g.cover || null, ct: g.ct }).catch(function () {}); }   // imagen rota: no se reintenta en cada arranque
     }).then(runCoverQueue);
   }
 
