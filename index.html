@@ -300,11 +300,11 @@
   .vseg button.on { background:rgba(124,108,255,.3); color:#e6e2ff; }
   #gcwrap { --gw:min(56vw, 250px, 40vh); display:flex; flex-direction:column; justify-content:center;
     min-height:calc(100dvh - 170px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding-bottom:40px; box-sizing:border-box; }
-  #gcar { position:relative; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
+  .gcar { position:relative; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
     scrollbar-width:none; overscroll-behavior-x:contain; padding:30px 0 calc(var(--gw) * .4);
     -webkit-mask-image:linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image:linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
-  #gcar::-webkit-scrollbar { display:none; }
-  #gcar::before, #gcar::after { content:""; flex:0 0 calc((100% - var(--gw) * .5) / 2); }
+  .gcar::-webkit-scrollbar { display:none; }
+  .gcar::before, .gcar::after { content:""; flex:0 0 calc((100% - var(--gw) * .5) / 2); }
   .gs { flex:0 0 calc(var(--gw) * .5); min-width:0; height:var(--gw); display:flex; justify-content:center; align-items:flex-end; position:relative;
     scroll-snap-align:center; scroll-snap-stop:always; border:0; background:none; padding:0; color:inherit;
     -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
@@ -333,7 +333,7 @@
   .gs .brf .cover .ini { display:none; }
   .gs.pressing .bx { transform:scale(.95); }
   /* Cantos de la caja según la consola: plástico oscuro (DS, Mega Drive, Game Gear, PS1), cartón claro (GB, GBA, SNES, N64) o negro (NES) */
-  #gcwrap, #ovfly { --k0:#101116; --k1:#23252d; --k2:#3a3d48; }
+  #gcwrap, .gcrow, #ovfly { --k0:#101116; --k1:#23252d; --k2:#3a3d48; }
   [data-kc="md"], [data-kc="gg"] { --k0:#050505; --k1:#141414; --k2:#2c2c2e; }
   [data-kc="psx"] { --k0:#060608; --k1:#111216; --k2:#3b3e48; }
   [data-kc="nes"] { --k0:#0a0a0a; --k1:#1b1b1b; --k2:#3a3a3a; }
@@ -342,19 +342,19 @@
   [data-kc="n64"] { --k0:#a7a7a7; --k1:#dcdcdc; --k2:#fafafa; }
   .gs img { -webkit-user-drag:none; pointer-events:none; }
   .gs:not(.on) .gfav { pointer-events:none; }
-  #gcinfo { text-align:center; padding:0 26px 6px; margin-top:-8px; }
-  /* Pestaña Juegos: Todos / Favoritos, y el mismo carrusel que dentro de cada consola (Versión 89) */
-  .lfil { display:flex; justify-content:center; gap:8px; margin:2px 16px 4px; }
-  .lfil button { display:flex; align-items:center; gap:7px; border:0; border-radius:999px; padding:8px 16px; font:inherit; font-size:15px; font-weight:600;
-    background:rgba(255,255,255,.07); color:var(--mut); transition:background .2s ease, color .2s ease; }
-  .lfil button.on { background:rgba(124,108,255,.3); color:#e6e2ff; }
-  .lfil img { width:17px; height:17px; image-rendering:pixelated; }
-  .lfil .n { font-weight:500; opacity:.7; font-variant-numeric:tabular-nums; }
-  #pLib #vbar { margin-bottom:2px; }
-  #pLib #gcwrap { min-height:calc(100dvh - 330px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding-bottom:20px; }
-  #gcinfo .gct { font-size:19px; font-weight:700; letter-spacing:-.2px; line-height:1.28; min-height:2.56em;
+  .gcinfo { text-align:center; padding:0 26px 6px; margin-top:-8px; }
+  /* Pestaña Juegos: tres carruseles más pequeños, Seguir jugando, Favoritos y Todos (Versión 90) */
+  .gcrow { --gw:min(36vw, 165px, 27vh); margin-bottom:6px; }
+  .gcrow .gcar { padding:16px 0 calc(var(--gw) * .34); }
+  .gcrow .gcinfo { margin-top:-4px; padding-bottom:0; }
+  .gcrow .gcinfo .gct { font-size:15px; min-height:0; -webkit-line-clamp:1; }
+  .gcrow .gcinfo .gcn { font-size:12px; margin-top:2px; }
+  #pLib .ptitle .n { color:var(--mut); font-size:15px; font-weight:600; letter-spacing:0; margin-left:6px; }
+  #pLib .lhint { color:var(--mut); font-size:13.5px; line-height:1.5; margin:4px 18px 18px; display:flex; align-items:center; gap:10px; }
+  #pLib .lhint img { width:30px; height:30px; flex:none; image-rendering:pixelated; }
+  .gcinfo .gct { font-size:19px; font-weight:700; letter-spacing:-.2px; line-height:1.28; min-height:2.56em;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  #gcinfo .gcn { color:var(--mut); font-size:13px; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .gcinfo .gcn { color:var(--mut); font-size:13px; margin-top:4px; font-variant-numeric:tabular-nums; }
   #selbar { display:none; position:fixed; left:0; right:0; bottom:0; z-index:60; max-width:640px; margin:0 auto; gap:8px;
     padding:10px 14px calc(env(safe-area-inset-bottom) + 10px); background:rgba(12,13,20,.82);
     -webkit-backdrop-filter:blur(22px) saturate(1.5); backdrop-filter:blur(22px) saturate(1.5); border-top:1px solid rgba(255,255,255,.07); }
@@ -622,12 +622,8 @@
     #toast { bottom:calc(env(safe-area-inset-bottom) + 20px); }
     /* sin el título «Consolitas»: el logo va arriba en la barra lateral */
     #home .brandbar { display:none; }
-    /* Juegos: Todos/Favoritos a la izquierda y lupa, vista y Ordenar a la derecha, en una sola fila */
-    #pLib { position:relative; padding-top:8px; }
-    #pLib .lfil { position:absolute; left:16px; top:10px; margin:0; z-index:31; }
-    #pLib #vbar { justify-content:flex-end; }
-    #pLib .lfil:has(~ #vbar.q) { visibility:hidden; }
-    #pLib #gcwrap { min-height:calc(100dvh - 60px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+    #pLib { padding-top:8px; }
+    .gcrow { --gw:min(30vw, 170px, 36vh); }
     #home .brandbar h1.brand { visibility:hidden; }
     .tlogo { display:flex; justify-content:center; position:absolute; left:0; right:0;
       top:calc(env(safe-area-inset-top) + 14px); pointer-events:none; }
@@ -723,7 +719,7 @@
       </div>
       <div id="qbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="eQ" type="search" placeholder="Buscar juego" autocomplete="off" autocorrect="off" spellcheck="false"><button id="eQx">Cancelar</button></div>
     </div>
-    <div id="gcwrap" style="display:none"><div id="gcar"></div><div id="gcinfo"><div class="gct"></div><div class="gcn"></div></div></div>
+    <div id="gcwrap" style="display:none"><div id="gcar" class="gcar"></div><div id="gcinfo" class="gcinfo"><div class="gct"></div><div class="gcn"></div></div></div>
     <div id="games" class="ggrid"></div>
     <div class="hint" id="gHint" style="display:none;padding:0 20px 30px">Toca un juego para abrirlo · mantén pulsado para más opciones</div>
     <div id="hbrew" style="display:none"></div>
@@ -800,7 +796,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 89 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 90 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1500,7 +1496,7 @@
   function renderGames() {
     if (!ctxConsole) return;
     var c = CONSOLES[ctxConsole];
-    if ($('vbar').parentNode !== $('cview')) { $('cview').insertBefore($('vbar'), $('games')); $('cview').insertBefore($('gcwrap'), $('games')); }
+    if ($('vbar').parentNode !== $('cview')) $('cview').insertBefore($('vbar'), $('gcwrap'));
     $('cTitle').firstChild.nodeValue = c.name;
     var list = games.filter(function (g) { return g.console === ctxConsole; });
     $('cSub').textContent = list.length === 1 ? '1 juego' : list.length + ' juegos';
@@ -1510,7 +1506,7 @@
     var car = list.length && gView() === 'car' && !gridForced();
     $('vbar').style.display = list.length ? '' : 'none';
     $('gcwrap').style.display = car ? '' : 'none'; box.style.display = car ? 'none' : '';
-    if (!car) { gcEl.innerHTML = ''; gcSlides = []; }
+    if (!car) GC.clear();
     paintView();
     if (!list.length && editOn) setEdit(false);
     if (!list.length && selMode) { selMode = false; selIds = []; $('cview').classList.remove('sel'); $('btnEdit').classList.remove('on'); }
@@ -1535,7 +1531,7 @@
     }
     if (car) {
       $('gcwrap').setAttribute('data-kc', ctxConsole);
-      buildGCar(list);
+      GC.build(list, ctxConsole);
       selCount();
       return;
     }
@@ -1558,11 +1554,7 @@
   // Estilo «coverflow»: la portada del centro de frente y las de los lados giradas en perspectiva, con reflejo en el suelo.
   // Infinito como el de las consolas: copias seguidas de la lista y, cuando el scroll se para fuera de la copia central,
   // se salta al mismo juego en la central sin que se vea. Al buscar o eliminar varios se usa la cuadrícula.
-  var gcEl = $('gcar'), gcSlides = [], gcList = [], gcN = 0, gcMid = 0, gcIdx = -1, gcCur = null, gcCurC = null;
-  var gcRaf = 0, gcSettle = 0, gcTouch = false, gcLit = [];
   function gView() { return lsGet('gview', 'car') === 'grid' ? 'grid' : 'car'; }
-  function libOn() { return !ctxConsole && TAB === 'lib' && $('home').style.display !== 'none'; }   // pestaña Juegos: comparte carrusel, lupa y Ordenar
-  function gKey() { return ctxConsole || 'all'; }
   function reGames() { if (ctxConsole) renderGames(); else if (TAB === 'lib') renderLib(); }
   function gridForced() { return editOn; }     // al buscar, la cuadrícula
   function paintView() {
@@ -1582,91 +1574,102 @@
     bx.insertAdjacentHTML('beforeend', '<i class="bsl"></i><i class="bsr"></i><i class="bt"></i>');
     return bx;
   }
-  function buildGCar(list) {
-    var keep = gcCurC === gKey() ? gcCur : lsGet('gcar-' + gKey(), '');
-    var copies = list.length < 2 ? 1 : Math.max(3, Math.ceil(40 / list.length) | 1);
-    gcEl.innerHTML = ''; gcSlides = []; gcLit = []; gcIdx = -1;
-    gcList = list; gcN = list.length; gcMid = Math.floor(copies / 2) * gcN; gcCurC = gKey();
-    for (var p = 0; p < gcN * copies; p++) (function (pos) {
-      var g = list[pos % gcN], b = document.createElement('button'); b.className = 'gs'; b.setAttribute('data-id', g.id); b.setAttribute('data-kc', g.console);
-      if (pos < gcMid || pos >= gcMid + gcN) { b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1; }
-      var t = document.createElement('div'); t.className = 'g3';
-      var bx = boxEl(g, true), bf = bx.firstChild, k = document.createElement('div'); k.className = 'chk';
-      bf.appendChild(gFavEl(g)); bf.appendChild(k);
-      if (selIds.indexOf(g.id) >= 0) b.classList.add('picked');
-      var rf = document.createElement('div'); rf.className = 'brf'; rf.setAttribute('aria-hidden', 'true'); rf.appendChild(coverEl(g, true, true)); bx.appendChild(rf);
-      t.appendChild(bx); b.appendChild(t);
-      b.addEventListener('click', function (e) {     // una portada de los lados: primero se trae al centro
-        if (pos === gcIdx) return;
-        gcGo(pos, true);
-        if (!selMode) { e.stopImmediatePropagation(); e.preventDefault(); }   // al elegir para eliminar, se marca igualmente
-      });
-      attachPress(b, g.id);
-      gcEl.appendChild(b); gcSlides.push(b);
-    })(p);
-    var k = 0;
-    for (var i = 0; i < gcN; i++) if (list[i].id === keep) { k = i; break; }
-    gcGo(gcMid + k, false); gcPaint();
-  }
-  function gcGo(i, smooth) {
-    var s = gcSlides[i]; if (!s) return;
-    var x = s.offsetLeft - (gcEl.clientWidth - s.offsetWidth) / 2;
-    if (gcEl.scrollTo) gcEl.scrollTo({ left: x, behavior: smooth ? 'smooth' : 'auto' }); else gcEl.scrollLeft = x;
-  }
-  function gcActive(i) {
-    if (!gcSlides[i] || i === gcIdx) return;
-    if (gcSlides[gcIdx]) gcSlides[gcIdx].classList.remove('on');
-    gcSlides[i].classList.add('on'); gcIdx = i;
-    var g = gcList[i % gcN];
-    gcCur = g.id; lsSet('gcar-' + gKey(), g.id);
-    $('gcinfo').firstChild.textContent = g.title;
-    var pos = gcN > 1 ? (i % gcN + 1) + ' de ' + gcN : '';
-    if (!ctxConsole && CONSOLES[g.console]) pos = CONSOLES[g.console].short + (pos ? ' · ' + pos : '');   // en Juegos se mezclan consolas
-    $('gcinfo').lastChild.textContent = pos;
-  }
-  function gcPaint() {                       // giro y profundidad de cada portada según lo lejos que esté del centro
-    if (!gcSlides.length) return;
-    var a = gcSlides[0], L = gcSlides.length, w = a.offsetWidth, mid = gcEl.scrollLeft + gcEl.clientWidth / 2;
-    var pitch = L > 1 ? (gcSlides[L - 1].offsetLeft - a.offsetLeft) / (L - 1) : 0;   // media: el ancho no es entero
-    var c = pitch ? Math.max(0, Math.min(L - 1, Math.round((mid - a.offsetLeft - w / 2) / pitch))) : 0, lit = [];
-    for (var i = Math.max(0, c - 4); i <= Math.min(L - 1, c + 4); i++) {
-      var d = pitch ? (gcSlides[i].offsetLeft + w / 2 - mid) / pitch : 0;
-      if (Math.abs(d) < .03) d = 0;           // la del centro, de frente del todo aunque el scroll quede a medio píxel
-      var ad = Math.abs(d), t = Math.max(-1, Math.min(1, d)), el = gcSlides[i].firstChild;
-      el.style.transform = 'perspective(800px) translateX(' + (t * 40 + (d - t) * 6).toFixed(2) + '%) translateZ(' +
-        (-(Math.min(ad, 1) * 130 + Math.max(0, ad - 1) * 80)).toFixed(1) + 'px) rotateY(-24deg) rotateX(-7deg)';   // todas giradas igual: se ven el canto y la tapa
-      el.style.setProperty('--dim', (Math.min(ad, 2) * .26).toFixed(3));
-      el.style.visibility = 'visible';
-      gcSlides[i].style.zIndex = 50 - Math.round(ad * 10);
-      lit.push(i);
+  // Un carrusel: el de cada consola y los tres de la pestaña Juegos. key: dónde se recuerda el juego centrado
+  // (gcar-<consola>, gcar-rec, gcar-fav, gcar-all); mix: mezcla consolas (bajo el título se dice cuál).
+  var GCARS = [];
+  function GCar(el, info, mix) {
+    var C = { el: el, slides: [], list: [], n: 0, mid: 0, idx: -1, cur: null, key: '', lit: [] }, raf = 0, settle = 0, touch = false;
+    function live() { return !!el.offsetParent; }
+    C.clear = function () { el.innerHTML = ''; C.slides = []; C.lit = []; C.idx = -1; };
+    C.build = function (list, key, many) {
+      var keep = C.key === key && C.cur ? C.cur : lsGet('gcar-' + key, '');
+      var copies = list.length < 2 ? 1 : Math.max(3, Math.ceil((many || 40) / list.length) | 1);
+      C.clear(); C.key = key;
+      C.list = list; C.n = list.length; C.mid = Math.floor(copies / 2) * C.n;
+      for (var p = 0; p < C.n * copies; p++) (function (pos) {
+        var g = list[pos % C.n], b = document.createElement('button'); b.className = 'gs'; b.setAttribute('data-id', g.id); b.setAttribute('data-kc', g.console);
+        if (pos < C.mid || pos >= C.mid + C.n) { b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1; }
+        var t = document.createElement('div'); t.className = 'g3';
+        var bx = boxEl(g, true), bf = bx.firstChild, k = document.createElement('div'); k.className = 'chk';
+        bf.appendChild(gFavEl(g)); bf.appendChild(k);
+        if (selIds.indexOf(g.id) >= 0) b.classList.add('picked');
+        var rf = document.createElement('div'); rf.className = 'brf'; rf.setAttribute('aria-hidden', 'true'); rf.appendChild(coverEl(g, true, true)); bx.appendChild(rf);
+        t.appendChild(bx); b.appendChild(t);
+        b.addEventListener('click', function (e) {     // una portada de los lados: primero se trae al centro
+          if (pos === C.idx) return;
+          C.go(pos, true);
+          if (!selMode) { e.stopImmediatePropagation(); e.preventDefault(); }   // al elegir para eliminar, se marca igualmente
+        });
+        attachPress(b, g.id);
+        el.appendChild(b); C.slides.push(b);
+      })(p);
+      var k = 0;
+      for (var i = 0; i < C.n; i++) if (list[i].id === keep) { k = i; break; }
+      C.go(C.mid + k, false); C.paint();
+    };
+    C.go = function (i, smooth) {
+      var s = C.slides[i]; if (!s) return;
+      var x = s.offsetLeft - (el.clientWidth - s.offsetWidth) / 2;
+      if (el.scrollTo) el.scrollTo({ left: x, behavior: smooth ? 'smooth' : 'auto' }); else el.scrollLeft = x;
+    };
+    function active(i) {
+      if (!C.slides[i] || i === C.idx) return;
+      if (C.slides[C.idx]) C.slides[C.idx].classList.remove('on');
+      C.slides[i].classList.add('on'); C.idx = i;
+      var g = C.list[i % C.n];
+      C.cur = g.id; lsSet('gcar-' + C.key, g.id);
+      info.firstChild.textContent = g.title;
+      var pos = C.n > 1 ? (i % C.n + 1) + ' de ' + C.n : '';
+      if (mix && CONSOLES[g.console]) pos = CONSOLES[g.console].short + (pos ? ' · ' + pos : '');
+      info.lastChild.textContent = pos;
     }
-    gcLit.forEach(function (j) { if (lit.indexOf(j) < 0 && gcSlides[j]) gcSlides[j].firstChild.style.visibility = 'hidden'; });
-    gcLit = lit;
-    gcActive(c);
-  }
-  function gcRecenter() {
-    if (gcN < 2 || gcIdx < 0 || (gcIdx >= gcMid && gcIdx < gcMid + gcN)) return;
-    gcGo(gcMid + gcIdx % gcN, false); gcPaint();
-  }
-  gcEl.addEventListener('scroll', function () {
-    if (!gcRaf) gcRaf = requestAnimationFrame(function () { gcRaf = 0; gcPaint(); });
-    clearTimeout(gcSettle);
-    gcSettle = setTimeout(function () { if (!gcTouch && (ctxConsole || libOn())) gcRecenter(); }, 400);
-  }, { passive: true });
-  gcEl.addEventListener('touchstart', function () { gcTouch = true; clearTimeout(gcSettle); }, { passive: true });
-  ['touchend', 'touchcancel'].forEach(function (ev) {
-    gcEl.addEventListener(ev, function () {
-      gcTouch = false; clearTimeout(gcSettle);
-      gcSettle = setTimeout(function () { if (!gcTouch && (ctxConsole || libOn())) gcRecenter(); }, 400);
+    C.paint = function () {                  // giro y profundidad de cada portada según lo lejos que esté del centro
+      var S = C.slides; if (!S.length) return;
+      var a = S[0], L = S.length, w = a.offsetWidth, mid = el.scrollLeft + el.clientWidth / 2;
+      var pitch = L > 1 ? (S[L - 1].offsetLeft - a.offsetLeft) / (L - 1) : 0;   // media: el ancho no es entero
+      var c = pitch ? Math.max(0, Math.min(L - 1, Math.round((mid - a.offsetLeft - w / 2) / pitch))) : 0, lit = [];
+      for (var i = Math.max(0, c - 4); i <= Math.min(L - 1, c + 4); i++) {
+        var d = pitch ? (S[i].offsetLeft + w / 2 - mid) / pitch : 0;
+        if (Math.abs(d) < .03) d = 0;           // la del centro, de frente del todo aunque el scroll quede a medio píxel
+        var ad = Math.abs(d), t = Math.max(-1, Math.min(1, d)), g3 = S[i].firstChild;
+        g3.style.transform = 'perspective(800px) translateX(' + (t * 40 + (d - t) * 6).toFixed(2) + '%) translateZ(' +
+          (-(Math.min(ad, 1) * 130 + Math.max(0, ad - 1) * 80)).toFixed(1) + 'px) rotateY(-24deg) rotateX(-7deg)';   // todas giradas igual: se ven el canto y la tapa
+        g3.style.setProperty('--dim', (Math.min(ad, 2) * .26).toFixed(3));
+        g3.style.visibility = 'visible';
+        S[i].style.zIndex = 50 - Math.round(ad * 10);
+        lit.push(i);
+      }
+      C.lit.forEach(function (j) { if (lit.indexOf(j) < 0 && S[j]) S[j].firstChild.style.visibility = 'hidden'; });
+      C.lit = lit;
+      active(c);
+    };
+    function recenter() {
+      if (C.n < 2 || C.idx < 0 || (C.idx >= C.mid && C.idx < C.mid + C.n)) return;
+      C.go(C.mid + C.idx % C.n, false); C.paint();
+    }
+    C.refit = function () { if (live() && C.slides.length && C.idx >= 0) { C.go(C.idx, false); C.paint(); } };
+    el.addEventListener('scroll', function () {
+      if (!raf) raf = requestAnimationFrame(function () { raf = 0; C.paint(); });
+      clearTimeout(settle);
+      settle = setTimeout(function () { if (!touch && live()) recenter(); }, 400);
     }, { passive: true });
-  });
+    el.addEventListener('touchstart', function () { touch = true; clearTimeout(settle); }, { passive: true });
+    ['touchend', 'touchcancel'].forEach(function (ev) {
+      el.addEventListener(ev, function () {
+        touch = false; clearTimeout(settle);
+        settle = setTimeout(function () { if (!touch && live()) recenter(); }, 400);
+      }, { passive: true });
+    });
+    return C;
+  }
+  var GC = GCar($('gcar'), $('gcinfo'), false);          // el de dentro de cada consola
   window.addEventListener('resize', function () {
-    if ((ctxConsole || libOn()) && gcSlides.length && gcIdx >= 0) { gcGo(gcIdx, false); gcPaint(); }
+    GC.refit(); GCARS.forEach(function (c) { c.refit(); });
   });
   document.addEventListener('keydown', function (e) {
-    if (!(ctxConsole || libOn()) || !gcSlides.length || ovId || $('gcwrap').style.display === 'none' || document.activeElement === $('eQ')) return;
-    if (e.key === 'ArrowLeft') gcGo(Math.max(0, gcIdx - 1), true);
-    else if (e.key === 'ArrowRight') gcGo(Math.min(gcSlides.length - 1, gcIdx + 1), true);
+    if (!ctxConsole || !GC.slides.length || ovId || $('gcwrap').style.display === 'none' || document.activeElement === $('eQ')) return;
+    if (e.key === 'ArrowLeft') GC.go(Math.max(0, GC.idx - 1), true);
+    else if (e.key === 'ArrowRight') GC.go(Math.min(GC.slides.length - 1, GC.idx + 1), true);
   });
 
   /* ====== Editar la lista de una consola: ordenar, buscar y eliminar varios ====== */
@@ -1801,63 +1804,63 @@
     attachPress(b, g.id);
     return b;
   }
-  // Arriba, Todos o Favoritos; debajo la misma fila que en cada consola (lupa, carrusel/cuadrícula, Ordenar)
-  function libFil() { return lsGet('lfil', 'all') === 'fav' ? 'fav' : 'all'; }
+  // Arriba la misma fila que en cada consola (lupa, carrusel/cuadrícula, Ordenar) y debajo tres apartados:
+  // Seguir jugando, Favoritos y Todos. En carrusel, cada uno es un carrusel más pequeño; al buscar, solo los resultados.
   function renderLib() {
-    if (ctxConsole) return;                        // con una consola abierta, la fila y el carrusel son suyos
-    var el = $('pLib'), vb = $('vbar'), gw = $('gcwrap');
-    // la fila y el carrusel no se sacan si ya están aquí: así el buscador no pierde el foco mientras se escribe
-    Array.prototype.slice.call(el.childNodes).forEach(function (n) { if (n !== vb && n !== gw) el.removeChild(n); });
+    if (ctxConsole) return;                        // con una consola abierta, la fila es suya
+    var el = $('pLib'), vb = $('vbar');
+    // la fila no se saca si ya está aquí: así el buscador no pierde el foco mientras se escribe
+    Array.prototype.slice.call(el.childNodes).forEach(function (n) { if (n !== vb) el.removeChild(n); });
+    GCARS = [];
     if (!games.length) {
-      if (vb.parentNode === el) { $('cview').insertBefore(vb, $('games')); $('cview').insertBefore(gw, $('games')); }
-      gw.style.display = 'none'; gcEl.innerHTML = ''; gcSlides = [];
+      if (vb.parentNode === el) $('cview').insertBefore(vb, $('gcwrap'));
       el.insertAdjacentHTML('beforeend', '<div class="ptitle">Juegos</div><div class="empty"><div class="big">🎮</div>Aún no tienes juegos.<br>' +
         'Añade una ROM o prueba los de la pestaña Gratis.<br><button class="addbig" id="libAdd">＋ Añadir juego</button></div>');
       $('libAdd').onclick = function () { $('rom').click(); };
       return;
     }
-    var fil = libFil(), favs = games.filter(isGFav);
-    var fb = document.createElement('div'); fb.className = 'lfil'; fb.setAttribute('role', 'group'); fb.setAttribute('aria-label', 'Qué juegos ver');
-    [['all', 'Todos', games.length], ['fav', 'Favoritos', favs.length]].forEach(function (o) {
-      var b = document.createElement('button'); b.setAttribute('data-f', o[0]); b.classList.toggle('on', fil === o[0]);
-      if (o[0] === 'fav') { var im = document.createElement('img'); im.alt = ''; im.src = STAR_IMG; b.appendChild(im); }
-      b.appendChild(document.createTextNode(o[1]));
-      var n = document.createElement('span'); n.className = 'n'; n.textContent = o[2]; b.appendChild(n);
-      b.onclick = function () { if (libFil() === o[0]) return; lsSet('lfil', o[0]); renderLib(); $('home').scrollTop = 0; };
-      fb.appendChild(b);
-    });
-    if (vb.parentNode !== el) { el.appendChild(vb); el.appendChild(gw); }
-    el.insertBefore(fb, vb); vb.style.display = '';
+    if (vb.parentNode !== el) el.appendChild(vb);
+    vb.style.display = '';
     paintView();
-    var list = sortList(fil === 'fav' ? favs : games);
-    var q = fold($('eQ').value.trim());
-    if (q && editOn) list = list.filter(function (g) { return fold(g.title).indexOf(q) >= 0; });
-    var car = list.length && gView() === 'car' && !gridForced();
-    $('gcwrap').style.display = car ? '' : 'none';
-    if (!car) { gcEl.innerHTML = ''; gcSlides = []; }
-    if (!list.length) {
-      var e = document.createElement('div'); e.className = 'empty';
-      if (q && editOn) { e.style.padding = '40px 20px'; e.textContent = 'Ningún juego coincide con «' + $('eQ').value.trim() + '»'; }
-      else e.innerHTML = '<img class="pad px" alt="" src="' + STAR_IMG + '" style="width:84px;image-rendering:pixelated">Aún no tienes favoritos.<br>' +
-        'Toca el icono de la esquina de una portada<br>o mantén pulsado un juego para marcarlo.';
-      el.appendChild(e);
+    var q = fold($('eQ').value.trim()), car = gView() === 'car' && !gridForced();
+    function title(t, n) {
+      var h = document.createElement('div'); h.className = 'ptitle'; h.textContent = t;
+      if (n != null) { var c = document.createElement('span'); c.className = 'n'; c.textContent = n; h.appendChild(c); }
+      el.appendChild(h);
+    }
+    function section(t, list, key) {
+      title(t, list.length);
+      if (car) {
+        var w = document.createElement('div'); w.className = 'gcrow';
+        w.innerHTML = '<div class="gcar"></div><div class="gcinfo"><div class="gct"></div><div class="gcn"></div></div>';
+        el.appendChild(w);
+        var c = GCar(w.firstChild, w.lastChild, true); GCARS.push(c);
+        c.build(list, key, 24);
+      } else {
+        var g = document.createElement('div'); g.className = 'ggrid';
+        list.forEach(function (x) { g.appendChild(libCard(x)); });
+        el.appendChild(g);
+      }
+    }
+    if (q && editOn) {                             // buscando: una sola lista con lo que coincide
+      var found = sortList(games).filter(function (g) { return fold(g.title).indexOf(q) >= 0; });
+      if (!found.length) {
+        var e = document.createElement('div'); e.className = 'empty'; e.style.padding = '40px 20px';
+        e.textContent = 'Ningún juego coincide con «' + $('eQ').value.trim() + '»'; el.appendChild(e);
+      } else section('Resultados', found, 'all');
       return;
     }
-    if (car) { $('gcwrap').removeAttribute('data-kc'); buildGCar(list); return; }
-    var rec = fil === 'all' && !editOn ? recentIds().slice(0, 4) : [];
-    if (rec.length) {
-      var h = document.createElement('div'); h.className = 'ptitle'; h.textContent = 'Seguir jugando'; el.appendChild(h);
-      var g1 = document.createElement('div'); g1.className = 'ggrid';
-      rec.forEach(function (id) { g1.appendChild(libCard(byId[id])); });
-      el.appendChild(g1);
+    var rec = recentIds().slice(0, car ? 8 : 4).map(function (id) { return byId[id]; });
+    if (rec.length) section('Seguir jugando', rec, 'rec');
+    var favs = sortList(games.filter(isGFav));
+    if (favs.length) section('Favoritos', favs, 'fav');
+    else {
+      title('Favoritos');
+      var hnt = document.createElement('div'); hnt.className = 'lhint';
+      hnt.innerHTML = '<img alt="" src="' + STAR_IMG + '"><span>Toca el icono de la esquina de una portada o mantén pulsado un juego para tenerlo aquí.</span>';
+      el.appendChild(hnt);
     }
-    var h2 = document.createElement('div'); h2.className = 'ptitle';
-    h2.textContent = fil === 'fav' ? 'Favoritos' : 'Todos tus juegos'; el.appendChild(h2);
-    var sub = document.createElement('div'); sub.className = 'psub';
-    sub.textContent = (list.length === 1 ? '1 juego' : list.length + ' juegos') + ' · mantén pulsado para más opciones'; el.appendChild(sub);
-    var g2 = document.createElement('div'); g2.className = 'ggrid';
-    list.forEach(function (g) { g2.appendChild(libCard(g)); });
-    el.appendChild(g2);
+    section('Todos', sortList(games), 'all');
   }
 
   /* ====== Pestaña Partidas: tarjeta de memoria ======
@@ -2073,7 +2076,7 @@
     var srcEl = coverOf(id), ov = $('ov'), fly = $('ovfly'), info = $('ovinfo'), bg = $('ovbg'), t = ovTarget();
     ovId = id; ovBusy = false;
     fly.innerHTML = ''; fly.appendChild(boxEl(g, false)); fly.setAttribute('data-kc', g.console);
-    var fromCar = !!(srcEl && srcEl.closest('#gcar'));
+    var fromCar = !!(srcEl && srcEl.closest('.gcar'));
     fly.classList.toggle('tilt', fromCar);    // desde el carrusel ya va girada; desde la cuadrícula gira mientras sube
     $('ovt').textContent = g.title;
     $('ovload').style.display = 'none';
@@ -2112,7 +2115,7 @@
     }
     if (!canAnimate()) { done(); return; }
     var srcEl = coverOf(id), r = srcEl ? srcEl.getBoundingClientRect() : null;
-    if (!(srcEl && srcEl.closest('#gcar'))) fly.classList.remove('tilt');   // vuelve plana a la cuadrícula
+    if (!(srcEl && srcEl.closest('.gcar'))) fly.classList.remove('tilt');   // vuelve plana a la cuadrícula
     var sc = r ? r.width / fly.offsetWidth : 0.9, dx = r ? r.left - fly.offsetLeft : 0, dy = r ? r.top - fly.offsetTop : 40;
     var a = fly.animate([
       { transform: 'translate(0px,0px) scale(1)', borderRadius: '26px', opacity: 1 },
@@ -2175,7 +2178,7 @@
   $('delFav').onclick = function () {
     var id = delId && delId[0]; if (!id) return;
     closeDel();
-    var f = document.querySelector('#gcar .gs.on .gfav[data-id="' + id + '"]') || document.querySelector('.gcard .gfav[data-id="' + id + '"]') || document.createElement('span');
+    var f = document.querySelector('.gcar .gs.on .gfav[data-id="' + id + '"]') || document.querySelector('.gcard .gfav[data-id="' + id + '"]') || document.createElement('span');
     toggleGFav(id, f);
     toast(isGFav(byId[id]) ? 'Añadido a favoritos' : 'Quitado de favoritos');
   };
@@ -2409,7 +2412,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 89, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 90, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
