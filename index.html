@@ -807,7 +807,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión 96 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión 97 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2490,7 +2490,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 96, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 97, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2978,8 +2978,9 @@
   // Devuelve una lista de elementos {kind:'rom'|'patch', base, ext, buf o blob, c}
   function extract(file) {
     var fext = extOf(file.name), big = file.size > 64 * 1048576;
-    var head = DISC_EXTS.indexOf(fext) >= 0 || big ? file.slice(0, 0x10000).arrayBuffer() : Promise.resolve(null);
+    var head = DISC_EXTS.indexOf(fext) >= 0 || PACK_EXTS.indexOf(fext) >= 0 || big ? file.slice(0, 0x10000).arrayBuffer() : Promise.resolve(null);
     return head.then(function (hb) {
+      if (hb && isPacked(new Uint8Array(hb))) return unpackFile(file);
       var d = hb && discOf(file, fext, new Uint8Array(hb));
       if (d) return [d];
       if (big && fext !== 'zip') throw new Error('archivo demasiado grande y no es un disco de PS1 reconocido');
@@ -2989,8 +2990,7 @@
   function extractAll(file) {
     return file.arrayBuffer().then(function (buf) {
       var u8 = new Uint8Array(buf), fext = extOf(file.name);
-      if (u8[0] === 0x37 && u8[1] === 0x7A && u8[2] === 0xBC) throw new Error('los .7z no se pueden abrir aquí; usa un .zip');
-      if (u8[0] === 0x52 && u8[1] === 0x61 && u8[2] === 0x72 && u8[3] === 0x21) throw new Error('los .rar no se pueden abrir aquí; usa un .zip');
+      if (isPacked(u8)) return unpackFile(file);
       var zipped = u8[0] === 0x50 && u8[1] === 0x4B && u8[2] === 0x03 && u8[3] === 0x04;
       if (!zipped) return [itemOf(baseOf(file.name), fext, buf, file.name)];
       return JSZip.loadAsync(buf).then(function (zip) {
@@ -3021,20 +3021,182 @@
             });
           });
         });
-        return chain.then(function () {
-          // Si dentro hay alguna ROM reconocida por su contenido, lo demás que solo encajaba «por la consola abierta»
-          // (archivos sin extensión, .bin sueltos…) no son juegos: se quedan fuera (Versión 87)
-          if (out.some(function (x) { return x.kind === 'rom' && !x.guess; }))
-            out = out.filter(function (x) { return !x.guess; });
-          if (!out.length) throw new Error('no hay ninguna ROM ni parche reconocido dentro de ' + file.name);
-          // Un parche con nombre genérico («patch.bps», «Unheadered.ips») toma el nombre del .zip
-          var zb = baseOf(file.name), pts = out.filter(function (x) { return x.kind === 'patch'; });
-          pts.forEach(function (x) {
-            if (GENERIC_PATCH.test(x.base.trim())) x.base = pts.length > 1 ? zb + ' ' + x.base : zb;
+        return chain.then(function () { return packedItems(file, out); });
+      });
+    });
+  }
+  function packedItems(file, out) {
+    // Si dentro hay alguna ROM reconocida por su contenido, lo demás que solo encajaba «por la consola abierta»
+    // (archivos sin extensión, .bin sueltos…) no son juegos: se quedan fuera (Versión 87)
+    if (out.some(function (x) { return x.kind === 'rom' && !x.guess; }))
+      out = out.filter(function (x) { return !x.guess; });
+    if (!out.length) throw new Error('no hay ninguna ROM ni parche reconocido dentro de ' + file.name);
+    // Un parche con nombre genérico («patch.bps», «Unheadered.ips») toma el nombre del .zip
+    var zb = baseOf(file.name), pts = out.filter(function (x) { return x.kind === 'patch'; });
+    pts.forEach(function (x) {
+      if (GENERIC_PATCH.test(x.base.trim())) x.base = pts.length > 1 ? zb + ' ' + x.base : zb;
+    });
+    return out;
+  }
+  /* .7z y .rar (Versión 97): se abren con 7-Zip (lib/7z, LGPL) dentro de un Worker. El archivo no se copia en memoria:
+     7-Zip lo lee a trozos directamente del archivo elegido, y lo que hay dentro sale a trozos de 16 MB que van a Blobs.
+     Así un disco de PS1 de cientos de MB no está entero en la memoria de la página mientras se descomprime. */
+  var PACK_EXTS = ['7z', 'rar'];
+  function isPacked(u8) {
+    return (u8[0] === 0x37 && u8[1] === 0x7A && u8[2] === 0xBC && u8[3] === 0xAF) ||
+      (u8[0] === 0x52 && u8[1] === 0x61 && u8[2] === 0x72 && u8[3] === 0x21);
+  }
+  // Código del Worker (se pasa como texto: no puede usar nada de fuera)
+  function un7zWorker() {
+    var CRC = new Int32Array(256), wasm = null, base = '';
+    for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c; }
+    // Una instancia nueva de 7-Zip por orden: empieza limpia y su memoria se suelta al acabar
+    function run(file, args, sink) {
+      var log = [];
+      return SevenZip({ wasmBinary: wasm, print: function (s) { log.push(s); }, printErr: function (s) { log.push(s); } }).then(function (m) {
+        var FS = m.FS, code;
+        FS.mkdir('/in'); FS.mount(m.WORKERFS, { files: [file] }, '/in');
+        if (sink) {                                    // con -so lo descomprimido va a «sink» en vez de a la consola
+          var dev = FS.makedev(64, 0);
+          FS.registerDevice(dev, { write: function (st, buf, off, len) { sink(buf.slice(off, off + len)); return len; } });
+          FS.mkdev('/sink', dev);
+          FS.close(FS.getStream(1)); FS.open('/sink', 1);   // vuelve a ser la salida 1
+        }
+        try { code = m.callMain(args); } catch (e) { code = e && e.status != null ? e.status : -1; log.push(String(e && e.message || e)); }
+        return { code: code, log: log };
+      });
+    }
+    function fail(r) {
+      var t = r.log.join('\n');
+      if (/password|contraseña/i.test(t)) return 'tiene contraseña';
+      if (/Cannot open the file as archive|Unexpected end|Data Error|CRC Failed/i.test(t)) return 'el archivo está dañado o incompleto';
+      return 'no se pudo descomprimir (' + (r.log.filter(function (l) { return /ERROR/i.test(l); })[0] || 'código ' + r.code) + ')';
+    }
+    onmessage = function (e) {
+      var file = e.data.file, junk = e.data.junk, arc = '/in/' + file.name;
+      var post = function (m) { postMessage(m); };
+      base = e.data.base;
+      importScripts(base + '7zz.umd.js');
+      fetch(base + '7zz.wasm').then(function (r) {
+        if (!r.ok) throw new Error('no se pudo descargar el descompresor');
+        return r.arrayBuffer();
+      }).then(function (b) {
+        wasm = b;
+        return run(file, ['l', '-slt', '-ba', '-bsp0', '-sccUTF-8', '-pconsolitas', arc]);
+      }).then(function (r) {
+        if (r.code !== 0) throw new Error(fail(r));
+        var list = [], cur = null;
+        r.log.forEach(function (l) {
+          var m = /^(\w[\w ]*?) = (.*)$/.exec(l.replace(/^[^\x08]*\x08+\s*/, ''));
+          if (!m) return;
+          if (m[1] === 'Path') list.push(cur = { path: m[2], size: 0, dir: false });
+          else if (cur && m[1] === 'Size') cur.size = +m[2] || 0;
+          else if (cur && (m[1] === 'Folder' && m[2] === '+' || m[1] === 'Attributes' && m[2].charAt(0) === 'D')) cur.dir = true;
+        });
+        // Fuera carpetas, restos del Mac (__MACOSX, ._x, .DS_Store), ocultos y lo que no es un juego (textos, fotos…)
+        list = list.filter(function (f) {
+          var x = /\.([A-Za-z0-9]+)$/.exec(f.path);
+          return !f.dir && !/(^|[\/\\])(__MACOSX[\/\\]|\.)/.test(f.path) && !(x && junk.indexOf(x[1].toLowerCase()) >= 0);
+        });
+        var total = list.reduce(function (a, f) { return a + f.size; }, 0) || 1, done = 0, chain = Promise.resolve();
+        list.forEach(function (f) {
+          chain = chain.then(function () {
+            var blobs = [], parts = [], held = 0, crc = -1, got = 0, shown = -1;
+            return run(file, ['e', '-so', '-spd', '-y', '-bsp0', '-sccUTF-8', '-pconsolitas', arc, f.path], function (u8) {
+              for (var i = 0; i < u8.length; i++) crc = CRC[(crc ^ u8[i]) & 255] ^ (crc >>> 8);
+              parts.push(u8); held += u8.length; got += u8.length;
+              if (held >= 16 * 1048576) { blobs.push(new Blob(parts)); parts = []; held = 0; }
+              var pc = Math.floor((done + got) * 100 / total);
+              if (pc !== shown) { shown = pc; post({ t: 'p', pc: pc }); }
+            }).then(function (r) {
+              if (r.code !== 0) throw new Error(fail(r));
+              if (got !== f.size) throw new Error('no se pudo sacar ' + f.path + ' entero');
+              done += got;
+              post({ t: 'f', name: f.path.split(/[\/\\]/).pop(), blob: new Blob(blobs.concat(parts)), size: got, crc: (crc ^ -1) >>> 0 });
+            });
           });
-          return out;
+        });
+        return chain;
+      }).then(function () { post({ t: 'done' }); }, function (err) { post({ t: 'err', msg: err.message || String(err) }); });
+    };
+  }
+  // Lista de {name, blob, size, crc} con lo que hay dentro del .7z/.rar
+  function unpack7(file) {
+    return new Promise(function (ok, ko) {
+      var url = URL.createObjectURL(new Blob(['(' + un7zWorker + ')()'], { type: 'text/javascript' }));
+      var w = new Worker(url), out = [];
+      function end() { w.terminate(); URL.revokeObjectURL(url); }
+      w.onmessage = function (e) {
+        var d = e.data;
+        if (d.t === 'p') status('Descomprimiendo ' + file.name + '… ' + d.pc + ' %');
+        else if (d.t === 'f') out.push(d);
+        else if (d.t === 'done') { end(); ok(out); }
+        else if (d.t === 'err') { end(); ko(new Error(d.msg)); }
+      };
+      w.onerror = function (e) { end(); ko(new Error('no se pudo descomprimir (' + (e.message || 'error') + ')')); };
+      w.postMessage({ file: file, base: new URL('lib/7z/', location.href).href, junk: JUNK_EXTS });
+    });
+  }
+  // .zip sin comprimir hecho de Blobs, sin copiar su contenido: cabeceras + los propios Blobs
+  function storeZip(list) {
+    var parts = [], cd = [], off = 0, enc = new TextEncoder();
+    function hdr(len, fill) { var b = new DataView(new ArrayBuffer(len)); fill(b); return new Uint8Array(b.buffer); }
+    list.forEach(function (f) {
+      var nm = enc.encode(f.name);
+      var lh = hdr(30, function (v) {
+        v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(6, 0x0800, true); v.setUint16(12, 0x21, true);
+        v.setUint32(14, f.crc, true); v.setUint32(18, f.size, true); v.setUint32(22, f.size, true); v.setUint16(26, nm.length, true);
+      });
+      var at = off;
+      cd.push(hdr(46, function (v) {
+        v.setUint32(0, 0x02014b50, true); v.setUint16(4, 20, true); v.setUint16(6, 20, true); v.setUint16(8, 0x0800, true);
+        v.setUint16(14, 0x21, true); v.setUint32(16, f.crc, true); v.setUint32(20, f.size, true); v.setUint32(24, f.size, true);
+        v.setUint16(28, nm.length, true); v.setUint32(42, at, true);
+      }), nm);
+      parts.push(lh, nm, f.blob);
+      off += 30 + nm.length + f.size;
+    });
+    var cdLen = cd.reduce(function (a, b) { return a + b.length; }, 0);
+    var end = hdr(22, function (v) {
+      v.setUint32(0, 0x06054b50, true); v.setUint16(8, list.length, true); v.setUint16(10, list.length, true);
+      v.setUint32(12, cdLen, true); v.setUint32(16, off, true);
+    });
+    return new Blob(parts.concat(cd, [end]));
+  }
+  function unpackFile(file) {
+    return unpack7(file).then(function (list) {
+      var zb = baseOf(file.name), ex = function (f) { return extOf(f.name); };
+      var discs = list.filter(function (f) { return DISC_EXTS.indexOf(ex(f)) >= 0; });
+      var cue = discs.filter(function (f) { return CUE_EXTS.indexOf(ex(f)) >= 0; })[0];
+      // PS1 con .cue: si es una sola pista basta el .bin; con varias (música en pistas aparte, varios discos…)
+      // se guarda un .zip sin comprimir con todo, que el emulador abre por el .cue
+      if (cue) return cue.blob.text().then(function (txt) {
+        var bins = discs.filter(function (f) { return CUE_EXTS.indexOf(ex(f)) < 0; });
+        var nf = (txt.match(/^\s*FILE\s/gim) || []).length, nt = (txt.match(/^\s*TRACK\s/gim) || []).length;
+        if (ex(cue) === 'cue' && nf === 1 && nt === 1 && bins.length === 1)
+          return [{ kind: 'rom', base: zb, ext: ['img', 'iso'].indexOf(ex(bins[0])) >= 0 ? ex(bins[0]) : 'bin', blob: bins[0].blob, c: 'psx', fname: file.name }];
+        return [{ kind: 'rom', base: zb, ext: 'zip', blob: storeZip(discs), c: 'psx', fname: file.name }];
+      });
+      // .chd, .pbp o una imagen de disco suelta: tal cual
+      var out = [], chain = Promise.resolve();
+      list.forEach(function (f) {
+        chain = chain.then(function () {
+          var e = ex(f);
+          if (DISC_EXTS.indexOf(e) >= 0 || f.size > 64 * 1048576) {
+            return f.blob.slice(0, 0x10000).arrayBuffer().then(function (hb) {
+              var d = discOf(new File([f.blob], f.name), e, new Uint8Array(hb));
+              if (d) { d.base = list.length === 1 ? zb : d.base; d.blob = f.blob; out.push(d); }
+              else if (f.size > 64 * 1048576) throw new Error(f.name + ' es demasiado grande y no es un disco de PS1 reconocido');
+              else return f.blob.arrayBuffer().then(function (b) { var it = itemOf(baseOf(f.name), e, b, f.name, true); if (it) out.push(it); });
+            });
+          }
+          return f.blob.arrayBuffer().then(function (b) {
+            var it = itemOf(baseOf(f.name), e, b, f.name, true);
+            if (it) out.push(it);
+          });
         });
       });
+      return chain.then(function () { return packedItems(file, out); });
     });
   }
   // Un .cue elegido junto con sus pistas (.bin) → un .zip sin comprimir con todo, que el emulador abre por el .cue
@@ -3227,7 +3389,7 @@
   // Solo archivos de juego: sin image/* ni video/* iOS no ofrece fototeca ni cámara.
   // application/octet-stream deja elegir ROMs con extensiones que iOS no conoce.
   var ROM_ACCEPT = Object.keys(CONSOLES).reduce(function (a, k) { return a.concat(CONSOLES[k].exts); }, [])
-    .concat(DISC_EXTS, PATCH_EXTS, ['zip', 'rom'])
+    .concat(DISC_EXTS, PATCH_EXTS, PACK_EXTS, ['zip', 'rom'])
     .filter(function (e, i, a) { return a.indexOf(e) === i; })
     .map(function (e) { return '.' + e; }).concat(['application/zip', 'application/octet-stream']).join(',');
   $('rom').accept = ROM_ACCEPT;
