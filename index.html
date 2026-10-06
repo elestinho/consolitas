@@ -807,7 +807,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión 95 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión 96 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1158,7 +1158,9 @@
       }).then(fin(res), fin(rej));
     });
   }
-  function tx(store, mode, fn) {
+  // Al volver a la app se prueba la base de datos: si no contesta en 3 s se suelta esa conexión y la siguiente abre otra
+  function dbPing() { tx('meta', 'readonly', function (s) { return s.count(); }, 3000, false).catch(function () {}); }
+  function tx(store, mode, fn, ms, retry) {
     return dbWatch(function () {
       return openDB().then(function (db) {
         return new Promise(function (res, rej) {
@@ -1168,7 +1170,7 @@
           t.onabort = function () { rej(t.error || new Error('no se pudo guardar en el móvil')); };
         });
       });
-    }, mode === 'readonly' ? 15000 : 45000, mode === 'readonly');
+    }, ms || (mode === 'readonly' ? 15000 : 45000), retry === undefined ? mode === 'readonly' : retry);
   }
   var putRom = function (o) { return tx('roms', 'readwrite', function (s) { return s.put(o); }); };
   var delRom = function (id) { return tx('roms', 'readwrite', function (s) { return s.delete(id); }); };
@@ -1176,8 +1178,61 @@
   var putMeta = function (o) { return tx('meta', 'readwrite', function (s) { return s.put(o); }); };
   var delMeta = function (id) { return tx('meta', 'readwrite', function (s) { return s.delete(id); }); };
   var allMeta = function () { return tx('meta', 'readonly', function (s) { return s.getAll(); }); };
-  var putAuto = function (o) { return tx('auto', 'readwrite', function (s) { return s.put(o); }); };
-  var getAuto = function (id) { return tx('auto', 'readonly', function (s) { return s.get(id); }); };
+  /* Partidas (Versión 96). En el iPhone la base de datos a veces deja de contestar (pasó guardando en Pokémon Diamante):
+     antes se esperaba 45 s a la misma conexión muerta. Ahora, si a los 8 s no contesta, se abre otra conexión y se
+     repite (poner la misma partida dos veces no hace daño). Si tampoco, la partida se guarda en una copia de emergencia
+     (almacén de caché, otro distinto) y pasa a la base de datos en cuanto vuelve a responder. */
+  var RESC = 'consolitas-rescate', RESC_K = 'rescate';
+  function rescKey(id) { return '/rescate/' + encodeURIComponent(id); }
+  function rescPut(o) {
+    if (!window.caches) return Promise.reject(new Error(DB_STUCK));
+    var meta = {}; Object.keys(o).forEach(function (k) { if (k !== 'state') meta[k] = o[k]; });
+    return caches.open(RESC).then(function (c) {
+      return Promise.all([c.put(rescKey(o.id), new Response(o.state)), c.put(rescKey(o.id) + '.json', new Response(JSON.stringify(meta)))]);
+    }).then(function () {
+      var l = {}; try { l = JSON.parse(lsGet(RESC_K, '{}')); } catch (e) {}
+      l[o.id] = o.t || Date.now(); lsSet(RESC_K, JSON.stringify(l));
+      diag('copia de emergencia guardada (' + o.id + ', ' + Math.round(o.state.length / 1024) + ' KB)');
+      return 'rescate';
+    });
+  }
+  function rescGet(id) {
+    var l = {}; try { l = JSON.parse(lsGet(RESC_K, '{}')); } catch (e) {}
+    if (!l[id] || !window.caches) return Promise.resolve(null);
+    return caches.open(RESC).then(function (c) {
+      return Promise.all([c.match(rescKey(id)), c.match(rescKey(id) + '.json')]);
+    }).then(function (r) {
+      if (!r[0] || !r[1]) return null;
+      return Promise.all([r[0].arrayBuffer(), r[1].json()]).then(function (v) { var o = v[1]; o.state = new Uint8Array(v[0]); return o; });
+    }).catch(function () { return null; });
+  }
+  function rescDel(id) {
+    var l = {}; try { l = JSON.parse(lsGet(RESC_K, '{}')); } catch (e) {}
+    if (!l[id]) return;
+    delete l[id]; if (Object.keys(l).length) lsSet(RESC_K, JSON.stringify(l)); else try { localStorage.removeItem(RESC_K); } catch (e) {}
+    if (window.caches) caches.open(RESC).then(function (c) { c.delete(rescKey(id)); c.delete(rescKey(id) + '.json'); }).catch(function () {});
+  }
+  function putAutoDb(o) { return tx('auto', 'readwrite', function (s) { return s.put(o); }, 8000, true); }
+  var putAuto = function (o) {
+    return putAutoDb(o).then(function (v) { rescDel(o.id); return v; }, function (e) {
+      if (!e || e.message !== DB_STUCK || !o.state) throw e;
+      diag('base de datos sin respuesta al guardar ' + o.id + ': copia de emergencia');
+      return rescPut(o).catch(function () { throw e; });
+    });
+  };
+  var getAuto = function (id) {
+    return tx('auto', 'readonly', function (s) { return s.get(id); }).then(function (a) {
+      return rescGet(id).then(function (r) {
+        if (!r || (a && a.t >= r.t)) { if (r) rescDel(id); return a; }
+        return putAutoDb(r).then(function () { rescDel(id); diag('copia de emergencia pasada a la base de datos (' + id + ')'); }, function () {}).then(function () { return r; });
+      });
+    }, function (e) { return rescGet(id).then(function (r) { if (r) return r; throw e; }); });
+  };
+  function rescMigrate() {                                  // al abrir la app: lo que quedó en la copia de emergencia pasa a la base de datos
+    var l = {}; try { l = JSON.parse(lsGet(RESC_K, '{}')); } catch (e) {}
+    Object.keys(l).forEach(function (id) { getAuto(id).catch(function () {}); });
+  }
+  setTimeout(rescMigrate, 4000);
   var getCache = function (id) { return tx('cache', 'readonly', function (s) { return s.get(id); }); };
   var putCache = function (o) { return tx('cache', 'readwrite', function (s) { return s.put(o); }); };
 
@@ -2435,7 +2490,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 95, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 96, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -3759,10 +3814,10 @@
     var g = gm();
     if (!g || !curId || typeof g.getState !== 'function') { pStat('No se pudo guardar: el emulador aún no está listo.', 1); diag('guardar partida: emulador no listo'); return; }
     // Cada paso se dice en pantalla y en Diagnóstico: si el iPhone se queda esperando, se ve en cuál
-    var stage = 'sacando la partida del emulador', t0 = Date.now(), fin = false;
+    var stage = 'sacando la partida del emulador', t0 = Date.now(), fin = false, resc = false;
     pStat('Guardando… (' + stage + ')'); diag('guardar partida: empieza');
     var slow = setTimeout(function () { if (!fin) { pStat('Guardando… sigue en «' + stage + '» (' + Math.round((Date.now() - t0) / 1000) + ' s)'); diag('guardar partida: lento en ' + stage); } }, 6000);
-    var hang = setTimeout(function () { if (!fin) { pStat('No se pudo guardar: se quedó esperando en «' + stage + '». Sal y vuelve a entrar; tu autoguardado sigue ahí.', 1); diag('guardar partida: colgado en ' + stage); } }, 20000);
+    var hang = setTimeout(function () { if (!fin) { pStat('No se pudo guardar: se quedó esperando en «' + stage + '». Sal y vuelve a entrar; tu autoguardado sigue ahí.', 1); diag('guardar partida: colgado en ' + stage); } }, 40000);
     var sh = null, shP = $('pause').style.display === 'flex' ? Promise.resolve(pauseShot) : grabShot(400);   // la captura de lo que había al pausar
     shP.then(function (u) { sh = u; return g.getState(); }).then(function (st) {
       if (typeof st === 'string') throw new Error('el emulador no dio la partida (' + st + ')');
@@ -3771,15 +3826,18 @@
       diag('guardar partida: estado sacado (' + c.length + ' bytes)');
       stage = 'escribiendo en el móvil'; pStat('Guardando… (' + stage + ')');
       var rec = { id: 'quick:' + curId, t: Date.now(), state: c }; if (sh) rec.shot = sh;
-      return putAuto(rec).then(function () { return getAuto('quick:' + curId); }).then(function (a) {
-        if (!a || !a.state || a.state.length !== c.length) throw new Error('no se pudo comprobar la copia');
-        flushSaves();                                        // además del instante, se escribe el guardado interno del juego (ya sin chocar con la escritura de arriba)
-        return c.length;
+      return putAuto(rec).then(function (how) {
+        if (how === 'rescate') { resc = true; return c.length; }   // la base de datos no contestaba: va en la copia de emergencia
+        return getAuto('quick:' + curId).then(function (a) {
+          if (!a || !a.state || a.state.length !== c.length) throw new Error('no se pudo comprobar la copia');
+          flushSaves();                                      // además del instante, se escribe el guardado interno del juego (ya sin chocar con la escritura de arriba)
+          return c.length;
+        });
       });
     }).then(function (n) {
       fin = true; clearTimeout(slow); clearTimeout(hang);
       var d = new Date(), p2 = function (x) { return (x < 10 ? '0' : '') + x; };
-      pStat('✓ Partida guardada a las ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds()) + ' (' + Math.round(n / 1024) + ' KB)'); pauseInfo();
+      pStat('✓ Partida guardada a las ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds()) + ' (' + Math.round(n / 1024) + ' KB)' + (resc ? '. El almacenamiento del móvil iba lento: se guardó en una copia de emergencia que se pasa sola cuando responda.' : '')); pauseInfo();
       diag('partida guardada (' + n + ' bytes)');
     }).catch(function (e) { fin = true; clearTimeout(slow); clearTimeout(hang); pStat('No se pudo guardar (' + stage + '): ' + e.message, 1); diag('guardar partida falló en ' + stage + ': ' + e.message); });
   }
@@ -3924,9 +3982,10 @@
   }
 
   function unlockAudio() {
+    audioCtxs = audioCtxs.filter(function (c) { return (c.realState ? c.realState() : c.state) !== 'closed'; });   // el emulador cierra el sonido al girar: esos ya no se reanudan
     audioCtxs.forEach(function (c) {
       if ((c.realState ? c.realState() : c.state) === 'running') return;
-      try { var p = c.resume(); if (p && p.then) p.then(function () { diag('audio: ' + (c.realState ? c.realState() : c.state)); }); } catch (e) {}
+      try { var p = c.resume(); if (p && p.then) p.then(function () { diag('audio: ' + (c.realState ? c.realState() : c.state)); }, function () {}); } catch (e) {}
     });
   }
   function onGesture() {
@@ -3944,7 +4003,7 @@
     diag('visibilidad: ' + (document.hidden ? 'oculta' : 'visible'));
     if (sess) { sess.vis = document.hidden ? 'hidden' : 'visible'; sess.hb = Date.now(); saveSess(); }
     if (!isPlaying()) return;
-    if (document.hidden) { flushSaves(); autoSave(); } else if (!wakeLock) keepAwake();
+    if (document.hidden) { flushSaves(); autoSave(); } else { if (!wakeLock) keepAwake(); dbPing(); }
   });
   window.addEventListener('pagehide', function (e) {
     diag('pagehide (persistente=' + !!e.persisted + ')');
