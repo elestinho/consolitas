@@ -28,3 +28,7 @@ parche `retroarch-ejs-rwebaudio-nogrowth.patch`. Cada `.data` (archivo 7z) lleva
 melonDS lleva además `melonds-fullpath.patch`: el núcleo lee la ROM él mismo en vez de recibirla ya cargada,
 así el juego está una sola vez en memoria. Con la memoria fija, los juegos más grandes de la DS (512 MB, como
 Kingdom Hearts 358/2 Days) no cabían y salía «Failed to start game».
+
+melonDS lleva también `melonds-lado-a-lado.patch`: con las pantallas lado a lado («Left/Right») respeta el hueco
+entre ellas (`melonds_screen_gap`), que el núcleo original solo dejaba con las pantallas una encima de otra. Lo usan
+las skins horizontales de la DS (Gris, Verde y Negra y oro), que tienen una franja entre las dos pantallas.
