@@ -807,7 +807,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión 97 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión 98 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1160,7 +1160,26 @@
   }
   // Al volver a la app se prueba la base de datos: si no contesta en 3 s se suelta esa conexión y la siguiente abre otra
   function dbPing() { tx('meta', 'readonly', function (s) { return s.count(); }, 3000, false).catch(function () {}); }
+  /* Escrituras en curso (Versión 98). Al pulsar «Salir» la app esperaba a medias: el autoguardado y la copia del
+     guardado se lanzaban justo al irse la página y la escritura se quedaba abierta en la página vieja, que el iPhone
+     guarda congelada. La página nueva no podía leer el almacén de partidas (Partidas vacía, «Cargar partida» sin
+     respuesta) hasta cerrar la app. Ahora se cuentan las escrituras y «Salir» espera a que acaben y cierra la base. */
+  var dbBusy = 0, dbIdleCbs = [];
+  function dbIdle(ms) {
+    return new Promise(function (res) {
+      if (!dbBusy) { res(true); return; }
+      var t = setTimeout(function () { dbIdleCbs = dbIdleCbs.filter(function (f) { return f !== cb; }); res(false); }, ms);
+      var cb = function () { clearTimeout(t); res(true); };
+      dbIdleCbs.push(cb);
+    });
+  }
   function tx(store, mode, fn, ms, retry) {
+    if (mode !== 'readwrite') return txRun(store, mode, fn, ms, retry);
+    dbBusy++;
+    var end = function () { if (--dbBusy > 0) return; var l = dbIdleCbs; dbIdleCbs = []; l.forEach(function (f) { f(); }); };
+    return txRun(store, mode, fn, ms, retry).then(function (v) { end(); return v; }, function (e) { end(); throw e; });
+  }
+  function txRun(store, mode, fn, ms, retry) {
     return dbWatch(function () {
       return openDB().then(function (db) {
         return new Promise(function (res, rej) {
@@ -1990,8 +2009,9 @@
     return d.getDate() + '/' + (d.getMonth() + 1) + '/' + String(d.getFullYear()).slice(2) + ', ' + hm;
   }
   function renderMem() {
-    var el = $('pMem');
+    var el = $('pMem'), wait = setTimeout(function () { if (TAB === 'mem') el.innerHTML = '<div class="mempty">Leyendo la memoria…</div>'; }, 800);
     memData().then(function (data) {
+      clearTimeout(wait);
       if (TAB !== 'mem') return;
       el.innerHTML = '';
       var list = Object.keys(data).map(function (id) { return data[id]; });
@@ -2029,7 +2049,7 @@
       card.appendChild(grid);
       el.appendChild(card);
       pick(cids[0]);
-    }).catch(function (e) { el.textContent = 'No se pudo leer la memoria: ' + e.message; });
+    }).catch(function (e) { clearTimeout(wait); el.textContent = 'No se pudo leer la memoria: ' + e.message; diag('Partidas: no se pudo leer (' + e.message + ')'); });
   }
   function renderMemList(el, list) {
     var box = document.createElement('div'); box.className = 'mlist';
@@ -2490,7 +2510,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 97, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 98, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -4017,8 +4037,15 @@
     if (leaving) return; leaving = true;
     $('pause').style.display = 'flex'; ['pContinue', 'pQSave', 'pQLoad', 'pALoad', 'pExit'].forEach(function (id) { $(id).style.display = 'none'; });
     pStat('Saliendo…');
+    clearInterval(autoTimer); clearInterval(flushTimer); autoTimer = flushTimer = null;   // nada nuevo empieza a escribir mientras se sale
     callGm('saveSaveFiles');
-    var go = function () { cleanExit(); location.href = exitUrl(); };
+    var went = false, go = function () {
+      if (went) return; went = true; cleanExit();
+      dbIdle(10000).then(function (ok) {                     // que no quede ninguna escritura a medias en esta página (Versión 98)
+        diag(ok ? 'salir: escrituras terminadas' : 'salir: una escritura no terminó en 10 s');
+        dbReset(); location.href = exitUrl();
+      });
+    };
     var t = setTimeout(go, 3000);
     backupSav().catch(function () {}).then(function () { clearTimeout(t); go(); });
   }
@@ -4164,15 +4191,20 @@
   document.addEventListener('visibilitychange', function () {
     diag('visibilidad: ' + (document.hidden ? 'oculta' : 'visible'));
     if (sess) { sess.vis = document.hidden ? 'hidden' : 'visible'; sess.hb = Date.now(); saveSess(); }
-    if (!isPlaying()) return;
+    if (!isPlaying() || leaving) return;                     // saliendo con «Salir»: ya se guardó lo que hacía falta
     if (document.hidden) { flushSaves(); autoSave(); } else { if (!wakeLock) keepAwake(); dbPing(); }
   });
   window.addEventListener('pagehide', function (e) {
     diag('pagehide (persistente=' + !!e.persisted + ')');
     if (sess) { sess.ph = Date.now(); saveSess(); }
-    if (isPlaying()) { flushSaves(); autoSave(); }
+    if (isPlaying() && !leaving) { flushSaves(); autoSave(); }
   });
-  window.addEventListener('pageshow', function (e) { if (e.persisted && sess) { sess.ph = 0; saveSess(); diag('pageshow desde caché'); } });
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    if (sess) { sess.ph = 0; saveSess(); diag('pageshow desde caché'); }
+    dbReset();                                               // la página vuelve congelada: conexión nueva a la base de datos
+    if (!isPlaying() && TAB === 'mem') renderMem();
+  });
 
   /* ====== Arrancar un juego ====== */
   /* PS1 (PCSX ReARMed, BIOS HLE: no hace falta BIOS). En navegador el núcleo va interpretado (sin recompilador),
