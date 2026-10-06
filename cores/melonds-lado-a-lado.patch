@@ -1,0 +1,54 @@
+diff --git a/src/libretro/screenlayout.cpp b/src/libretro/screenlayout.cpp
+index faf9d1f..f9d2bfb 100644
+--- a/src/libretro/screenlayout.cpp
++++ b/src/libretro/screenlayout.cpp
+@@ -110,29 +110,29 @@ void update_screenlayout(ScreenLayout layout, ScreenLayoutData *data, bool openg
+             data->enable_top_screen = true;
+             data->enable_bottom_screen = true;
+ 
+-            data->buffer_width = data->screen_width * 2;
++            data->buffer_width = data->screen_width * 2 + data->screen_gap;
+             data->buffer_height = data->screen_height;
+-            data->buffer_stride = data->screen_width * 2 * pixel_size;
++            data->buffer_stride = data->buffer_width * pixel_size;
+ 
+-            data->touch_offset_x = data->screen_width;
++            data->touch_offset_x = data->screen_width + data->screen_gap;
+             data->touch_offset_y = 0;
+ 
+             data->top_screen_offset = 0;
+-            data->bottom_screen_offset = (data->screen_width * 2);
++            data->bottom_screen_offset = (data->screen_width + data->screen_gap) * 2;
+ 
+             break;
+         case ScreenLayout::RightLeft:
+             data->enable_top_screen = true;
+             data->enable_bottom_screen = true;
+ 
+-            data->buffer_width = data->screen_width * 2;
++            data->buffer_width = data->screen_width * 2 + data->screen_gap;
+             data->buffer_height = data->screen_height;
+-            data->buffer_stride = data->screen_width * 2 * pixel_size;
++            data->buffer_stride = data->buffer_width * pixel_size;
+ 
+             data->touch_offset_x = 0;
+             data->touch_offset_y = 0;
+ 
+-            data->top_screen_offset = (data->screen_width * 2);
++            data->top_screen_offset = (data->screen_width + data->screen_gap) * 2;
+             data->bottom_screen_offset = 0;
+ 
+             break;
+diff --git a/src/libretro/utils.cpp b/src/libretro/utils.cpp
+index 61c5583..56c4586 100644
+--- a/src/libretro/utils.cpp
++++ b/src/libretro/utils.cpp
+@@ -16,7 +16,7 @@ void copy_screen(ScreenLayoutData *data, uint32_t* src, unsigned offset)
+       unsigned y;
+       for (y = 0; y < data->screen_height; y++)
+       {
+-         memcpy((uint16_t *)data->buffer_ptr + offset + (y * data->screen_width * data->pixel_size),
++         memcpy((uint16_t *)data->buffer_ptr + offset + (y * data->buffer_stride / 2),
+             src + (y * data->screen_width), data->screen_width * data->pixel_size);
+       }
+    }
