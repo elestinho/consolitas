@@ -343,6 +343,15 @@
   .gs img { -webkit-user-drag:none; pointer-events:none; }
   .gs:not(.on) .gfav { pointer-events:none; }
   #gcinfo { text-align:center; padding:0 26px 6px; margin-top:-8px; }
+  /* Pestaña Juegos: Todos / Favoritos, y el mismo carrusel que dentro de cada consola (Versión 89) */
+  .lfil { display:flex; justify-content:center; gap:8px; margin:2px 16px 4px; }
+  .lfil button { display:flex; align-items:center; gap:7px; border:0; border-radius:999px; padding:8px 16px; font:inherit; font-size:15px; font-weight:600;
+    background:rgba(255,255,255,.07); color:var(--mut); transition:background .2s ease, color .2s ease; }
+  .lfil button.on { background:rgba(124,108,255,.3); color:#e6e2ff; }
+  .lfil img { width:17px; height:17px; image-rendering:pixelated; }
+  .lfil .n { font-weight:500; opacity:.7; font-variant-numeric:tabular-nums; }
+  #pLib #vbar { margin-bottom:2px; }
+  #pLib #gcwrap { min-height:calc(100dvh - 330px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding-bottom:20px; }
   #gcinfo .gct { font-size:19px; font-weight:700; letter-spacing:-.2px; line-height:1.28; min-height:2.56em;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   #gcinfo .gcn { color:var(--mut); font-size:13px; margin-top:4px; font-variant-numeric:tabular-nums; }
@@ -612,7 +621,13 @@
     #home .brandbar, #pLib, #pMem { width:100%; max-width:640px; margin-left:auto; margin-right:auto; }
     #toast { bottom:calc(env(safe-area-inset-bottom) + 20px); }
     /* sin el título «Consolitas»: el logo va arriba en la barra lateral */
-    #home:not(.t-lib) .brandbar { display:none; }
+    #home .brandbar { display:none; }
+    /* Juegos: Todos/Favoritos a la izquierda y lupa, vista y Ordenar a la derecha, en una sola fila */
+    #pLib { position:relative; padding-top:8px; }
+    #pLib .lfil { position:absolute; left:16px; top:10px; margin:0; z-index:31; }
+    #pLib #vbar { justify-content:flex-end; }
+    #pLib .lfil:has(~ #vbar.q) { visibility:hidden; }
+    #pLib #gcwrap { min-height:calc(100dvh - 60px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
     #home .brandbar h1.brand { visibility:hidden; }
     .tlogo { display:flex; justify-content:center; position:absolute; left:0; right:0;
       top:calc(env(safe-area-inset-top) + 14px); pointer-events:none; }
@@ -785,7 +800,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 88 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 89 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1239,6 +1254,7 @@
   var TAB = 'cons';
   function setTab(t) {
     if (t === 'set') { $('bd').style.display = 'block'; $('settings').style.display = 'block'; return; }
+    if (t !== TAB && editOn) setEdit(false);
     TAB = t;
     $('home').className = 'wrapc t-' + t;
     $('pCons').style.display = t === 'cons' ? 'flex' : 'none';
@@ -1484,6 +1500,7 @@
   function renderGames() {
     if (!ctxConsole) return;
     var c = CONSOLES[ctxConsole];
+    if ($('vbar').parentNode !== $('cview')) { $('cview').insertBefore($('vbar'), $('games')); $('cview').insertBefore($('gcwrap'), $('games')); }
     $('cTitle').firstChild.nodeValue = c.name;
     var list = games.filter(function (g) { return g.console === ctxConsole; });
     $('cSub').textContent = list.length === 1 ? '1 juego' : list.length + ' juegos';
@@ -1544,13 +1561,16 @@
   var gcEl = $('gcar'), gcSlides = [], gcList = [], gcN = 0, gcMid = 0, gcIdx = -1, gcCur = null, gcCurC = null;
   var gcRaf = 0, gcSettle = 0, gcTouch = false, gcLit = [];
   function gView() { return lsGet('gview', 'car') === 'grid' ? 'grid' : 'car'; }
+  function libOn() { return !ctxConsole && TAB === 'lib' && $('home').style.display !== 'none'; }   // pestaña Juegos: comparte carrusel, lupa y Ordenar
+  function gKey() { return ctxConsole || 'all'; }
+  function reGames() { if (ctxConsole) renderGames(); else if (TAB === 'lib') renderLib(); }
   function gridForced() { return editOn; }     // al buscar, la cuadrícula
   function paintView() {
     var v = gView();
     Array.prototype.forEach.call($('vseg').children, function (b) { b.classList.toggle('on', b.getAttribute('data-v') === v); });
   }
   Array.prototype.forEach.call($('vseg').children, function (b) {
-    b.onclick = function () { if (gView() === b.getAttribute('data-v')) return; lsSet('gview', b.getAttribute('data-v')); renderGames(); };
+    b.onclick = function () { if (gView() === b.getAttribute('data-v')) return; lsSet('gview', b.getAttribute('data-v')); reGames(); };
   });
   function boxEl(g, lazy) {                  // caja 3D: portada delante, cantos a los lados y arriba (el color lo da data-kc)
     var bx = document.createElement('div'); bx.className = 'bx';
@@ -1563,12 +1583,12 @@
     return bx;
   }
   function buildGCar(list) {
-    var keep = gcCurC === ctxConsole ? gcCur : lsGet('gcar-' + ctxConsole, '');
+    var keep = gcCurC === gKey() ? gcCur : lsGet('gcar-' + gKey(), '');
     var copies = list.length < 2 ? 1 : Math.max(3, Math.ceil(40 / list.length) | 1);
     gcEl.innerHTML = ''; gcSlides = []; gcLit = []; gcIdx = -1;
-    gcList = list; gcN = list.length; gcMid = Math.floor(copies / 2) * gcN; gcCurC = ctxConsole;
+    gcList = list; gcN = list.length; gcMid = Math.floor(copies / 2) * gcN; gcCurC = gKey();
     for (var p = 0; p < gcN * copies; p++) (function (pos) {
-      var g = list[pos % gcN], b = document.createElement('button'); b.className = 'gs'; b.setAttribute('data-id', g.id);
+      var g = list[pos % gcN], b = document.createElement('button'); b.className = 'gs'; b.setAttribute('data-id', g.id); b.setAttribute('data-kc', g.console);
       if (pos < gcMid || pos >= gcMid + gcN) { b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1; }
       var t = document.createElement('div'); t.className = 'g3';
       var bx = boxEl(g, true), bf = bx.firstChild, k = document.createElement('div'); k.className = 'chk';
@@ -1598,9 +1618,11 @@
     if (gcSlides[gcIdx]) gcSlides[gcIdx].classList.remove('on');
     gcSlides[i].classList.add('on'); gcIdx = i;
     var g = gcList[i % gcN];
-    gcCur = g.id; lsSet('gcar-' + ctxConsole, g.id);
+    gcCur = g.id; lsSet('gcar-' + gKey(), g.id);
     $('gcinfo').firstChild.textContent = g.title;
-    $('gcinfo').lastChild.textContent = gcN > 1 ? (i % gcN + 1) + ' de ' + gcN : '';
+    var pos = gcN > 1 ? (i % gcN + 1) + ' de ' + gcN : '';
+    if (!ctxConsole && CONSOLES[g.console]) pos = CONSOLES[g.console].short + (pos ? ' · ' + pos : '');   // en Juegos se mezclan consolas
+    $('gcinfo').lastChild.textContent = pos;
   }
   function gcPaint() {                       // giro y profundidad de cada portada según lo lejos que esté del centro
     if (!gcSlides.length) return;
@@ -1629,20 +1651,20 @@
   gcEl.addEventListener('scroll', function () {
     if (!gcRaf) gcRaf = requestAnimationFrame(function () { gcRaf = 0; gcPaint(); });
     clearTimeout(gcSettle);
-    gcSettle = setTimeout(function () { if (!gcTouch && ctxConsole) gcRecenter(); }, 400);
+    gcSettle = setTimeout(function () { if (!gcTouch && (ctxConsole || libOn())) gcRecenter(); }, 400);
   }, { passive: true });
   gcEl.addEventListener('touchstart', function () { gcTouch = true; clearTimeout(gcSettle); }, { passive: true });
   ['touchend', 'touchcancel'].forEach(function (ev) {
     gcEl.addEventListener(ev, function () {
       gcTouch = false; clearTimeout(gcSettle);
-      gcSettle = setTimeout(function () { if (!gcTouch && ctxConsole) gcRecenter(); }, 400);
+      gcSettle = setTimeout(function () { if (!gcTouch && (ctxConsole || libOn())) gcRecenter(); }, 400);
     }, { passive: true });
   });
   window.addEventListener('resize', function () {
-    if (ctxConsole && gcSlides.length && gcIdx >= 0) { gcGo(gcIdx, false); gcPaint(); }
+    if ((ctxConsole || libOn()) && gcSlides.length && gcIdx >= 0) { gcGo(gcIdx, false); gcPaint(); }
   });
   document.addEventListener('keydown', function (e) {
-    if (!ctxConsole || !gcSlides.length || ovId || $('gcwrap').style.display === 'none' || document.activeElement === $('eQ')) return;
+    if (!(ctxConsole || libOn()) || !gcSlides.length || ovId || $('gcwrap').style.display === 'none' || document.activeElement === $('eQ')) return;
     if (e.key === 'ArrowLeft') gcGo(Math.max(0, gcIdx - 1), true);
     else if (e.key === 'ArrowRight') gcGo(Math.min(gcSlides.length - 1, gcIdx + 1), true);
   });
@@ -1686,7 +1708,7 @@
     editOn = on;
     $('qbar').classList.toggle('on', on); $('eFind').classList.toggle('on', on); $('vbar').classList.toggle('q', on);
     closeSort();
-    if (on) { $('eQ').placeholder = 'Buscar en ' + CONSOLES[ctxConsole].name; $('eQ').focus(); }
+    if (on) { $('eQ').placeholder = ctxConsole ? 'Buscar en ' + CONSOLES[ctxConsole].name : 'Buscar en tus juegos'; $('eQ').focus(); }
     else { $('eQ').value = ''; $('eQ').blur(); }
   }
   function setSel(on) {
@@ -1723,12 +1745,12 @@
   Array.prototype.forEach.call($('sortMenu').children, function (b) {
     b.onclick = function () {
       lsSet('sort', b.getAttribute('data-s')); paintSort(); closeSort();
-      renderGames();
+      reGames();
     };
   });
-  $('eFind').onclick = function () { setEdit(!editOn); renderGames(); };
-  $('eQx').onclick = function () { setEdit(false); renderGames(); };
-  $('eQ').addEventListener('input', function () { renderGames(); });
+  $('eFind').onclick = function () { setEdit(!editOn); reGames(); };
+  $('eQx').onclick = function () { setEdit(false); reGames(); };
+  $('eQ').addEventListener('input', function () { reGames(); });
   $('eQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('eQ').blur(); });
   $('selNo').onclick = function () { setSel(false); };
   $('selAll').onclick = function () {
@@ -1779,15 +1801,50 @@
     attachPress(b, g.id);
     return b;
   }
+  // Arriba, Todos o Favoritos; debajo la misma fila que en cada consola (lupa, carrusel/cuadrícula, Ordenar)
+  function libFil() { return lsGet('lfil', 'all') === 'fav' ? 'fav' : 'all'; }
   function renderLib() {
-    var el = $('pLib'); el.innerHTML = '';
+    if (ctxConsole) return;                        // con una consola abierta, la fila y el carrusel son suyos
+    var el = $('pLib'), vb = $('vbar'), gw = $('gcwrap');
+    // la fila y el carrusel no se sacan si ya están aquí: así el buscador no pierde el foco mientras se escribe
+    Array.prototype.slice.call(el.childNodes).forEach(function (n) { if (n !== vb && n !== gw) el.removeChild(n); });
     if (!games.length) {
-      el.innerHTML = '<div class="ptitle">Juegos</div><div class="empty"><div class="big">🎮</div>Aún no tienes juegos.<br>' +
-        'Añade una ROM o prueba los de la pestaña Gratis.<br><button class="addbig" id="libAdd">＋ Añadir juego</button></div>';
+      if (vb.parentNode === el) { $('cview').insertBefore(vb, $('games')); $('cview').insertBefore(gw, $('games')); }
+      gw.style.display = 'none'; gcEl.innerHTML = ''; gcSlides = [];
+      el.insertAdjacentHTML('beforeend', '<div class="ptitle">Juegos</div><div class="empty"><div class="big">🎮</div>Aún no tienes juegos.<br>' +
+        'Añade una ROM o prueba los de la pestaña Gratis.<br><button class="addbig" id="libAdd">＋ Añadir juego</button></div>');
       $('libAdd').onclick = function () { $('rom').click(); };
       return;
     }
-    var rec = recentIds().slice(0, 4);
+    var fil = libFil(), favs = games.filter(isGFav);
+    var fb = document.createElement('div'); fb.className = 'lfil'; fb.setAttribute('role', 'group'); fb.setAttribute('aria-label', 'Qué juegos ver');
+    [['all', 'Todos', games.length], ['fav', 'Favoritos', favs.length]].forEach(function (o) {
+      var b = document.createElement('button'); b.setAttribute('data-f', o[0]); b.classList.toggle('on', fil === o[0]);
+      if (o[0] === 'fav') { var im = document.createElement('img'); im.alt = ''; im.src = STAR_IMG; b.appendChild(im); }
+      b.appendChild(document.createTextNode(o[1]));
+      var n = document.createElement('span'); n.className = 'n'; n.textContent = o[2]; b.appendChild(n);
+      b.onclick = function () { if (libFil() === o[0]) return; lsSet('lfil', o[0]); renderLib(); $('home').scrollTop = 0; };
+      fb.appendChild(b);
+    });
+    if (vb.parentNode !== el) { el.appendChild(vb); el.appendChild(gw); }
+    el.insertBefore(fb, vb); vb.style.display = '';
+    paintView();
+    var list = sortList(fil === 'fav' ? favs : games);
+    var q = fold($('eQ').value.trim());
+    if (q && editOn) list = list.filter(function (g) { return fold(g.title).indexOf(q) >= 0; });
+    var car = list.length && gView() === 'car' && !gridForced();
+    $('gcwrap').style.display = car ? '' : 'none';
+    if (!car) { gcEl.innerHTML = ''; gcSlides = []; }
+    if (!list.length) {
+      var e = document.createElement('div'); e.className = 'empty';
+      if (q && editOn) { e.style.padding = '40px 20px'; e.textContent = 'Ningún juego coincide con «' + $('eQ').value.trim() + '»'; }
+      else e.innerHTML = '<img class="pad px" alt="" src="' + STAR_IMG + '" style="width:84px;image-rendering:pixelated">Aún no tienes favoritos.<br>' +
+        'Toca el icono de la esquina de una portada<br>o mantén pulsado un juego para marcarlo.';
+      el.appendChild(e);
+      return;
+    }
+    if (car) { $('gcwrap').removeAttribute('data-kc'); buildGCar(list); return; }
+    var rec = fil === 'all' && !editOn ? recentIds().slice(0, 4) : [];
     if (rec.length) {
       var h = document.createElement('div'); h.className = 'ptitle'; h.textContent = 'Seguir jugando'; el.appendChild(h);
       var g1 = document.createElement('div'); g1.className = 'ggrid';
@@ -1795,14 +1852,13 @@
       el.appendChild(g1);
     }
     var h2 = document.createElement('div'); h2.className = 'ptitle';
-    h2.textContent = 'Todos tus juegos'; el.appendChild(h2);
+    h2.textContent = fil === 'fav' ? 'Favoritos' : 'Todos tus juegos'; el.appendChild(h2);
     var sub = document.createElement('div'); sub.className = 'psub';
-    sub.textContent = (games.length === 1 ? '1 juego' : games.length + ' juegos') + ' · mantén pulsado para eliminar'; el.appendChild(sub);
+    sub.textContent = (list.length === 1 ? '1 juego' : list.length + ' juegos') + ' · mantén pulsado para más opciones'; el.appendChild(sub);
     var g2 = document.createElement('div'); g2.className = 'ggrid';
-    favFirst(games).forEach(function (g) { g2.appendChild(libCard(g)); });
+    list.forEach(function (g) { g2.appendChild(libCard(g)); });
     el.appendChild(g2);
   }
-
 
   /* ====== Pestaña Partidas: tarjeta de memoria ======
      Junta lo que hay guardado de cada juego en el almacén 'auto': la partida guardada a mano ('quick:<id>'),
@@ -2353,7 +2409,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 88, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 89, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
