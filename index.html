@@ -785,7 +785,7 @@
   <div class="row"><span>Al volver a abrir la app, seguir en el juego</span><input type="checkbox" id="resumeSw"></div>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Consolitas · Versión 87 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
+  <p class="ver">Consolitas · Versión 88 · <a id="updCheck">Buscar actualización</a> · <a id="diagOpen">Diagnóstico</a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2353,7 +2353,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 87, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 88, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -3674,24 +3674,30 @@
   function quickSave() {
     var g = gm();
     if (!g || !curId || typeof g.getState !== 'function') { pStat('No se pudo guardar: el emulador aún no está listo.', 1); diag('guardar partida: emulador no listo'); return; }
-    pStat('Guardando…'); diag('guardar partida: empieza');   // si la app se queda congelada, Diagnóstico enseña hasta dónde llegó
-    flushSaves();                                            // además del instante, se escribe el guardado interno del juego
+    // Cada paso se dice en pantalla y en Diagnóstico: si el iPhone se queda esperando, se ve en cuál
+    var stage = 'sacando la partida del emulador', t0 = Date.now(), fin = false;
+    pStat('Guardando… (' + stage + ')'); diag('guardar partida: empieza');
+    var slow = setTimeout(function () { if (!fin) { pStat('Guardando… sigue en «' + stage + '» (' + Math.round((Date.now() - t0) / 1000) + ' s)'); diag('guardar partida: lento en ' + stage); } }, 6000);
+    var hang = setTimeout(function () { if (!fin) { pStat('No se pudo guardar: se quedó esperando en «' + stage + '». Sal y vuelve a entrar; tu autoguardado sigue ahí.', 1); diag('guardar partida: colgado en ' + stage); } }, 20000);
     var sh = null, shP = $('pause').style.display === 'flex' ? Promise.resolve(pauseShot) : grabShot(400);   // la captura de lo que había al pausar
     shP.then(function (u) { sh = u; return g.getState(); }).then(function (st) {
       if (typeof st === 'string') throw new Error('el emulador no dio la partida (' + st + ')');
       if (!st || !st.length) throw new Error('estado vacío');
       var c = new Uint8Array(st.length); c.set(st);
       diag('guardar partida: estado sacado (' + c.length + ' bytes)');
+      stage = 'escribiendo en el móvil'; pStat('Guardando… (' + stage + ')');
       var rec = { id: 'quick:' + curId, t: Date.now(), state: c }; if (sh) rec.shot = sh;
       return putAuto(rec).then(function () { return getAuto('quick:' + curId); }).then(function (a) {
         if (!a || !a.state || a.state.length !== c.length) throw new Error('no se pudo comprobar la copia');
+        flushSaves();                                        // además del instante, se escribe el guardado interno del juego (ya sin chocar con la escritura de arriba)
         return c.length;
       });
     }).then(function (n) {
+      fin = true; clearTimeout(slow); clearTimeout(hang);
       var d = new Date(), p2 = function (x) { return (x < 10 ? '0' : '') + x; };
       pStat('✓ Partida guardada a las ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds()) + ' (' + Math.round(n / 1024) + ' KB)'); pauseInfo();
       diag('partida guardada (' + n + ' bytes)');
-    }).catch(function (e) { pStat('No se pudo guardar: ' + e.message, 1); diag('guardar partida falló: ' + e.message); });
+    }).catch(function (e) { fin = true; clearTimeout(slow); clearTimeout(hang); pStat('No se pudo guardar (' + stage + '): ' + e.message, 1); diag('guardar partida falló en ' + stage + ': ' + e.message); });
   }
   function quickLoad(silent) {
     var fromMenu = $('pause').style.display === 'flex';
