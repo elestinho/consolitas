@@ -816,7 +816,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.0.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.0.2</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1524,7 +1524,7 @@
     skinsOf(c).forEach(function (x) {
       var o = document.createElement('button'); o.className = 'skopt' + (cur && x.id === cur.id ? ' on' : '');
       o.innerHTML = '<span class="pic"><img alt="" decoding="async"></span><b></b>';
-      o.querySelector('img').src = c === 'gba' ? 'skins/gba/mini/' + x.id + '.webp' : x.mini || x.dir + 'mini.webp';
+      o.querySelector('img').src = c === 'gba' ? 'skins/gba/mini/' + x.id + '.webp' : x.mini || x.dir + 'mini.webp?v=' + APP_VER;
       o.querySelector('b').textContent = x.name;
       o.onclick = function () {
         lsSet('skin-' + c, x.id); paintCust();
@@ -2513,7 +2513,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 108, APP_SEMVER = '1.0.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 109, APP_SEMVER = '1.0.2', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -3606,8 +3606,10 @@
   }
   // Imagen de una skin descargable: se guarda en la caché del navegador para que la próxima vez no haga falta conexión
   function skinFile(url) {
+    url += '?v=' + APP_VER;     // cada versión de la app pide sus imágenes: así no se queda la skin vieja guardada con el mismo nombre
     function get() { return fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r; }); }
     var p = window.caches ? caches.open('consolitas-skins').then(function (c) {
+      c.keys().then(function (ks) { ks.forEach(function (k) { if (k.url.indexOf('?v=' + APP_VER) < 0) c.delete(k); }); }).catch(function () {});
       return c.match(url).then(function (hit) {
         return hit || get().then(function (r) { c.put(url, r.clone()).catch(function () {}); return r; });
       });
