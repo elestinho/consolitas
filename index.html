@@ -799,7 +799,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.1.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.1.2</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2449,7 +2449,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 113, APP_SEMVER = '1.1.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 114, APP_SEMVER = '1.1.2', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -4213,6 +4213,44 @@
       G.prototype._ds = 1; diag('PS1: mando DualShock');
     }, 50);
   }
+  /* El juego, una sola vez en memoria (1.1.2). EmulatorJS leía el archivo entero dos veces (también para una consulta
+     HEAD que no lo necesita), luego lo copiaba otra vez y el sistema de archivos del núcleo hacía otra copia más: con un
+     disco de PS1 de 500-700 MB (Crash Bandicoot) eran 2-3 GB y iOS cerraba la página («ha generado problemas
+     repetidamente»). Ahora se lee una vez, como ArrayBuffer (sin copia al envolverlo), y el sistema de archivos se queda
+     con ese mismo búfer. Se parchea la clase de EmulatorJS en cuanto se define, antes de que loader.js la use. */
+  function ejsOneCopy() {
+    if (window._ejs1) return; window._ejs1 = 1;
+    var BIG = 16 << 20, cls;
+    function ownFS(FS) {
+      if (!FS || FS._own) return; FS._own = 1;
+      var w = FS.writeFile;
+      FS.writeFile = function (p, d, o) {
+        if (d && ArrayBuffer.isView(d) && d.byteLength > BIG) o = Object.assign({}, o || {}, { canOwn: true });
+        return w.call(this, p, d, o);
+      };
+    }
+    function patch(C) {
+      var P = C && C.prototype;
+      if (!P || P._one || typeof P.downloadFile !== 'function') return;
+      var dl = P.downloadFile;
+      P.downloadFile = function (path, cb, nwp, opts) {
+        if (this.gameManager) ownFS(this.gameManager.FS);
+        if (path instanceof Blob && path.size > BIG) {
+          if (opts && opts.method === 'HEAD') return Promise.resolve({ headers: {} });
+          var t0 = Date.now();
+          return path.arrayBuffer().then(function (ab) {
+            diag('juego leído una vez: ' + Math.round(ab.byteLength / 1048576) + ' MB en ' + (Date.now() - t0) + ' ms'); return { headers: {}, data: ab };
+          }, function () { return -1; });
+        }
+        return dl.apply(this, arguments);
+      };
+      P._one = 1;
+    }
+    try {
+      Object.defineProperty(window, 'EmulatorJS', { configurable: true,
+        get: function () { return cls; }, set: function (v) { cls = v; try { patch(v); } catch (e) {} } });
+    } catch (e) {}
+  }
   /* Nintendo 64 (Mupen64Plus-Next, el mismo en todos los dispositivos: el otro núcleo de EmulatorJS, que es el que elige
      por su cuenta en iPhone, se queda colgado al arrancar). En navegador la CPU va interpretada, así que se quita lo
      que más cuesta y apenas se ve: copiar la profundidad a la memoria (solo la usan unos pocos efectos) y el filtro
@@ -4313,6 +4351,7 @@
       melonds_threaded_renderer: useThreads ? 'enabled' : 'disabled' };
     if (curConsole === 'psx') psxSetup(useThreads);
     if (curConsole === 'psx' && skinMode) psxDualShock();
+    ejsOneCopy();
     if (curConsole === 'n64') n64Setup();
     window.EJS_gameName = g.name;                       // clave de guardado
     if (THREAD_CONS[curConsole] || curConsole === 'n64') presetCore(g.name, useThreads);
