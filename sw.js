@@ -48,7 +48,7 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
   var app = isApp(url) || (req.mode === 'navigate' && url.indexOf(SCOPE) === 0);
   var own = url.indexOf(SCOPE + 'cores/') === 0;                     // núcleos propios: también sin conexión
-  if (!app && !own && url.indexOf(EJS) !== 0 && url !== JSZIP) return;   // portadas, skins, juegos gratis…: como siempre
+  if (!app && !own && url.indexOf(EJS) !== 0 && url !== JSZIP) return;   // portadas, skins…: como siempre
   var game = app && req.mode === 'navigate' && isGame(url);
   e.respondWith(caches.open(CACHE).then(function (c) {
     var key = app ? SCOPE : keyOf(url);
