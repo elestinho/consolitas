@@ -58,13 +58,12 @@
     box-shadow:0 0 0 2px rgba(12,13,20,.9), 0 0 8px rgba(255,138,31,.8); display:none; }
   .tab.upd .ndot { display:block; }
   .tab:active svg { transform:scale(.9); }
-  /* Pestañas Juegos y Gratis */
+  /* Pestaña Juegos */
   .ptitle { font-size:24px; font-weight:800; letter-spacing:-.4px; margin:6px 18px 2px; }
   .psub { color:var(--mut); font-size:13px; line-height:1.45; margin:0 18px 10px; }
   .psub a { color:var(--mut); }
   .gcard .gc { margin:2px 2px 0; color:var(--mut); font-size:12px; }
   #pLib .ggrid { padding-bottom:18px; }
-  #pFree .hlist { padding:4px 16px 24px; }
   .top h1.brand { display:flex; align-items:center; justify-content:center; gap:7px; font-size:27px; font-weight:800;
     letter-spacing:-.6px; overflow:visible; }
   .brand .logo { width:36px; height:36px; flex:none; filter:drop-shadow(0 4px 10px rgba(124,108,255,.45)); }
@@ -371,19 +370,6 @@
     padding:14px 22px; font-size:16px; font-weight:700; }
   #status { color:var(--mut); font-size:13px; padding:0 18px; min-height:18px; }
 #home:not(.t-lib) #status { display:none; }   /* «Procesando…» y compañía solo en Juegos, no en el carrusel ni en Partidas */
-  /* Juegos gratis (homebrew con licencia libre) */
-  #hbrew { padding:0 16px 40px; }
-  #hbrew h2 { font-size:19px; margin:4px 2px 2px; }
-  #hbrew .hsub { color:var(--mut); font-size:13px; line-height:1.45; margin:0 2px 12px; }
-  #hbrew .hsub a, .hcard .hby a { color:var(--mut); }
-  .hcard { display:flex; gap:12px; align-items:center; background:var(--card); border-radius:16px; padding:10px; margin-bottom:10px; }
-  .hcard img { width:84px; height:63px; object-fit:cover; border-radius:10px; flex:none; background:#000; }
-  .hcard .hinfo { flex:1; min-width:0; }
-  .hcard b { display:block; font-size:15px; line-height:1.2; }
-  .hcard .hd { color:var(--txt); opacity:.85; font-size:12.5px; line-height:1.35; margin-top:3px; }
-  .hcard .hby { color:var(--mut); font-size:11.5px; margin-top:3px; }
-  .hcard button { flex:none; border:0; border-radius:12px; background:var(--acc); color:#fff; font-size:14px; font-weight:700; padding:10px 12px; }
-  .hcard button:disabled { background:var(--card2); color:var(--mut); }
   .tips { color:var(--mut); font-size:13px; line-height:1.55; padding:0 20px 30px; }
 
   /* ---------- Hojas (fichas y ajustes) ---------- */
@@ -696,8 +682,6 @@
     </div>
     <!-- Pestaña Juegos: recientes y todos -->
     <div class="pane" id="pLib" style="display:none"></div>
-    <!-- Pestaña Gratis: juegos homebrew de todas las consolas -->
-    <div class="pane" id="pFree" style="display:none"></div>
     <!-- Pestaña Partidas: tarjeta de memoria -->
     <div class="pane" id="pMem" style="display:none"></div>
   </section>
@@ -738,7 +722,6 @@
     <div id="gcwrap" style="display:none"><div id="gcar" class="gcar"></div><div id="gcinfo" class="gcinfo"><div class="gct"></div><div class="gcn"></div></div></div>
     <div id="games" class="ggrid"></div>
     <div class="hint" id="gHint" style="display:none;padding:0 20px 30px">Toca un juego para abrirlo · mantén pulsado para más opciones</div>
-    <div id="hbrew" style="display:none"></div>
     <div id="selbar">
       <button id="selNo">Cancelar</button>
       <button id="selAll">Todos</button>
@@ -816,7 +799,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.0.4</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.1.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1341,7 +1324,7 @@
         return g;
       }).sort(function (a, b) { return a.title.localeCompare(b.title); });
       byId = {}; games.forEach(function (g) { byId[g.id] = g; });
-      renderHome(); renderGames(); if (TAB === 'lib') renderLib(); if (TAB === 'free') renderFree();
+      renderHome(); renderGames(); if (TAB === 'lib') renderLib();
     });
   }
 
@@ -1354,10 +1337,9 @@
     $('home').className = 'wrapc t-' + t;
     $('pCons').style.display = t === 'cons' ? 'flex' : 'none';
     $('pLib').style.display = t === 'lib' ? 'block' : 'none';
-    $('pFree').style.display = t === 'free' ? 'block' : 'none';
     $('pMem').style.display = t === 'mem' ? 'block' : 'none';
     Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) { b.classList.toggle('on', b.getAttribute('data-t') === t); });
-    if (t === 'lib') renderLib(); else if (t === 'free') renderFree(); else if (t === 'mem') { memConsole = null; renderMem(); }
+    if (t === 'lib') renderLib(); else if (t === 'mem') { memConsole = null; renderMem(); }
     $('home').scrollTop = 0;
     if (t === 'cons' && slideEls.length) requestAnimationFrame(recenter);
   }
@@ -1611,7 +1593,6 @@
     paintView();
     if (!list.length && editOn) setEdit(false);
     if (!list.length && selMode) { selMode = false; selIds = []; $('cview').classList.remove('sel'); $('btnEdit').classList.remove('on'); }
-    renderHomebrew();
     if (!list.length) {
       box.innerHTML = '<div class="empty">' + padImg(ctxConsole) + 'Aún no hay juegos de ' + c.short +
         (ctxConsole === 'psx'
@@ -1916,7 +1897,7 @@
     if (!games.length) {
       if (vb.parentNode === el) $('cview').insertBefore(vb, $('gcwrap'));
       el.insertAdjacentHTML('beforeend', '<div class="ptitle">Juegos</div><div class="empty"><div class="big">🎮</div>Aún no tienes juegos.<br>' +
-        'Añade una ROM o prueba los de la pestaña Gratis.<br><button class="addbig" id="libAdd">＋ Añadir juego</button></div>');
+        'Añade una ROM para empezar.<br><button class="addbig" id="libAdd">＋ Añadir juego</button></div>');
       $('libAdd').onclick = function () { $('rom').click(); };
       return;
     }
@@ -2088,71 +2069,6 @@
       box.appendChild(row);
     });
     el.appendChild(box);
-  }
-
-  /* ====== Juegos gratis: homebrew con licencia libre que viene con la app (carpeta homebrew/) ====== */
-  // name es la clave de guardado: no cambiarlo. Créditos y licencias en homebrew/README.md
-  var HOMEBREW = [
-    { console: 'md', name: 'KleleAtoms MD', title: 'KłełeAtoms', ext: 'md', file: 'kleleatoms-md-1.2.1.bin', cover: 'kleleatoms.jpg',
-      by: 'Nightwolf-47', lic: 'MIT', desc: 'Estrategia por turnos de 1 a 4 jugadores: haz estallar tus átomos para quedarte con los del rival.' },
-    { console: 'md', name: 'Minesweeper MD', title: 'Minesweeper MD', ext: 'md', file: 'minesweeper-md-1.1.1.bin', cover: 'minesweeper.jpg',
-      by: 'Nightwolf-47', lic: 'MIT', desc: 'El buscaminas de siempre, con tableros de hasta 38×22 y récords.' },
-    { console: 'gg', name: 'Waternet', title: 'Waternet', ext: 'gg', file: 'waternet-1.0.gg', cover: 'waternet.jpg',
-      by: 'Willems Davy', lic: 'MIT', desc: 'Puzle: gira y desliza las tuberías para que el agua llegue a todas.' },
-    { console: 'gg', name: 'Petris', title: 'Petris', ext: 'gg', file: 'petris-beta-2021-10-10.gg', cover: 'petris.jpg',
-      by: 'bbbbbr', lic: 'CC BY-NC-SA', desc: 'Puzle de piezas que caen: completa mascotas cada vez más largas.' }
-  ];
-  function renderHomebrew() {
-    var el = $('hbrew'), list = HOMEBREW.filter(function (h) { return h.console === ctxConsole; });
-    el.innerHTML = ''; el.style.display = list.length ? 'block' : 'none';
-    if (!list.length) return;
-    el.innerHTML = '<h2>Juegos gratis</h2><div class="hsub">Juegos hechos por aficionados que sus autores comparten con licencia libre. ' +
-      '<a href="https://github.com/elestinho/consolitas/tree/main/homebrew" target="_blank" rel="noopener">Créditos y licencias</a></div>';
-    hbCards(el, list, false);
-  }
-  function renderFree() {
-    var el = $('pFree');
-    el.innerHTML = '<div class="ptitle">Juegos gratis</div><div class="psub">Hechos por aficionados que los comparten con licencia libre. ' +
-      '<a href="https://github.com/elestinho/consolitas/tree/main/homebrew" target="_blank" rel="noopener">Créditos y licencias</a></div>';
-    var box = document.createElement('div'); box.className = 'hlist'; el.appendChild(box);
-    hbCards(box, HOMEBREW, true);
-  }
-  function hbCards(el, list, withConsole) {
-    list.forEach(function (h) {
-      var have = games.some(function (g) { return g.console === h.console && g.name === h.name; });
-      var d = document.createElement('div'); d.className = 'hcard';
-      var im = document.createElement('img'); im.alt = ''; im.src = 'homebrew/portadas/' + h.cover; d.appendChild(im);
-      var info = document.createElement('div'); info.className = 'hinfo';
-      var b = document.createElement('b'); b.textContent = h.title; info.appendChild(b);
-      var ds = document.createElement('div'); ds.className = 'hd'; ds.textContent = h.desc; info.appendChild(ds);
-      var by = document.createElement('div'); by.className = 'hby'; by.textContent = (withConsole ? CONSOLES[h.console].short + ' · ' : '') + 'De ' + h.by + ' · Licencia ' + h.lic; info.appendChild(by);
-      d.appendChild(info);
-      var btn = document.createElement('button');
-      btn.textContent = have ? '✓ Está' : '＋ Añadir'; btn.disabled = have;
-      btn.onclick = function () { addHomebrew(h, btn); };
-      d.appendChild(btn);
-      el.appendChild(d);
-    });
-  }
-  function addHomebrew(h, btn) {
-    btn.disabled = true; btn.textContent = 'Añadiendo…';
-    var id = String(Date.now()) + Math.floor(Math.random() * 1000), buf;
-    fetch('homebrew/' + h.file).then(function (r) {
-      if (!r.ok) throw new Error('no se pudo descargar (' + r.status + ')');
-      return r.arrayBuffer();
-    }).then(function (b) {
-      buf = b;
-      return fetch('homebrew/portadas/' + h.cover).then(function (r) { return r.ok ? r.blob().then(fileToCover) : null; })
-        .catch(function () { return null; });                       // sin portada también vale
-    }).then(function (cover) {
-      return putRom({ id: id, name: h.name, ext: h.ext, console: h.console, buf: buf })
-        .then(function () { return putMeta({ id: id, title: h.title, cover: cover, ct: Date.now() }); });
-    }).then(refresh).then(function () {
-      toast(h.title + ' añadido ✔');
-    }).catch(function (e) {
-      btn.disabled = false; btn.textContent = '＋ Añadir';
-      toast(/fetch|network|Load failed|offline|Failed/i.test(e.message) ? 'Sin conexión: no pude descargar el juego' : 'Error: ' + e.message, 3200);
-    });
   }
 
   /* ====== Ficha: la portada sube al centro y aparece «Jugar» ====== */
@@ -2513,7 +2429,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 111, APP_SEMVER = '1.0.4', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 112, APP_SEMVER = '1.1.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2596,7 +2512,7 @@
       if (offBusy) return;
       $('offNote').textContent = !offOk ? 'Este navegador no deja guardar el emulador para usarlo sin internet.'
         : !st ? 'Se está activando. Cierra y vuelve a abrir la app con internet.'
-        : all ? 'Ya puedes jugar sin conexión. Las skins nuevas y los juegos de Gratis se descargan aparte: elígelos una vez con internet.'
+        : all ? 'Ya puedes jugar sin conexión. Las skins nuevas se descargan aparte: elígelas una vez con internet.'
         : 'Con internet, abre un juego de cada consola que falte o pulsa «Preparar todas» (unos 12 MB). Después arrancan sin conexión.';
     });
   }
