@@ -485,6 +485,14 @@
   #touch { position:absolute; left:0; top:0; width:100%; height:100%; z-index:3; pointer-events:none; touch-action:none; }
   #sticks { position:absolute; left:0; top:0; width:100%; height:100%; z-index:2; pointer-events:none; }
   #sticks img { position:absolute; pointer-events:none; -webkit-user-drag:none; will-change:transform; }
+  /* Botones dibujados encima de la skin (L y R de la GBA en vertical): discretos, se iluminan al pulsarlos */
+  #sticks .skbtn { position:absolute; display:flex; align-items:center; justify-content:center; box-sizing:border-box;
+    border-radius:10px; background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.28);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18); color:rgba(255,255,255,.8);
+    font:700 15px/1 -apple-system, system-ui, sans-serif; text-shadow:0 1px 1px rgba(0,0,0,.4); transition:background .08s; }
+  #sticks .skbtn.l { border-top-left-radius:22px; }
+  #sticks .skbtn.r { border-top-right-radius:22px; }
+  #sticks .skbtn.on { background:rgba(255,255,255,.32); color:#fff; }
   #skinwrap.tl #skinimg, #skinwrap.tl #sticks { opacity:.75; }
   #hud { display:none; position:fixed; z-index:60; top:calc(env(safe-area-inset-top, 0px) + 4px); right:8px; pointer-events:none;
     font:600 10px/1.3 ui-monospace, Menlo, monospace; color:rgba(255,255,255,.75); text-shadow:0 0 2px #000; text-align:right; white-space:pre; }
@@ -807,7 +815,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión 97 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión 99 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2490,7 +2498,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 97, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 99, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -3640,6 +3648,12 @@
      (están en el menú de pausa) y la consola baja. cutBottom = dónde acaba la consola en la imagen */
   var CUT_GAP = 10;
   SKIN_DATA.pikachu.info.representations.iphone.edgeToEdge.portrait.cutBottom = 840;
+  // L y R a la vista, en los extremos de la bisagra como en la GBA SP (la skin solo los tenía invisibles a los lados de la pantalla)
+  [['edgeToEdge', 422, 44], ['standard', 347, 42]].forEach(function (a) {
+    var r = SKIN_DATA.pikachu.info.representations.iphone[a[0]].portrait, e = { top: 6, bottom: 4, left: 6, right: 6 };
+    r.items.push({ inputs: ['l'], label: 'L', frame: { x: 6, y: a[1], width: 100, height: a[2] }, extendedEdges: e },
+      { inputs: ['r'], label: 'R', frame: { x: 308, y: a[1], width: 100, height: a[2] }, extendedEdges: e });
+  });
 
   // Varias pantallas (DS: la de arriba y la táctil, una encima de otra) → un solo recuadro que las abarca
   function unionFrame(list, key) {
@@ -3719,7 +3733,7 @@
   }
   function press(n, v) {
     var K = curConsole === 'n64' ? KEYS_N64 : KEYS;
-    if (n in K) { sim(K[n], v); return; }
+    if (n in K) { sim(K[n], v); litBtn(n, v); return; }
     if (n in AXES) { sim(AXES[n], v ? 0x7fff : 0); return; }
     if (n === 'toggleAnalog') { [10, 11, 2].forEach(function (i) { sim(i, v); }); return; }   // L1+R1+Select: el botón ANALOG del DualShock
     if (n === 'fastForward') { if (callGm('toggleFastForward', [v ? 1 : 0])) ff = !!v; return; }   // mantener pulsada la pantalla = avance rápido
@@ -3745,6 +3759,16 @@
       if (url) el.src = url; else el.style.display = 'none';
       box.appendChild(el); it._el = el;
     });
+    skinState.items.forEach(function (it) {          // botones dibujados (L y R de la GBA)
+      if (!it.label) return;
+      var b = document.createElement('div');
+      b.className = 'skbtn ' + it.inputs[0]; b.textContent = it.label; b.dataset.in = it.inputs[0];
+      place(b, it.frame, skinState.mw, skinState.mh); box.appendChild(b);
+    });
+  }
+  function litBtn(n, v) {
+    var bs = $('sticks').querySelectorAll('.skbtn');
+    for (var i = 0; i < bs.length; i++) if (bs[i].dataset.in === n) bs[i].classList.toggle('on', !!v);
   }
   function stickAt(px, py) {
     if (!skinState) return null;
