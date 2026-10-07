@@ -816,7 +816,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión 106 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.0.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2513,7 +2513,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 106, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 107, APP_SEMVER = '1.0.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2524,11 +2524,11 @@
       if (r.headers.get('X-Consolitas-Offline')) throw new Error('sin conexión');   // respuesta guardada por sw.js
       return r.ok ? r.text() : '';
     }).then(function (t) {
-      var m = /APP_VER = (\d+)/.exec(t), v = m ? parseInt(m[1], 10) : 0;
+      var m = /APP_VER = (\d+)/.exec(t), v = m ? parseInt(m[1], 10) : 0, ms = /APP_SEMVER = '([\d.]+)'/.exec(t), vs = ms ? ms[1] : String(v);
       if (v > APP_VER) {
         newVer = v; diag('versión nueva disponible: ' + v);
         $('updCheck').textContent = 'Actualizar a V' + v;
-        $('updRowT').textContent = 'Toca para actualizar a la Versión ' + v; $('updRow').style.display = '';
+        $('updRowT').textContent = 'Toca para actualizar a la Versión ' + vs; $('updRow').style.display = '';
         $('btnSettings').classList.add('upd');
       } else if (manual) $('updCheck').textContent = 'Está al día';
     }).catch(function () { if (manual) $('updCheck').textContent = 'Sin conexión'; });
@@ -2542,7 +2542,7 @@
   // Tras actualizar, iPhone a veces no ve las partidas hasta cerrar la app del todo: se avisa una vez
   if (new URLSearchParams(location.search).get('v')) {
     history.replaceState({}, '', location.pathname);
-    $('updDoneT').textContent = 'Ya tienes la Versión ' + APP_VER;
+    $('updDoneT').textContent = 'Ya tienes la Versión ' + APP_SEMVER;
     $('updDone').style.display = 'flex';
     $('updDoneOk').onclick = function () { $('updDone').style.display = 'none'; };
   }
