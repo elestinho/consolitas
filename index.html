@@ -812,7 +812,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.2.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.3.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2136,7 +2136,7 @@
     fly.style.left = fl + 'px'; fly.style.top = ft + 'px'; fly.style.width = fw + 'px'; fly.style.height = fh + 'px';
     fly.style.setProperty('--d', (Math.max(fw, fh) * .1).toFixed(1) + 'px');
     spinReset();
-    if (g.console === 'nds') dsDress(fly.querySelector('.bx'), g, fh, +(Math.max(fw, fh) * .1).toFixed(1));
+    if (g.console === 'nds' || g.console === 'psx') boxDress(fly.querySelector('.bx'), g, fh, +(Math.max(fw, fh) * .1).toFixed(1));
     info.style.left = t.left + 'px'; info.style.width = t.size + 'px'; info.style.top = (ft + fh + 20) + 'px';
     [fly, info, bg].forEach(cancelAnims);
     ov.style.display = 'block';
@@ -2187,35 +2187,53 @@
   }, dsImgs = {};
   function dsImg(k) { if (!dsImgs[k]) { dsImgs[k] = new Image(); dsImgs[k].src = DSBOX[k]; } return dsImgs[k]; }
   function spineName(t) { return String(t || '').replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '').replace(/\.(nds|zip|7z|rar)$/i, '').replace(/\s+/g, ' ').trim(); }
-  function drawSpine(cv, name) {
-    var W = cv.width, H = cv.height, x = cv.getContext('2d'), top = dsImg('top'), bot = dsImg('bot');
-    function paint() {
-      x.fillStyle = '#050505'; x.fillRect(0, 0, W, H);
-      var th = W * 249 / 112, bh = W * 40 / 112, by = H - bh - W * .35;
-      if (top.complete && top.naturalWidth) x.drawImage(top, 0, 0, W, th);
-      if (bot.complete && bot.naturalWidth) x.drawImage(bot, 0, by, W, bh);
-      var room = by - th - W * .7, fs = W * .4;
-      x.save(); x.translate(W / 2, th + W * .35); x.rotate(Math.PI / 2);
-      x.fillStyle = '#fff'; x.textBaseline = 'middle'; x.font = '700 ' + fs + 'px -apple-system, "Helvetica Neue", Arial, sans-serif';
-      var t = name, w = x.measureText(t).width;
-      if (w > room) { fs = Math.max(W * .28, fs * room / w); x.font = '700 ' + fs + 'px -apple-system, "Helvetica Neue", Arial, sans-serif'; }
+  function drawSpine(cv, name, ps) {
+    var W = cv.width, H = cv.height, x = cv.getContext('2d'), top = dsImg('top'), bot = dsImg('bot'), pl = ps ? psLogo() : null;
+    var FONT = '700 {s}px -apple-system, "Helvetica Neue", Arial, sans-serif';
+    function title(y0, y1, size) {           // nombre del juego en vertical, de arriba abajo, como en una caja real
+      var room = y1 - y0, fs = size, t = name;
+      x.save(); x.translate(W / 2, y0); x.rotate(Math.PI / 2);
+      x.fillStyle = '#fff'; x.textBaseline = 'middle'; x.font = FONT.replace('{s}', fs);
+      var w = x.measureText(t).width;
+      if (w > room) { fs = Math.max(W * .28, fs * room / w); x.font = FONT.replace('{s}', fs); }
       while (t.length > 1 && x.measureText(t).width > room) t = t.slice(0, -2).trim() + '…';
       x.fillText(t, 0, 0); x.restore();
     }
+    function paint() {
+      if (ps) {                              // PS1: lateral negro, logo pequeño en su cuadrito arriba y el nombre debajo
+        var g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, '#0b0b0d'); g.addColorStop(.5, '#1b1b1f'); g.addColorStop(1, '#0b0b0d');
+        x.fillStyle = g; x.fillRect(0, 0, W, H);
+        var m = W * .1, bw = W - 2 * m, by = W * .12;
+        x.strokeStyle = 'rgba(255,255,255,.85)'; x.lineWidth = Math.max(1, W * .02); x.strokeRect(m, by, bw, bw);
+        if (pl.complete && pl.naturalWidth) { var lw = bw * .72, lh = lw * pl.naturalHeight / pl.naturalWidth; x.drawImage(pl, m + (bw - lw) / 2, by + bw * .12, lw, lh); }
+        x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'alphabetic'; x.font = '600 ' + (W * .13) + 'px -apple-system, Arial, sans-serif';
+        x.fillText('PlayStation', W / 2, by + bw * .92); x.textAlign = 'start';
+        title(by + bw + W * .5, H - W * .3, W * .42);
+        return;
+      }
+      x.fillStyle = '#050505'; x.fillRect(0, 0, W, H);
+      var th = W * 249 / 112, bh = W * 40 / 112, by2 = H - bh - W * .35;
+      if (top.complete && top.naturalWidth) x.drawImage(top, 0, 0, W, th);
+      if (bot.complete && bot.naturalWidth) x.drawImage(bot, 0, by2, W, bh);
+      title(th + W * .35, by2 - W * .35, W * .4);
+    }
     paint();
-    [top, bot].forEach(function (im) { if (!im.complete) im.addEventListener('load', paint); });
+    (ps ? [pl] : [top, bot]).forEach(function (im) { if (!im.complete) im.addEventListener('load', paint); });
   }
-  function dsDress(bx, g, fh, d) {           // solo la caja grande de la ficha
-    bx.classList.add('ds');
+  function psLogo() { if (!dsImgs.ps) { dsImgs.ps = new Image(); dsImgs.ps.src = PS_IMG; } return dsImgs.ps; }
+  function boxDress(bx, g, fh, d) {          // solo la caja grande de la ficha: DS y PS1 (lomo con el nombre y contraportada)
+    var ps = g.console === 'psx';
+    bx.classList.add('cbox');
     var old = bx.querySelector('.bsl'), cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
     cv.className = 'bsl'; cv.width = Math.round(d * dpr); cv.height = Math.round(fh * dpr);
     cv.style.width = d + 'px'; cv.style.height = fh + 'px';
-    bx.replaceChild(cv, old); drawSpine(cv, spineName(g.title));
-    var bk = document.createElement('i'); bk.className = 'bk'; bk.style.backgroundImage = 'url(' + DSBOX.seta + ')';
+    bx.replaceChild(cv, old); drawSpine(cv, spineName(g.title), ps);
+    var bk = document.createElement('i'); bk.className = 'bk'; bk.style.backgroundImage = 'url(' + (ps ? PS_IMG : DSBOX.seta) + ')';
+    if (ps) { bk.style.backgroundColor = '#8e9098'; bk.style.backgroundSize = '46% auto'; }
     bx.appendChild(bk);
   }
   var spin = { on: false, ry: 0, base: 0, x0: 0, y0: 0, drag: false, pts: [], at: 0, raf: 0 };
-  function spinBox() { return $('ovfly').querySelector('.bx.ds'); }
+  function spinBox() { return $('ovfly').querySelector('.bx.cbox'); }
   function spinT(ry) { return 'perspective(900px) rotateY(' + (ry - 24) + 'deg) rotateX(-7deg)'; }
   function spinReset() {
     var fly = $('ovfly'), bx = spinBox(); cancelAnimationFrame(spin.raf); spin.raf = 0;
@@ -2557,7 +2575,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 116, APP_SEMVER = '1.2.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 117, APP_SEMVER = '1.3.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
