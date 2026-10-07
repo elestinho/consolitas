@@ -480,6 +480,7 @@
   #boot { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; z-index:4; background:#fef5ff;
     pointer-events:none; transition:opacity .6s ease; }
   #boot.dsin { animation:dsIn 1s ease-out; }
+  #wrap > #boot { z-index:2147483000; }   /* sin skin: por encima de los menús de EmulatorJS mientras carga */
   @keyframes dsIn { from { filter:brightness(3); } to { filter:none; } }
   #skinimg { position:absolute; left:0; top:0; width:100%; height:100%; z-index:2; pointer-events:none; -webkit-user-drag:none; }
   #touch { position:absolute; left:0; top:0; width:100%; height:100%; z-index:3; pointer-events:none; touch-action:none; }
@@ -815,7 +816,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión 99 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión 100 · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2498,7 +2499,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 99, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 100, APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -3668,7 +3669,7 @@
   var skinPair = null;
   function buildSkin(pair) {
     skinPair = pair; skinState = null;
-    $('screen').insertBefore($('game'), $('grid'));
+    $('screen').insertBefore($('game'), $('grid')); $('screen').appendChild($('boot'));
     $('skinimg').onerror = function () { log('No se pudo cargar la imagen de la skin: ' + (skinState && skinState.sk.img)); };
     $('skinwrap').style.display = 'block';
     applyLcd(); layout(); bindTouch(); $('touch').style.pointerEvents = 'auto';
@@ -4442,6 +4443,8 @@
             $('wrap').style.display = 'block';
             $('exit').style.display = 'block';
             $('exit').textContent = '☰'; $('exit').setAttribute('aria-label', 'Menú'); $('exit').onclick = openPause;
+            // NES, SNES, Mega Drive y Game Gear no tienen skin: su logo tapa también el marco simple mientras se descarga el núcleo
+            $('wrap').appendChild($('boot')); showBoot();
           }
           startEmulator(g, data, !!sk, ((sk && sk.port ? skin : lsk) || {}).menu);
         });
