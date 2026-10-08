@@ -8,4 +8,9 @@ ds.glb: "Nintendo DS Chrome Special Edition" por Huge Nintendo DS (https://sketc
   Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
   Modificado: materiales convertidos a metal-rugosidad, texturas reducidas (WebP), malla comprimida.
   Nintendo DS es marca de Nintendo.
+gba.glb: "Gameboy Advance SP" por thegraphicsgeek (https://sketchfab.com/thegraphicsgeek)
+  https://sketchfab.com/3d-models/gameboy-advance-sp-18c9688eaa8f4903a940c105242df15f
+  Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Modificado: mallas unidas por material, texturas reducidas a 512 px (WebP), malla comprimida.
+  Game Boy Advance SP es marca de Nintendo.
 ps1-3d.js: three.js (MIT, https://threejs.org), con GLTFLoader y MeshoptDecoder (MIT).

@@ -2,4 +2,4 @@
 Lil project for playing some hackroms in your browser. More details in the REAMDE.md 
 
 ## Créditos
-- PS1 y DS en 3D del carrusel: «Playstation 1» de [ecjhr0awipso](https://sketchfab.com/ecjhr0awipso) y «Nintendo DS Chrome Special Edition» de [Huge Nintendo DS](https://sketchfab.com/hugenintendods) (ambos CC BY 4.0), simplificados y comprimidos. three.js (MIT). Ver `lib/3d/LICENSE.txt`.
+- PS1, DS y GBA en 3D del carrusel: «Playstation 1» de [ecjhr0awipso](https://sketchfab.com/ecjhr0awipso), «Nintendo DS Chrome Special Edition» de [Huge Nintendo DS](https://sketchfab.com/hugenintendods) y «Gameboy Advance SP» de [thegraphicsgeek](https://sketchfab.com/thegraphicsgeek) (todos CC BY 4.0), simplificados y comprimidos. three.js (MIT). Ver `lib/3d/LICENSE.txt`.
