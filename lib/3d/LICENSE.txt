@@ -13,4 +13,12 @@ gba.glb: "Gameboy Advance SP" por thegraphicsgeek (https://sketchfab.com/thegrap
   Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
   Modificado: mallas unidas por material, texturas reducidas a 512 px (WebP), malla comprimida.
   Game Boy Advance SP es marca de Nintendo.
+snes.glb: "Snes PAL Controller" por kwstasg (https://sketchfab.com/kwstasg)
+  https://sketchfab.com/3d-models/snes-pal-controller-332c4b913ca1421b8b6001dc0b7a214b
+  Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Modificado: malla simplificada y comprimida, texturas en WebP. Super Nintendo es marca de Nintendo.
+md.glb: "Low-Poly Sega Mega Drive" por niklas.glosen (https://sketchfab.com/niklas.glosen)
+  https://sketchfab.com/3d-models/low-poly-sega-mega-drive-f11afb3b0b114e6fab52e531a4d3ef6d
+  Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Modificado: texturas en WebP, malla comprimida. Mega Drive es marca de Sega.
 ps1-3d.js: three.js (MIT, https://threejs.org), con GLTFLoader y MeshoptDecoder (MIT).
