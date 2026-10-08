@@ -145,9 +145,10 @@
      se encoge cuando sube, como si estuviera viva */
   .art::after { content:""; position:absolute; left:22%; right:22%; bottom:var(--sb, 0px); height:16px; border-radius:50%; pointer-events:none;
     background:radial-gradient(closest-side, rgba(0,0,0,.5), rgba(0,0,0,0)); opacity:.8; }
-  .art .m3d { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity .5s; }
-  .art.has3d .m3d { opacity:1; }
-  .art.has3d img { opacity:0; animation:none !important; }
+  .art .m3d { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0; transform:scale(.97); transition:opacity .45s ease, transform .6s ease; }
+  .art.has3d .m3d { opacity:1; transform:none; }
+  .art.has3d img { opacity:0; transition:opacity .45s ease; }   /* fundido cruzado imagen → 3D; la imagen sigue flotando hasta que se apaga */
+  .art.has3d.d3 img { animation:none !important; }
   .slide.active .art img { animation:cfloat 3.6s ease-in-out infinite; }
   .slide.active .art::before { animation:chalo 3.6s ease-in-out infinite; }
   .slide.active .art::after { animation:cshadow 3.6s ease-in-out infinite; }
@@ -815,7 +816,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.8.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.8.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
   <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelos 3D: «Playstation 1» de ecjhr0awipso, «Nintendo DS Chrome Special Edition» de Huge Nintendo DS y «Gameboy Advance SP» de thegraphicsgeek, «Snes PAL Controller» de kwstasg y «Low-Poly Sega Mega Drive» de niklas.glosen, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
 </div>
 
@@ -1457,17 +1458,34 @@
       import(new URL('lib/3d/ps1-3d.js', location.href).href).then(function (m) { return m.create(new URL('lib/3d/' + M3[cid].glb, location.href).href, M3[cid]); }).then(function (h) {
         p.h = h; p.busy = false;
         h.el.className = 'm3d';
-        h.onlost = function () { p.bad = true; if (p.art) p.art.classList.remove('has3d'); h.run(false); diag('3D: se perdió el contexto WebGL (' + cid + ')'); };
+        h.onlost = function () { p.bad = true; if (p.art) p.art.classList.remove('has3d', 'd3'); h.run(false); diag('3D: se perdió el contexto WebGL (' + cid + ')'); };
         var art2 = art3d(cid); if (art2) put3d(p, art2);
       }).catch(function (e) { p.busy = false; p.bad = true; diag('3D no disponible (' + cid + '): ' + (e && e.message || e)); });
     });
   }
+  /* Precarga en segundo plano (ratos libres, sin ahorro de datos ni 2G/3G): módulo y modelos, la consola actual primero, para que
+     al llegar a cada consola el 3D ya esté en la caché y el cambio de la imagen al modelo sea casi inmediato. */
+  function warm3d() {
+    var cn = navigator.connection || {};
+    if (cn.saveData || /2g|3g/.test(cn.effectiveType || '')) return;
+    var cur = lsGet('car-c', ''), ids = Object.keys(M3).sort(function (a, b) { return (b === cur) - (a === cur); });
+    var base = function (f) { return new URL('lib/3d/' + f, location.href).href; };
+    var next = function () {
+      var id = ids.shift(); if (!id) return;
+      if (P3[id] && (P3[id].busy || P3[id].h)) return next();   // ya la está bajando la consola del centro
+      fetch(base(M3[id].glb)).then(function (r) { return r.arrayBuffer(); }).catch(function () {}).then(function () { setTimeout(next, 300); });
+    };
+    import(base('ps1-3d.js')).catch(function () {}).then(next);
+  }
+  (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(function () { setTimeout(warm3d, 800); });
   function put3d(p, art) {
-    if (p.art && p.art !== art) p.art.classList.remove('has3d');
+    if (p.art && p.art !== art) p.art.classList.remove('has3d', 'd3');
     p.art = art;
     if (p.h.el.parentNode !== art) art.appendChild(p.h.el);
-    p.h.run(true);
-    requestAnimationFrame(function () { art.classList.add('has3d'); });
+    p.h.run(true, function () {      // el 3D se muestra cuando ya tiene dibujado su primer fotograma: sin parpadeo
+      art.classList.add('has3d');
+      setTimeout(function () { art.classList.add('d3'); }, 600);
+    });
   }
   function nearestSlide() {                  // cálculo directo (hay muchas diapositivas)
     var a = slideEls[0], b = slideEls[1], pitch = b.offsetLeft - a.offsetLeft;
@@ -2674,7 +2692,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 127, APP_SEMVER = '1.8.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 128, APP_SEMVER = '1.8.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
