@@ -3,4 +3,9 @@ ps1.glb: "Playstation 1" por ecjhr0awipso (https://sketchfab.com/ecjhr0awipso)
   Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
   Modificado: malla simplificada y comprimida, texturas reducidas (WebP).
   PlayStation es marca de Sony Interactive Entertainment.
+ds.glb: "Nintendo DS Chrome Special Edition" por Huge Nintendo DS (https://sketchfab.com/hugenintendods)
+  https://sketchfab.com/3d-models/nintendo-dstm-chrome-special-edition-575a0d9b9e24434da3f5913f28253dd5
+  Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Modificado: materiales convertidos a metal-rugosidad, texturas reducidas (WebP), malla comprimida.
+  Nintendo DS es marca de Nintendo.
 ps1-3d.js: three.js (MIT, https://threejs.org), con GLTFLoader y MeshoptDecoder (MIT).

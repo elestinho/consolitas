@@ -816,7 +816,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
   <p class="ver">Versión <span id="verTxt">1.8.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
-  <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelo 3D de la PS1: «Playstation 1» de ecjhr0awipso, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
+  <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelos 3D: «Playstation 1» de ecjhr0awipso y «Nintendo DS Chrome Special Edition» de Huge Nintendo DS, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1439,31 +1439,33 @@
     lsSet('car-c', CAR[r]);
     sync3d();
   }
-  /* PS1 en 3D (1.8.0): un solo lienzo WebGL que se coloca sobre la PS1 del centro. three.js y el modelo (lib/3d, ~0,4 MB)
+  /* PS1 y DS en 3D (1.8.0): un lienzo WebGL por consola que se coloca sobre la del centro. three.js y el modelo (lib/3d, ~0,4 MB)
      se bajan la primera vez que la PS1 queda en el centro; si algo falla se queda la imagen de siempre. Solo vive en la
      portada: al abrir un juego la página se recarga y el 3D desaparece. */
-  var P3 = { h: null, art: null, busy: false, bad: false };
+  var M3 = { psx: { glb: 'ps1.glb' }, nds: { glb: 'ds.glb', ry: 0.15, sway: 0.6 } }, P3 = {};
+  function art3d(cid) { var a = slideEls[activeIdx]; return a && a.getAttribute('data-c') === cid ? a.querySelector('.art') : null; }
   function sync3d() {
-    var a = slideEls[activeIdx], art = a && a.getAttribute('data-c') === 'psx' ? a.querySelector('.art') : null;
-    if (!art) { if (P3.h) P3.h.run(false); return; }
-    if (P3.bad) return;
-    if (P3.h) { put3d(art); return; }
-    var sd = navigator.connection && navigator.connection.saveData;
-    if (P3.busy || sd) return;
-    P3.busy = true;
-    import(new URL('lib/3d/ps1-3d.js', location.href).href).then(function (m) { return m.create(new URL('lib/3d/ps1.glb', location.href).href); }).then(function (h) {
-      P3.h = h; P3.busy = false;
-      h.el.className = 'm3d';
-      h.onlost = function () { P3.bad = true; if (P3.art) P3.art.classList.remove('has3d'); h.run(false); diag('PS1 3D: se perdió el contexto WebGL'); };
-      var a2 = slideEls[activeIdx], art2 = a2 && a2.getAttribute('data-c') === 'psx' ? a2.querySelector('.art') : null;
-      if (art2) put3d(art2);
-    }).catch(function (e) { P3.busy = false; P3.bad = true; diag('PS1 3D no disponible: ' + (e && e.message || e)); });
+    Object.keys(M3).forEach(function (cid) {
+      var p = P3[cid] || (P3[cid] = { h: null, art: null, busy: false, bad: false }), art = art3d(cid);
+      if (!art) { if (p.h) p.h.run(false); return; }
+      if (p.bad) return;
+      if (p.h) { put3d(p, art); return; }
+      var sd = navigator.connection && navigator.connection.saveData;
+      if (p.busy || sd) return;
+      p.busy = true;
+      import(new URL('lib/3d/ps1-3d.js', location.href).href).then(function (m) { return m.create(new URL('lib/3d/' + M3[cid].glb, location.href).href, M3[cid]); }).then(function (h) {
+        p.h = h; p.busy = false;
+        h.el.className = 'm3d';
+        h.onlost = function () { p.bad = true; if (p.art) p.art.classList.remove('has3d'); h.run(false); diag('3D: se perdió el contexto WebGL (' + cid + ')'); };
+        var art2 = art3d(cid); if (art2) put3d(p, art2);
+      }).catch(function (e) { p.busy = false; p.bad = true; diag('3D no disponible (' + cid + '): ' + (e && e.message || e)); });
+    });
   }
-  function put3d(art) {
-    if (P3.art && P3.art !== art) P3.art.classList.remove('has3d');
-    P3.art = art;
-    if (P3.h.el.parentNode !== art) art.appendChild(P3.h.el);
-    P3.h.run(true);
+  function put3d(p, art) {
+    if (p.art && p.art !== art) p.art.classList.remove('has3d');
+    p.art = art;
+    if (p.h.el.parentNode !== art) art.appendChild(p.h.el);
+    p.h.run(true);
     requestAnimationFrame(function () { art.classList.add('has3d'); });
   }
   function nearestSlide() {                  // cálculo directo (hay muchas diapositivas)
