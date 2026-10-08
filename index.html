@@ -145,6 +145,9 @@
      se encoge cuando sube, como si estuviera viva */
   .art::after { content:""; position:absolute; left:22%; right:22%; bottom:var(--sb, 0px); height:16px; border-radius:50%; pointer-events:none;
     background:radial-gradient(closest-side, rgba(0,0,0,.5), rgba(0,0,0,0)); opacity:.8; }
+  .art .m3d { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity .5s; }
+  .art.has3d .m3d { opacity:1; }
+  .art.has3d img { opacity:0; animation:none !important; }
   .slide.active .art img { animation:cfloat 3.6s ease-in-out infinite; }
   .slide.active .art::before { animation:chalo 3.6s ease-in-out infinite; }
   .slide.active .art::after { animation:cshadow 3.6s ease-in-out infinite; }
@@ -812,7 +815,8 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.7.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.8.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelo 3D de la PS1: «Playstation 1» de ecjhr0awipso, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1433,6 +1437,34 @@
     Array.prototype.forEach.call($('dots').children, function (d, k) { d.classList.toggle('on', k === r); });
     Array.prototype.forEach.call($('glows').children, function (g) { g.classList.toggle('on', g.getAttribute('data-c') === CAR[r]); });
     lsSet('car-c', CAR[r]);
+    sync3d();
+  }
+  /* PS1 en 3D (1.8.0): un solo lienzo WebGL que se coloca sobre la PS1 del centro. three.js y el modelo (lib/3d, ~0,4 MB)
+     se bajan la primera vez que la PS1 queda en el centro; si algo falla se queda la imagen de siempre. Solo vive en la
+     portada: al abrir un juego la página se recarga y el 3D desaparece. */
+  var P3 = { h: null, art: null, busy: false, bad: false };
+  function sync3d() {
+    var a = slideEls[activeIdx], art = a && a.getAttribute('data-c') === 'psx' ? a.querySelector('.art') : null;
+    if (!art) { if (P3.h) P3.h.run(false); return; }
+    if (P3.bad) return;
+    if (P3.h) { put3d(art); return; }
+    var sd = navigator.connection && navigator.connection.saveData;
+    if (P3.busy || sd) return;
+    P3.busy = true;
+    import(new URL('lib/3d/ps1-3d.js', location.href).href).then(function (m) { return m.create(new URL('lib/3d/ps1.glb', location.href).href); }).then(function (h) {
+      P3.h = h; P3.busy = false;
+      h.el.className = 'm3d';
+      h.onlost = function () { P3.bad = true; if (P3.art) P3.art.classList.remove('has3d'); h.run(false); diag('PS1 3D: se perdió el contexto WebGL'); };
+      var a2 = slideEls[activeIdx], art2 = a2 && a2.getAttribute('data-c') === 'psx' ? a2.querySelector('.art') : null;
+      if (art2) put3d(art2);
+    }).catch(function (e) { P3.busy = false; P3.bad = true; diag('PS1 3D no disponible: ' + (e && e.message || e)); });
+  }
+  function put3d(art) {
+    if (P3.art && P3.art !== art) P3.art.classList.remove('has3d');
+    P3.art = art;
+    if (P3.h.el.parentNode !== art) art.appendChild(P3.h.el);
+    P3.h.run(true);
+    requestAnimationFrame(function () { art.classList.add('has3d'); });
   }
   function nearestSlide() {                  // cálculo directo (hay muchas diapositivas)
     var a = slideEls[0], b = slideEls[1], pitch = b.offsetLeft - a.offsetLeft;
@@ -2639,7 +2671,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 126, APP_SEMVER = '1.7.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 127, APP_SEMVER = '1.8.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;

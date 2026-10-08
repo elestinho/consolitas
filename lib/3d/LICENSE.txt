@@ -1,0 +1,6 @@
+ps1.glb: "Playstation 1" por ecjhr0awipso (https://sketchfab.com/ecjhr0awipso)
+  https://sketchfab.com/3d-models/playstation-1-96bed8283f2940d7bb4b1866ab0637a2
+  Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Modificado: malla simplificada y comprimida, texturas reducidas (WebP).
+  PlayStation es marca de Sony Interactive Entertainment.
+ps1-3d.js: three.js (MIT, https://threejs.org), con GLTFLoader y MeshoptDecoder (MIT).
