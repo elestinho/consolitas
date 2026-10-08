@@ -812,7 +812,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.5.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.5.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2269,12 +2269,16 @@
     else if (k === 'n64') { s.backgroundImage = 'url(' + BOXLOGO.n64 + ')'; s.backgroundColor = '#c3c4c8'; s.backgroundSize = '44% auto'; }
     else {
       s.backgroundImage = 'url(' + BOXLOGO[k] + ')'; s.backgroundColor = '#f3f1ea'; s.backgroundSize = '68% auto';
-      if (g.logo) {                          // logo del título del juego (libretro) debajo del de la consola
-        s.backgroundSize = '52% auto'; s.backgroundPosition = 'center 24%';
-        var im = document.createElement('img'); im.src = g.logo; im.alt = ''; im.draggable = false;
-        im.style.cssText = 'position:absolute;left:50%;top:56%;transform:translateX(-50%);width:62%;max-height:32%;object-fit:contain;pointer-events:none';
-        bk.appendChild(im);
-      }
+    }
+    if (g.logo && LOGO_CONSOLES[k]) {        // logo del título del juego (libretro): pequeño, justo debajo del de la consola; los dos juntos y centrados
+      var cl = { gba: [46, 30], n64: [32, 36], psx: [28, 36] }[k];
+      s.backgroundImage = 'none';
+      s.cssText += ';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5%';
+      var ci = document.createElement('img'), im = document.createElement('img');
+      ci.src = k === 'psx' ? PS_IMG : BOXLOGO[k]; im.src = g.logo; ci.alt = im.alt = ''; ci.draggable = im.draggable = false;
+      ci.style.cssText = 'width:' + cl[0] + '%;max-height:' + cl[1] + '%;object-fit:contain;pointer-events:none';
+      im.style.cssText = 'width:34%;max-height:16%;object-fit:contain;pointer-events:none';
+      bk.appendChild(ci); bk.appendChild(im);
     }
     bx.appendChild(bk);
   }
@@ -2621,7 +2625,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 120, APP_SEMVER = '1.5.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 121, APP_SEMVER = '1.5.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2981,7 +2985,7 @@
         });
       }).catch(function () { return null; });
   }
-  var LOGO_CONSOLES = { gba: 1 };                 // consolas con logo del título en la contraportada (libretro: Named_Logos)
+  var LOGO_CONSOLES = { gba: 1, n64: 1, psx: 1 };                 // consolas con logo del título en la contraportada (libretro: Named_Logos)
   function findCover(consoleId, ext, titles, buf, hint, only) {
     var sets = coverSetsFor(consoleId, ext);
     return Promise.all(sets.map(loadIndex)).then(function (idxs) {
@@ -3026,7 +3030,7 @@
   function autoLogo(id) {                          // solo el logo del título (juegos que ya tenían portada o la eligió Álex)
     var g = byId[id];
     if (!g || g.logo || !LOGO_CONSOLES[g.console]) return Promise.resolve(null);
-    return getRom(id).then(romBuf).then(function (buf) {
+    return (g.console === 'psx' ? Promise.resolve(null) : getRom(id).then(romBuf)).then(function (buf) {   // un disco de PS1 no se lee entero
       var n = g.name, hint = /europe|\(E\)/i.test(n) ? 'europe' : /japan|\(J\)/i.test(n) ? 'japan' : /usa|\((U|JU|UE)\)/i.test(n) ? 'usa' : '';
       return findCover(g.console, g.ext, [g.title, prettify(g.name)], buf, hint, 'logo');
     }).then(function (res) {
