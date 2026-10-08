@@ -145,6 +145,9 @@
      se encoge cuando sube, como si estuviera viva */
   .art::after { content:""; position:absolute; left:22%; right:22%; bottom:var(--sb, 0px); height:16px; border-radius:50%; pointer-events:none;
     background:radial-gradient(closest-side, rgba(0,0,0,.5), rgba(0,0,0,0)); opacity:.8; }
+  .art .m3d { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity .5s; }
+  .art.has3d .m3d { opacity:1; }
+  .art.has3d img { opacity:0; animation:none !important; }
   .slide.active .art img { animation:cfloat 3.6s ease-in-out infinite; }
   .slide.active .art::before { animation:chalo 3.6s ease-in-out infinite; }
   .slide.active .art::after { animation:cshadow 3.6s ease-in-out infinite; }
@@ -812,7 +815,8 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.7.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.8.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelos 3D: «Playstation 1» de ecjhr0awipso, «Nintendo DS Chrome Special Edition» de Huge Nintendo DS y «Gameboy Advance SP» de thegraphicsgeek, «Snes PAL Controller» de kwstasg y «Low-Poly Sega Mega Drive» de niklas.glosen, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1433,6 +1437,37 @@
     Array.prototype.forEach.call($('dots').children, function (d, k) { d.classList.toggle('on', k === r); });
     Array.prototype.forEach.call($('glows').children, function (g) { g.classList.toggle('on', g.getAttribute('data-c') === CAR[r]); });
     lsSet('car-c', CAR[r]);
+    sync3d();
+  }
+  /* PS1, DS, GBA, SNES y Mega Drive en 3D (1.8.0): un lienzo WebGL por consola que se coloca sobre la del centro. three.js y el modelo (lib/3d, ~0,4 MB)
+     se bajan la primera vez que la PS1 queda en el centro; si algo falla se queda la imagen de siempre. Solo vive en la
+     portada: al abrir un juego la página se recarga y el 3D desaparece. */
+  var M3 = { psx: { glb: 'ps1.glb' }, nds: { glb: 'ds.glb', ry: 0.15, sway: 0.6 }, gba: { glb: 'gba.glb', ry: 0.45, sway: 0.6, fit: 2.4 },
+    snes: { glb: 'snes.glb', rx: 0.7, ry: 0.2, sway: 0.5, fit: 2.3 }, md: { glb: 'md.glb', ry: 0.5, sway: 0.6, fit: 2.3, light: 1.7 } }, P3 = {};
+  function art3d(cid) { var a = slideEls[activeIdx]; return a && a.getAttribute('data-c') === cid ? a.querySelector('.art') : null; }
+  function sync3d() {
+    Object.keys(M3).forEach(function (cid) {
+      var p = P3[cid] || (P3[cid] = { h: null, art: null, busy: false, bad: false }), art = art3d(cid);
+      if (!art) { if (p.h) p.h.run(false); return; }
+      if (p.bad) return;
+      if (p.h) { put3d(p, art); return; }
+      var sd = navigator.connection && navigator.connection.saveData;
+      if (p.busy || sd) return;
+      p.busy = true;
+      import(new URL('lib/3d/ps1-3d.js', location.href).href).then(function (m) { return m.create(new URL('lib/3d/' + M3[cid].glb, location.href).href, M3[cid]); }).then(function (h) {
+        p.h = h; p.busy = false;
+        h.el.className = 'm3d';
+        h.onlost = function () { p.bad = true; if (p.art) p.art.classList.remove('has3d'); h.run(false); diag('3D: se perdió el contexto WebGL (' + cid + ')'); };
+        var art2 = art3d(cid); if (art2) put3d(p, art2);
+      }).catch(function (e) { p.busy = false; p.bad = true; diag('3D no disponible (' + cid + '): ' + (e && e.message || e)); });
+    });
+  }
+  function put3d(p, art) {
+    if (p.art && p.art !== art) p.art.classList.remove('has3d');
+    p.art = art;
+    if (p.h.el.parentNode !== art) art.appendChild(p.h.el);
+    p.h.run(true);
+    requestAnimationFrame(function () { art.classList.add('has3d'); });
   }
   function nearestSlide() {                  // cálculo directo (hay muchas diapositivas)
     var a = slideEls[0], b = slideEls[1], pitch = b.offsetLeft - a.offsetLeft;
@@ -2639,7 +2674,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 126, APP_SEMVER = '1.7.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 127, APP_SEMVER = '1.8.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
