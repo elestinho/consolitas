@@ -812,7 +812,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.5.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.5.2</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2196,9 +2196,10 @@
   function dsImg(k) { if (!dsImgs[k]) { dsImgs[k] = new Image(); dsImgs[k].src = DSBOX[k]; } return dsImgs[k]; }
   function spineName(t) { return String(t || '').replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '').replace(/\.(nds|gba|gbc|gb|n64|z64|v64|zip|7z|rar)$/i, '').replace(/\s+/g, ' ').trim(); }
   function logoImg(k) { var n = 'L' + k; if (!dsImgs[n]) { dsImgs[n] = new Image(); dsImgs[n].src = BOXLOGO[k]; } return dsImgs[n]; }
-  function drawSpine(cv, name, k) {
+  function drawSpine(cv, name, k, tlUrl) {
     var W = cv.width, H = cv.height, x = cv.getContext('2d'), ps = k === 'psx', ds = k === 'nds';
-    var ims = ps ? [psLogo()] : ds ? [dsImg('top'), dsImg('bot')] : [logoImg(k)];
+    var ims = ps ? [psLogo()] : ds ? [dsImg('top'), dsImg('bot')] : [logoImg(k)], tl = null;
+    if (tlUrl && LOGO_CONSOLES[k]) { tl = new Image(); tl.src = tlUrl; ims.push(tl); }    // logo del título del juego (libretro)
     var FONT = '700 {s}px -apple-system, "Helvetica Neue", Arial, sans-serif';
     function ok(im) { return im.complete && im.naturalWidth; }
     function title(y0, y1, size, col) {      // nombre del juego en vertical, de arriba abajo, como en una caja real
@@ -2206,9 +2207,16 @@
       x.save(); x.translate(W / 2, y0); x.rotate(Math.PI / 2);
       x.fillStyle = col || '#fff'; x.textBaseline = 'middle'; x.font = FONT.replace('{s}', fs);
       var w = x.measureText(t).width;
-      if (w > room) { fs = Math.max(W * .28, fs * room / w); x.font = FONT.replace('{s}', fs); }
+      if (w > room) { fs = Math.max(W * .2, fs * room / w); x.font = FONT.replace('{s}', fs); }
       while (t.length > 1 && x.measureText(t).width > room) t = t.slice(0, -2).trim() + '…';
       x.fillText(t, 0, 0); x.restore();
+    }
+    function tlogo(y0, cap) {                // logo del título girado, leyéndose de arriba abajo como el nombre; devuelve dónde acaba
+      if (!tl || !ok(tl)) return y0;
+      var asp = tl.naturalWidth / tl.naturalHeight, th = W * .8, L = th * asp;
+      if (L > cap) { L = cap; th = L / asp; }
+      x.save(); x.translate((W + th) / 2, y0); x.rotate(Math.PI / 2); x.drawImage(tl, 0, 0, L, th); x.restore();
+      return y0 + L + W * .22;
     }
     function bg(c0, c1, c2) {
       var g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, c0); g.addColorStop(.4, c2); g.addColorStop(.7, c1); g.addColorStop(1, c0);
@@ -2224,7 +2232,7 @@
         if (ok(pl)) { var lw = bw * .72, lh = lw * pl.naturalHeight / pl.naturalWidth; x.drawImage(pl, m + (bw - lw) / 2, by + bw * .12, lw, lh); }
         x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'alphabetic'; x.font = '600 ' + (W * .13) + 'px -apple-system, Arial, sans-serif';
         x.fillText('PlayStation', W / 2, by + bw * .92); x.textAlign = 'start';
-        title(by + bw + W * .5, H - W * .3, W * .42);
+        title(tlogo(by + bw + W * .25, H * .18) + (tl && ok(tl) ? 0 : W * .2), H - W * .3, W * .42);
         return;
       }
       if (ds) {
@@ -2239,14 +2247,14 @@
       if (k === 'n64') {                     // N64: lateral gris claro, logo pequeño arriba y el nombre debajo
         bg('#a7a7a7', '#dcdcdc', '#fafafa');
         if (ok(lg)) x.drawImage(lg, (W - lw2) / 2, W * .16, lw2, lh2);
-        title(W * .16 + lh2 + W * .45, H - W * .3, W * .42, '#1c1c22');
+        title(tlogo(W * .16 + lh2 + W * .25, H * .18) + (tl && ok(tl) ? 0 : W * .15), H - W * .3, W * .42, '#1c1c22');
         return;
       }
       bg('#a9a59b', '#d8d4ca', '#f6f4ee');   // GBA y GBC: lateral claro, logo girado hacia abajo arriba y el nombre debajo
       var lw3 = W * .5, lh3 = ok(lg) ? lw3 * lg.naturalWidth / lg.naturalHeight : 0, y0 = W * .25;
-      lh3 = Math.min(lh3, H * .3); lw3 = ok(lg) ? lh3 * lg.naturalHeight / lg.naturalWidth : lw3;
+      lh3 = Math.min(lh3, H * (tl && ok(tl) ? .17 : .3)); lw3 = ok(lg) ? lh3 * lg.naturalHeight / lg.naturalWidth : lw3;
       if (ok(lg)) { x.save(); x.translate((W + lw3) / 2, y0); x.rotate(Math.PI / 2); x.drawImage(lg, 0, 0, lh3, lw3); x.restore(); }
-      title(y0 + lh3 + W * .45, H - W * .3, W * .42, '#1c1c22');
+      title(tlogo(y0 + lh3 + W * .25, H * .18) + (tl && ok(tl) ? 0 : W * .15), H - W * .3, W * .42, '#1c1c22');
     }
     paint();
     ims.forEach(function (im) { if (!im.complete) im.addEventListener('load', paint); });
@@ -2259,7 +2267,7 @@
     var old = bx.querySelector('.bsl'), cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
     cv.className = 'bsl'; cv.width = Math.round(d * dpr); cv.height = Math.round(fh * dpr);
     cv.style.width = d + 'px'; cv.style.height = fh + 'px';
-    bx.replaceChild(cv, old); drawSpine(cv, spineName(g.title), k);
+    bx.replaceChild(cv, old); drawSpine(cv, spineName(g.title), k, g.logo);
     var bk = document.createElement('i'), s = bk.style; bk.className = 'bk';
     if (k === 'psx') { s.backgroundImage = 'url(' + PS_IMG + ')'; s.backgroundColor = '#8e9098'; s.backgroundSize = '46% auto'; }
     else if (k === 'nds') {                  // champiñón algo más arriba y el logo de Nintendo DS debajo
@@ -2269,16 +2277,6 @@
     else if (k === 'n64') { s.backgroundImage = 'url(' + BOXLOGO.n64 + ')'; s.backgroundColor = '#c3c4c8'; s.backgroundSize = '44% auto'; }
     else {
       s.backgroundImage = 'url(' + BOXLOGO[k] + ')'; s.backgroundColor = '#f3f1ea'; s.backgroundSize = '68% auto';
-    }
-    if (g.logo && LOGO_CONSOLES[k]) {        // logo del título del juego (libretro): pequeño, justo debajo del de la consola; los dos juntos y centrados
-      var cl = { gba: [46, 30], n64: [32, 36], psx: [28, 36] }[k];
-      s.backgroundImage = 'none';
-      s.cssText += ';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5%';
-      var ci = document.createElement('img'), im = document.createElement('img');
-      ci.src = k === 'psx' ? PS_IMG : BOXLOGO[k]; im.src = g.logo; ci.alt = im.alt = ''; ci.draggable = im.draggable = false;
-      ci.style.cssText = 'width:' + cl[0] + '%;max-height:' + cl[1] + '%;object-fit:contain;pointer-events:none';
-      im.style.cssText = 'width:34%;max-height:16%;object-fit:contain;pointer-events:none';
-      bk.appendChild(ci); bk.appendChild(im);
     }
     bx.appendChild(bk);
   }
@@ -2625,7 +2623,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 121, APP_SEMVER = '1.5.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 122, APP_SEMVER = '1.5.2', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
