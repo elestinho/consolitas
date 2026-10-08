@@ -812,7 +812,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.4.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.5.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1352,6 +1352,7 @@
         g.title = m.title || prettify(g.name);
         g.cover = m.cover || null;
         g.ct = m.ct || 0;
+        g.logo = m.logo || null; g.lt = m.lt || 0;      // logo del título (contraportada de la caja)
         g.own = !!m.own;                           // portada elegida por Álex: manda sobre la automática
         return g;
       }).sort(function (a, b) { return a.title.localeCompare(b.title); });
@@ -2266,7 +2267,15 @@
       s.backgroundPosition = 'center 36%, center 84%'; s.backgroundSize = '52% auto, 66% auto';
     }
     else if (k === 'n64') { s.backgroundImage = 'url(' + BOXLOGO.n64 + ')'; s.backgroundColor = '#c3c4c8'; s.backgroundSize = '44% auto'; }
-    else { s.backgroundImage = 'url(' + BOXLOGO[k] + ')'; s.backgroundColor = '#f3f1ea'; s.backgroundSize = '68% auto'; }
+    else {
+      s.backgroundImage = 'url(' + BOXLOGO[k] + ')'; s.backgroundColor = '#f3f1ea'; s.backgroundSize = '68% auto';
+      if (g.logo) {                          // logo del título del juego (libretro) debajo del de la consola
+        s.backgroundSize = '52% auto'; s.backgroundPosition = 'center 24%';
+        var im = document.createElement('img'); im.src = g.logo; im.alt = ''; im.draggable = false;
+        im.style.cssText = 'position:absolute;left:50%;top:56%;transform:translateX(-50%);width:62%;max-height:32%;object-fit:contain;pointer-events:none';
+        bk.appendChild(im);
+      }
+    }
     bx.appendChild(bk);
   }
   var spin = { on: false, ry: 0, base: 0, x0: 0, y0: 0, drag: false, pts: [], at: 0, raf: 0 };
@@ -2612,7 +2621,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 119, APP_SEMVER = '1.4.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 120, APP_SEMVER = '1.5.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -2789,6 +2798,24 @@
     c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
     return c.toDataURL('image/jpeg', 0.86);
   }
+  function fileToLogo(file) {                      // logo del título: PNG con transparencia, pequeño
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        try {
+          var s = Math.min(1, 300 / im.naturalWidth), c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(im.naturalWidth * s)); c.height = Math.max(1, Math.round(im.naturalHeight * s));
+          var x = c.getContext('2d'); x.drawImage(im, 0, 0, c.width, c.height);
+          var d = x.getImageData(0, 0, c.width, c.height), p = d.data;          // restos casi transparentes del fondo: fuera
+          for (var i = 3; i < p.length; i += 4) if (p[i] < 40) p[i] = 0;
+          x.putImageData(d, 0, 0); res(c.toDataURL('image/png'));
+        } catch (e) { rej(e); }
+        URL.revokeObjectURL(url);
+      };
+      im.onerror = function () { rej(new Error('No se pudo leer el logo')); URL.revokeObjectURL(url); };
+      im.src = url;
+    });
+  }
   function fileToCover(file) {
     return new Promise(function (res, rej) {
       var url = URL.createObjectURL(file), im = new Image();
@@ -2954,7 +2981,8 @@
         });
       }).catch(function () { return null; });
   }
-  function findCover(consoleId, ext, titles, buf, hint) {
+  var LOGO_CONSOLES = { gba: 1 };                 // consolas con logo del título en la contraportada (libretro: Named_Logos)
+  function findCover(consoleId, ext, titles, buf, hint, only) {
     var sets = coverSetsFor(consoleId, ext);
     return Promise.all(sets.map(loadIndex)).then(function (idxs) {
       return (buf ? lookupHash(idxs, buf) : Promise.resolve(null)).then(function (hit) {
@@ -2968,7 +2996,11 @@
             return b ? { blob: b, name: cands[i], how: how, folder: folder } : tryList(folder, i + 1);
           });
         }
-        return tryList('Named_Boxarts', 0).then(function (r) { return r || tryList('Named_Titles', 0); });   // si no hay caja, la pantalla de título
+        if (only === 'logo') return tryList('Named_Logos', 0);
+        return tryList('Named_Boxarts', 0).then(function (r) { return r || tryList('Named_Titles', 0); }).then(function (r) {   // si no hay caja, la pantalla de título
+          if (!r || !LOGO_CONSOLES[consoleId]) return r;
+          return tryList('Named_Logos', 0).then(function (l) { r.logo = l && l.blob; return r; });
+        });
       });
     });
   }
@@ -2984,13 +3016,29 @@
       return findCover(g.console, g.ext, [g.title, prettify(g.name)], buf, hint);
     }).then(function (res) {
       if (!res) return null;
-      return fileToCover(res.blob).then(function (url) { res.url = url; return res; });
+      return fileToCover(res.blob).then(function (url) { res.url = url; return res.logo ? fileToLogo(res.logo).then(function (l) { res.logoUrl = l; }, function () {}).then(function () { return res; }) : res; });
     }).then(function (res) {
       if (byId[id] && byId[id].own) return null;   // eligieron una foto mientras se buscaba
-      var meta = { id: id, title: g.title, cover: res ? res.url : g.cover, ct: Date.now() };
-      return putMeta(meta).then(function () { g.cover = meta.cover; g.ct = meta.ct; diag('portada ' + (res ? res.how + ': ' + res.name : 'no encontrada') + ' (' + g.title + ')'); return res; });
+      var meta = { id: id, title: g.title, cover: res ? res.url : g.cover, ct: Date.now(), logo: (res && res.logoUrl) || g.logo || undefined, lt: LOGO_CONSOLES[g.console] ? Date.now() : g.lt };
+      return putMeta(meta).then(function () { g.cover = meta.cover; g.ct = meta.ct; g.logo = meta.logo || null; g.lt = meta.lt || 0; diag('portada ' + (res ? res.how + ': ' + res.name : 'no encontrada') + ' (' + g.title + ')'); return res; });
     });
   }
+  function autoLogo(id) {                          // solo el logo del título (juegos que ya tenían portada o la eligió Álex)
+    var g = byId[id];
+    if (!g || g.logo || !LOGO_CONSOLES[g.console]) return Promise.resolve(null);
+    return getRom(id).then(romBuf).then(function (buf) {
+      var n = g.name, hint = /europe|\(E\)/i.test(n) ? 'europe' : /japan|\(J\)/i.test(n) ? 'japan' : /usa|\((U|JU|UE)\)/i.test(n) ? 'usa' : '';
+      return findCover(g.console, g.ext, [g.title, prettify(g.name)], buf, hint, 'logo');
+    }).then(function (res) {
+      return (res ? fileToLogo(res.blob) : Promise.resolve(null)).then(function (url) {
+        return metaRec(id).then(function (m) {
+          if (url) m.logo = url; m.lt = Date.now();
+          return putMeta(m).then(function () { g.logo = m.logo || null; g.lt = m.lt; diag('logo ' + (url ? res.how + ': ' + res.name : 'no encontrado') + ' (' + g.title + ')'); return url; });
+        });
+      });
+    });
+  }
+  var logoOnly = {};
   function queueCovers(ids) {
     ids.forEach(function (id) { if (coverQueue.indexOf(id) < 0) coverQueue.push(id); });
     if (!coverBusy) runCoverQueue();
@@ -3004,12 +3052,13 @@
     if (!id) { coverBusy = false; coverStatus(''); return; }
     coverBusy = true;
     var g = byId[id]; coverStatus('Buscando portada de ' + (g ? g.title : '…') + '…');
-    autoCover(id, !!coverForce[id]).then(function (res) {
+    (logoOnly[id] ? autoLogo(id).then(function () { return null; }) : autoCover(id, !!coverForce[id])).then(function (res) {
       if (res) { toast('Portada encontrada: ' + baseTitle(res.name)); if (ctxConsole) renderGames(); }
     }).catch(function (e) {
       diag('portada: error ' + e.message + (g ? ' (' + g.title + ')' : ''));
       if (/fetch|network|Load failed|offline|Failed/i.test(e.message)) toast('Sin conexión: no pude buscar portadas', 3200);
-      else if (g && !(byId[id] || g).own) { g.ct = Date.now(); putMeta({ id: id, title: g.title, cover: g.cover || null, ct: g.ct }).catch(function () {}); }   // imagen rota: no se reintenta en cada arranque
+      else if (logoOnly[id]) { g.lt = Date.now(); metaRec(id).then(function (m) { m.lt = g.lt; return putMeta(m); }).catch(function () {}); }
+      else if (g && !(byId[id] || g).own) { g.ct = Date.now(); putMeta({ id: id, title: g.title, cover: g.cover || null, ct: g.ct, logo: g.logo || undefined, lt: g.lt || undefined }).catch(function () {}); }   // imagen rota: no se reintenta en cada arranque
     }).then(runCoverQueue);
   }
 
@@ -4045,7 +4094,7 @@
         for (var i = 0; i < d.length; i += 400) if (d[i] || d[i + 1] || d[i + 2]) lit++;
         if (!lit) throw new Error('la captura salió vacía');
         var url = shrinkToJpeg(t, t.width, t.height);
-        putMeta({ id: curId, title: (byId[curId] && byId[curId].title) || curName, cover: url })
+        putMeta({ id: curId, title: (byId[curId] && byId[curId].title) || curName, cover: url, logo: (byId[curId] && byId[curId].logo) || undefined, lt: (byId[curId] && byId[curId].lt) || undefined })
           .then(function () { toast('Portada guardada'); }).catch(function (e) { toast('Error: ' + e.message); });
       } catch (e) { toast('No se pudo capturar: ' + e.message); }
     });
@@ -4652,7 +4701,8 @@
   if (qs.get('g')) launch(qs.get('g'));
   else if (CONSOLES[qs.get('c')]) { $('home').style.display = 'none'; $('tabbar').style.display = 'none'; }   // al salir de un juego: sin carrusel mientras carga su consola
   if (!qs.get('g')) refresh().then(function () { updateProt(); show(qs.get('c'), false); var again = false; try { again = localStorage.getItem('cover-retry') !== '82'; localStorage.setItem('cover-retry', '82'); } catch (e) {}   // v81: se reintentan una vez las que fallaron por los enlaces de libretro
-    queueCovers(games.filter(function (g) { return !g.cover && (!g.ct || again); }).map(function (g) { if (again) coverForce[g.id] = 1; return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
+    queueCovers(games.filter(function (g) { return !g.cover && (!g.ct || again); }).map(function (g) { if (again) coverForce[g.id] = 1; return g.id; }));
+    queueCovers(games.filter(function (g) { return LOGO_CONSOLES[g.console] && !g.logo && !g.lt && (g.cover || g.ct); }).map(function (g) { logoOnly[g.id] = 1; return g.id; })); }).catch(function (e) { log('Error: ' + e.message); });
 })();
 </script>
 </body>
