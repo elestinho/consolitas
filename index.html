@@ -812,7 +812,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.4.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.4.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -2134,9 +2134,10 @@
     var ar = srcEl ? parseFloat(srcEl.getAttribute('data-ar')) || 1 : 1;   // portada no cuadrada: la ficha toma su forma
     var fw = ar > 1 ? t.size : t.size * ar, fh = ar > 1 ? t.size / ar : t.size, fl = t.left + (t.size - fw) / 2, ft = t.top + (t.size - fh) / 2;
     fly.style.left = fl + 'px'; fly.style.top = ft + 'px'; fly.style.width = fw + 'px'; fly.style.height = fh + 'px';
-    fly.style.setProperty('--d', (Math.max(fw, fh) * .1).toFixed(1) + 'px');
+    var dk = (g.console === 'n64' || g.console === 'gba' || g.console === 'gb') ? .18 : .1;   // cajas de plástico más gruesas que las carátulas finas de DS y PS1
+    fly.style.setProperty('--d', (Math.max(fw, fh) * dk).toFixed(1) + 'px');
     spinReset();
-    if (BOXKC[g.console]) boxDress(fly.querySelector('.bx'), g, fh, +(Math.max(fw, fh) * .1).toFixed(1));
+    if (BOXKC[g.console]) boxDress(fly.querySelector('.bx'), g, fh, +(Math.max(fw, fh) * dk).toFixed(1));
     info.style.left = t.left + 'px'; info.style.width = t.size + 'px'; info.style.top = (ft + fh + 20) + 'px';
     [fly, info, bg].forEach(cancelAnims);
     ov.style.display = 'block';
@@ -2241,8 +2242,8 @@
         return;
       }
       bg('#a9a59b', '#d8d4ca', '#f6f4ee');   // GBA y GBC: lateral claro, logo girado hacia abajo arriba y el nombre debajo
-      var lw3 = W * .7, lh3 = ok(lg) ? lw3 * lg.naturalWidth / lg.naturalHeight : 0, y0 = W * .25;
-      lh3 = Math.min(lh3, H * .42); lw3 = ok(lg) ? lh3 * lg.naturalHeight / lg.naturalWidth : lw3;
+      var lw3 = W * .5, lh3 = ok(lg) ? lw3 * lg.naturalWidth / lg.naturalHeight : 0, y0 = W * .25;
+      lh3 = Math.min(lh3, H * .3); lw3 = ok(lg) ? lh3 * lg.naturalHeight / lg.naturalWidth : lw3;
       if (ok(lg)) { x.save(); x.translate((W + lw3) / 2, y0); x.rotate(Math.PI / 2); x.drawImage(lg, 0, 0, lh3, lw3); x.restore(); }
       title(y0 + lh3 + W * .45, H - W * .3, W * .42, '#1c1c22');
     }
@@ -2611,7 +2612,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 118, APP_SEMVER = '1.4.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 119, APP_SEMVER = '1.4.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
