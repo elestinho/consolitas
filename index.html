@@ -845,7 +845,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.14.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.14.2</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
   <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelos 3D: «Playstation 1» de ecjhr0awipso, «Nintendo DS Chrome Special Edition» de Huge Nintendo DS y «Gameboy Advance SP» de thegraphicsgeek, «Snes PAL Controller» de kwstasg y «Low-Poly Sega Mega Drive» de niklas.glosen y «Gameboy Color Pokemon Edition» de NeaKaufeldt, «Sonic with a Game Gear» de sonicfan443 y «Nintendo 64 Controller» de synthetic worlds y «Nintendo NES original» de A.stark, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
 </div>
 
@@ -2412,7 +2412,7 @@
   }
   var spin = { on: false, ry: 0, base: 0, x0: 0, y0: 0, drag: false, pts: [], at: 0, raf: 0 };
   function spinBox() { return $('ovfly').querySelector('.bx.cbox'); }
-  function spinT(ry) { return 'perspective(900px) rotateY(' + (ry - 24) + 'deg) rotateX(-7deg)'; }
+  function boxSpinT(ry) { return 'perspective(900px) rotateY(' + (ry - 24) + 'deg) rotateX(-7deg)'; }
   function spinReset() {
     var fly = $('ovfly'), bx = spinBox(); cancelAnimationFrame(spin.raf); spin.raf = 0;
     spin.on = spin.drag = false; spin.ry = 0;
@@ -2435,7 +2435,7 @@
       bx.style.transition = 'none'; fly.classList.add('twirl');
     }
     spin.ry = spin.base + dx * 0.55;
-    bx.style.transform = spinT(spin.ry);
+    bx.style.transform = boxSpinT(spin.ry);
     spin.pts.push([e.clientX, performance.now()]); if (spin.pts.length > 6) spin.pts.shift();
   });
   function spinEnd() {
@@ -2453,7 +2453,7 @@
     function step(now) {
       if (spinBox() !== bx) { spin.raf = 0; return; }
       var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
-      spin.ry = from + (to - from) * e; bx.style.transform = spinT(spin.ry);
+      spin.ry = from + (to - from) * e; bx.style.transform = boxSpinT(spin.ry);
       if (k < 1) { spin.raf = requestAnimationFrame(step); return; }
       spin.raf = 0;
       var back = ((to % 360) + 360) % 360 === 180;
@@ -2753,7 +2753,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 138, APP_SEMVER = '1.14.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 139, APP_SEMVER = '1.14.2', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
