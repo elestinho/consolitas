@@ -21,4 +21,20 @@ md.glb: "Low-Poly Sega Mega Drive" por niklas.glosen (https://sketchfab.com/nikl
   https://sketchfab.com/3d-models/low-poly-sega-mega-drive-f11afb3b0b114e6fab52e531a4d3ef6d
   Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
   Modificado: texturas en WebP, malla comprimida. Mega Drive es marca de Sega.
+gbc.glb: "Gameboy Color Pokemon Edition" por NeaKaufeldt (https://sketchfab.com/NeaKaufeldt)
+  https://sketchfab.com/3d-models/gameboy-color-pokemon-edition-38f46f3fb61340c6942ab72ff529bdfd
+  Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Modificado: quitados los dos cartuchos, malla simplificada y comprimida, texturas en WebP. Game Boy Color y Pokémon son marcas de Nintendo.
+gg.glb: "Sonic with a Game Gear" por sonicfan443 (https://sketchfab.com/sonicfan443)
+  https://sketchfab.com/3d-models/sonic-with-a-game-gear-05593576d56b48c2b9125b3cb368ac36
+  Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Modificado: malla comprimida. Sonic y Game Gear son marcas de Sega.
+n64.glb: "Nintendo 64 Controller" por synthetic worlds (https://sketchfab.com/syntheticworlds)
+  https://sketchfab.com/3d-models/nintendo-64-controller-0cec163531b5428a8b77114314364712
+  Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Modificado: texturas en WebP, malla comprimida. Nintendo 64 es marca de Nintendo.
+nes.glb: "Nintendo NES original" por A.stark (https://sketchfab.com/a.stark)
+  https://sketchfab.com/3d-models/nintendo-nes-original-6de5054340184509af6f301c7f3fac57
+  Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Modificado: mallas unidas y simplificadas, texturas en WebP, malla comprimida. NES es marca de Nintendo.
 ps1-3d.js: three.js (MIT, https://threejs.org), con GLTFLoader y MeshoptDecoder (MIT).
