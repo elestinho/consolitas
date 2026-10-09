@@ -817,7 +817,7 @@
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
   <p class="ver">Versión <span id="verTxt">1.8.2</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
-  <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelos 3D: «Playstation 1» de ecjhr0awipso, «Nintendo DS Chrome Special Edition» de Huge Nintendo DS y «Gameboy Advance SP» de thegraphicsgeek, «Snes PAL Controller» de kwstasg y «Low-Poly Sega Mega Drive» de niklas.glosen, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
+  <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelos 3D: «Playstation 1» de ecjhr0awipso, «Nintendo DS Chrome Special Edition» de Huge Nintendo DS y «Gameboy Advance SP» de thegraphicsgeek, «Snes PAL Controller» de kwstasg y «Low-Poly Sega Mega Drive» de niklas.glosen y «Gameboy Color Pokemon Edition» de NeaKaufeldt, «Sonic with a Game Gear» de sonicfan443 y «Nintendo 64 Controller» de synthetic worlds y «Nintendo NES original» de A.stark, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
 </div>
 
 <!-- Personalizar la Game Boy Advance: elegir skin -->
@@ -1444,7 +1444,7 @@
      se bajan la primera vez que la PS1 queda en el centro; si algo falla se queda la imagen de siempre. Solo vive en la
      portada: al abrir un juego la página se recarga y el 3D desaparece. */
   var M3 = { psx: { glb: 'ps1.glb' }, nds: { glb: 'ds.glb', ry: 0.15, sway: 0.6 }, gba: { glb: 'gba.glb', ry: 0.45, sway: 0.6, fit: 2.4 },
-    snes: { glb: 'snes.glb', rx: 0.7, ry: 0.2, sway: 0.5, fit: 2.3 }, md: { glb: 'md.glb', ry: 3.64, sway: 0.6, fit: 2.3, light: 1.7 } }, P3 = {};
+    snes: { glb: 'snes.glb', rx: 0.7, ry: 0.2, sway: 0.5, fit: 2.3 }, gb: { glb: 'gbc.glb', ry: 0.5, sway: 0.6, fit: 2.3 }, nes: { glb: 'nes.glb', rx: 0.45, ry: 3.34, sway: 0.5, fit: 1.9 }, gg: { glb: 'gg.glb', rx: 0.7, ry: 0.5, sway: 0.5, fit: 2.3 }, n64: { glb: 'n64.glb', rx: 0.7, ry: 0.2, sway: 0.5, fit: 2.3 }, md: { glb: 'md.glb', ry: 3.64, sway: 0.6, fit: 2.3, light: 1.7 } }, P3 = {};
   function art3d(cid) { var a = slideEls[activeIdx]; return a && a.getAttribute('data-c') === cid ? a.querySelector('.art') : null; }
   function sync3d() {
     Object.keys(M3).forEach(function (cid) {
@@ -1477,7 +1477,7 @@
     };
     import(base('ps1-3d.js')).catch(function () {}).then(next);
   }
-  (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(function () { setTimeout(warm3d, 800); });
+  if (!/[?&]g=/.test(location.search)) (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(function () { setTimeout(warm3d, 800); });
   function put3d(p, art) {
     if (p.art && p.art !== art) p.art.classList.remove('has3d', 'd3');
     p.art = art;
@@ -2692,7 +2692,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 129, APP_SEMVER = '1.8.2', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 132, APP_SEMVER = '1.9.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
