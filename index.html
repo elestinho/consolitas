@@ -593,12 +593,6 @@
   #ovfly img { pointer-events:none; -webkit-user-drag:none; }
   #ovfly { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   .bk { inset:0; transform:rotateY(180deg) translateZ(calc(var(--d) / 2)); border-radius:3px; background:#fafafa center / 52% auto no-repeat; }
-  /* Contraportada: el nombre de la consola con la letra del carrusel (oscuro sobre cajas claras, claro con brillo sobre oscuras) */
-  .bk .bkn { position:absolute; left:0; right:0; top:50%; transform:translateY(-50%); text-align:center; white-space:nowrap; font-style:normal;
-    font-weight:800; letter-spacing:-.3px; line-height:1.1; color:#1c1c22; }
-  .bk .bkn.lt { background:linear-gradient(105deg, #dedee8 0%, #dedee8 36%, #fff 45%, #fffbe8 50%, #fff 55%, #dedee8 64%, #dedee8 100%);
-    background-size:300% 100%; background-position:60% 0; -webkit-background-clip:text; background-clip:text; color:transparent; }
-  .bk .bkn.lo { top:84%; }
   .bk::after { content:""; position:absolute; inset:0; border-radius:3px; pointer-events:none;
     background:linear-gradient(112deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.06) 26%, transparent 40%, transparent 72%, rgba(255,255,255,.08) 100%);
     box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14), inset 0 0 0 3.5px rgba(0,0,0,.28); }
@@ -839,7 +833,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.13.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.12.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
   <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelos 3D: «Playstation 1» de ecjhr0awipso, «Nintendo DS Chrome Special Edition» de Huge Nintendo DS y «Gameboy Advance SP» de thegraphicsgeek, «Snes PAL Controller» de kwstasg y «Low-Poly Sega Mega Drive» de niklas.glosen y «Gameboy Color Pokemon Edition» de NeaKaufeldt, «Sonic with a Game Gear» de sonicfan443 y «Nintendo 64 Controller» de synthetic worlds y «Nintendo NES original» de A.stark, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
 </div>
 
@@ -2234,7 +2228,7 @@
     var dk = (g.console === 'nds' || g.console === 'psx') ? .1 : .18;   // cajas de plástico más gruesas que las carátulas finas de DS y PS1
     fly.style.setProperty('--d', (Math.max(fw, fh) * dk).toFixed(1) + 'px');
     spinReset();
-    if (BOXKC[g.console]) boxDress(fly.querySelector('.bx'), g, fh, +(Math.max(fw, fh) * dk).toFixed(1), fw);
+    if (BOXKC[g.console]) boxDress(fly.querySelector('.bx'), g, fh, +(Math.max(fw, fh) * dk).toFixed(1));
     info.style.left = t.left + 'px'; info.style.width = t.size + 'px'; info.style.top = (ft + fh + 20) + 'px';
     [fly, info, bg].forEach(cancelAnims);
     ov.style.display = 'block';
@@ -2369,7 +2363,7 @@
   }
   function psLogo() { if (!dsImgs.ps) { dsImgs.ps = new Image(); dsImgs.ps.src = PS_IMG; } return dsImgs.ps; }
   var BOXKC = { nds: 1, psx: 1, n64: 1, gba: 1, gb: 1, nes: 1, snes: 1, md: 1, gg: 1 };
-  function boxDress(bx, g, fh, d, fw) {      // solo la caja grande de la ficha: lomo con el nombre y contraportada con el nombre de la consola
+  function boxDress(bx, g, fh, d) {          // solo la caja grande de la ficha: lomo con el nombre y contraportada con el logo
     var k = g.console;
     bx.classList.add('cbox');
     var old = bx.querySelector('.bsl'), cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -2377,16 +2371,19 @@
     cv.style.width = d + 'px'; cv.style.height = fh + 'px';
     bx.replaceChild(cv, old); drawSpine(cv, spineName(g.title), k, g.logo);
     var bk = document.createElement('i'), s = bk.style; bk.className = 'bk';
-    var BKC = { psx: '#8e9098', nds: '#fafafa', md: '#17181b', gg: '#f4f4f2', nes: '#d9d9d6', snes: '#e6e6ec', n64: '#c3c4c8' };
-    s.backgroundColor = BKC[k] || '#f3f1ea';
-    if (k === 'nds') { s.backgroundImage = 'url(' + DSBOX.seta + ')'; s.backgroundPosition = 'center 36%'; s.backgroundSize = '52% auto'; }
-    else s.backgroundImage = 'none';
-    var nm = document.createElement('span'), cn = CONSOLES[k].name, fs = fw * .1, mc = document.createElement('canvas').getContext('2d');
-    mc.font = '800 ' + fs + 'px -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif';
-    var tw = mc.measureText(cn).width; if (tw > fw * .8) fs = fs * fw * .8 / tw;   // el nombre del carrusel, del mismo tamaño en todas y que quepa en la caja
-    nm.className = 'bkn' + (k === 'md' || k === 'psx' ? ' lt' : '') + (k === 'nds' ? ' lo' : '');
-    nm.textContent = cn; nm.style.fontSize = fs.toFixed(1) + 'px';
-    bk.appendChild(nm);
+    if (k === 'psx') { s.backgroundImage = 'url(' + PS_IMG + ')'; s.backgroundColor = '#8e9098'; s.backgroundSize = '46% auto'; }
+    else if (k === 'nds') {                  // champiñón algo más arriba y el logo de Nintendo DS debajo
+      s.backgroundImage = 'url(' + DSBOX.seta + '), url(' + BOXLOGO.nds + ')';
+      s.backgroundPosition = 'center 36%, center 84%'; s.backgroundSize = '52% auto, 66% auto';
+    }
+    else if (k === 'md') { s.backgroundImage = 'url(' + BOXLOGO.md + ')'; s.backgroundColor = '#17181b'; s.backgroundSize = '70% auto'; }
+    else if (k === 'gg') { s.backgroundImage = 'url(' + BOXLOGO.gg + ')'; s.backgroundColor = '#f4f4f2'; s.backgroundSize = '40% auto'; }
+    else if (k === 'nes') { s.backgroundImage = 'url(' + BOXLOGO.nes + ')'; s.backgroundColor = '#d9d9d6'; s.backgroundSize = '66% auto'; }
+    else if (k === 'snes') { s.backgroundImage = 'url(' + BOXLOGO.snes + ')'; s.backgroundColor = '#e6e6ec'; s.backgroundSize = '50% auto'; }
+    else if (k === 'n64') { s.backgroundImage = 'url(' + BOXLOGO.n64 + ')'; s.backgroundColor = '#c3c4c8'; s.backgroundSize = '44% auto'; }
+    else {
+      s.backgroundImage = 'url(' + BOXLOGO[k] + ')'; s.backgroundColor = '#f3f1ea'; s.backgroundSize = '68% auto';
+    }
     bx.appendChild(bk);
   }
   var spin = { on: false, ry: 0, base: 0, x0: 0, y0: 0, drag: false, pts: [], at: 0, raf: 0 };
@@ -2732,7 +2729,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 136, APP_SEMVER = '1.13.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 135, APP_SEMVER = '1.12.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
