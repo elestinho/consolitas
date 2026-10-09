@@ -845,7 +845,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.14.2</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.14.3</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
   <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelos 3D: «Playstation 1» de ecjhr0awipso, «Nintendo DS Chrome Special Edition» de Huge Nintendo DS y «Gameboy Advance SP» de thegraphicsgeek, «Snes PAL Controller» de kwstasg y «Low-Poly Sega Mega Drive» de niklas.glosen y «Gameboy Color Pokemon Edition» de NeaKaufeldt, «Sonic with a Game Gear» de sonicfan443 y «Nintendo 64 Controller» de synthetic worlds y «Nintendo NES original» de A.stark, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
 </div>
 
@@ -2753,7 +2753,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 139, APP_SEMVER = '1.14.2', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 140, APP_SEMVER = '1.14.3', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
@@ -3197,7 +3197,7 @@
   /* ====== Añadir ROMs y parches ====== */
   var PATCH_EXTS = ['ips', 'bps', 'ups'];
   var GENERIC_PATCH = /^(patch|parche|hack|rom|game|juego|headered|unheadered|headerless|[a-z]?[\d._-]*)$/i;
-  var JUNK_EXTS = ['txt', 'nfo', 'diz', 'md', 'pdf', 'doc', 'docx', 'rtf', 'htm', 'html', 'url', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp',
+  var JUNK_EXTS = ['txt', 'nfo', 'diz', 'pdf', 'doc', 'docx', 'rtf', 'htm', 'html', 'url', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp',
     'sav', 'srm', 'sgm', 'state', 'cht', 'xml', 'json', 'db', 'ini', 'cfg', 'exe', 'dll', 'bat', 'sh', 'asm', 'tbl', 'ttf', 'mp3', 'ogg', 'wav', 'mp4'];
   function hex8(n) { return ('0000000' + (n >>> 0).toString(16)).slice(-8).toUpperCase(); }
   function u32le(u8, p) { return (u8[p] | (u8[p + 1] << 8) | (u8[p + 2] << 16) | (u8[p + 3] << 24)) >>> 0; }
@@ -3260,9 +3260,16 @@
     return null;
   }
   // Decide consola y extensión: primero el contenido, luego la extensión, y un .bin/.rom suelto va a la consola abierta
+  function isText(u8) {
+    var n = Math.min(u8.length, 1024), i, x;
+    for (i = 0; i < n; i++) { x = u8[i]; if (x < 9 || (x > 13 && x < 32)) return false; }
+    return true;
+  }
   function classifyRom(base, ext, buf) {
     var s = sniffConsole(new Uint8Array(buf)), byExt = detectConsole(ext);
     if (s) return { c: s.c, ext: byExt === s.c ? ext : s.ext };
+    // .md es Mega Drive, pero también un README.md: si es texto no es un juego (1.14.3)
+    if (ext === 'md' && isText(new Uint8Array(buf))) return null;
     if (byExt) return { c: byExt, ext: ext };
     if ((ext === 'bin' || ext === 'rom' || !ext) && ctxConsole) return { c: ctxConsole, ext: CONSOLES[ctxConsole].exts[0], guess: true };
     return null;
