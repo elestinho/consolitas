@@ -173,12 +173,12 @@
   .slide .sn .nm.lg img { display:block; max-height:40px; max-width:210px; width:auto; height:auto; object-fit:contain; pointer-events:none; -webkit-user-drag:none;
     filter:drop-shadow(0 0 1.2px #fff) drop-shadow(0 0 1.2px #fff) drop-shadow(0 0 3px rgba(255,255,255,.7)) drop-shadow(0 2px 6px rgba(0,0,0,.3)); }
   .slide .sn .nm.lg.ps img { max-width:170px; }
-  /* Brillo que cruza el logo (solo dentro de su silueta) una vez por segundo */
+  /* Brillo que cruza el logo (solo dentro de su silueta) una vez cada 2 segundos */
   .slide .sn .nm.lg::after { content:""; position:absolute; inset:0; pointer-events:none; opacity:0;
     background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,.95) 50%, transparent 62%) 130% 0 / 280% 100% no-repeat;
     -webkit-mask:var(--lg) center / contain no-repeat; mask:var(--lg) center / contain no-repeat; }
-  .slide.active .sn .nm.lg::after { opacity:1; animation:lshine 1s ease-in-out infinite; }
-  @keyframes lshine { 0% { background-position:130% 0; } 65%, 100% { background-position:-30% 0; } }
+  .slide.active .sn .nm.lg::after { opacity:1; animation:lshine 2s ease-in-out infinite; }
+  @keyframes lshine { 0% { background-position:130% 0; } 33%, 100% { background-position:-30% 0; } }
   @media (prefers-reduced-motion: reduce) { .slide.active .sn .nm.lg::after { animation:none; opacity:0; } }
   .slide .sn::before { content:""; flex:0 0 30px; }   /* contrapeso de la estrella: el nombre queda centrado */
   /* Icono de favorita (estrella, Sonic o PS): gris y translúcida sin marcar; al marcar, salta, gira y suelta destellos */
@@ -845,7 +845,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.14.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.14.1</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
   <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelos 3D: «Playstation 1» de ecjhr0awipso, «Nintendo DS Chrome Special Edition» de Huge Nintendo DS y «Gameboy Advance SP» de thegraphicsgeek, «Snes PAL Controller» de kwstasg y «Low-Poly Sega Mega Drive» de niklas.glosen y «Gameboy Color Pokemon Edition» de NeaKaufeldt, «Sonic with a Game Gear» de sonicfan443 y «Nintendo 64 Controller» de synthetic worlds y «Nintendo NES original» de A.stark, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
 </div>
 
@@ -2753,7 +2753,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 137, APP_SEMVER = '1.14.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 138, APP_SEMVER = '1.14.1', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
