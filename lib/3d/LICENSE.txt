@@ -33,4 +33,8 @@ n64.glb: "Nintendo 64 Controller" por synthetic worlds (https://sketchfab.com/sy
   https://sketchfab.com/3d-models/nintendo-64-controller-0cec163531b5428a8b77114314364712
   Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
   Modificado: texturas en WebP, malla comprimida. Nintendo 64 es marca de Nintendo.
+nes.glb: "Nintendo NES original" por A.stark (https://sketchfab.com/a.stark)
+  https://sketchfab.com/3d-models/nintendo-nes-original-6de5054340184509af6f301c7f3fac57
+  Licencia CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Modificado: mallas unidas y simplificadas, texturas en WebP, malla comprimida. NES es marca de Nintendo.
 ps1-3d.js: three.js (MIT, https://threejs.org), con GLTFLoader y MeshoptDecoder (MIT).
