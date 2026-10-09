@@ -833,7 +833,7 @@
   </button>
   <div class="row"><span>Mostrar rendimiento en el juego (fps)</span><input type="checkbox" id="perf"></div>
   <button class="sbtn pri" id="setClose">Listo</button>
-  <p class="ver">Versión <span id="verTxt">1.11.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
+  <p class="ver">Versión <span id="verTxt">1.12.0</span> · <a id="diagOpen">Diagnóstico</a><a id="updCheck" style="display:none"></a></p>
   <p class="ver" style="margin-top:2px;font-size:11px;opacity:.55">Modelos 3D: «Playstation 1» de ecjhr0awipso, «Nintendo DS Chrome Special Edition» de Huge Nintendo DS y «Gameboy Advance SP» de thegraphicsgeek, «Snes PAL Controller» de kwstasg y «Low-Poly Sega Mega Drive» de niklas.glosen y «Gameboy Color Pokemon Edition» de NeaKaufeldt, «Sonic with a Game Gear» de sonicfan443 y «Nintendo 64 Controller» de synthetic worlds y «Nintendo NES original» de A.stark, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (modificado)</p>
 </div>
 
@@ -1507,6 +1507,21 @@
       setTimeout(function () { art.classList.add('d3'); }, 600);
     });
   }
+  /* Giro al deslizar (1.12.0): la consola 3D del centro se voltea hacia donde se desliza el carrusel (izquierda o derecha), tanto más
+     cuanto más rápido, y vuelve sola a su postura al pararse. Solo suma un ángulo (spin) al que ya tiene cada modelo en M3. */
+  var spinX = null, spinT = 0, spinV = 0, spinA = 0, spinRaf = 0;
+  var SPIN_OFF = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function spinTick(t) {
+    spinRaf = 0;
+    var x = carEl.scrollLeft, dt = Math.max(8, t - spinT), first = spinX === null, dx = first ? 0 : x - spinX;
+    spinV = Math.abs(dx) < carEl.clientWidth ? spinV * 0.6 + (dx / dt) * 0.4 : 0;   // un salto grande es el recentrado invisible: no cuenta
+    spinX = x; spinT = t;
+    var aim = Math.max(-1.1, Math.min(1.1, -spinV * 0.8));     // px/ms → radianes; hacia la izquierda gira a la izquierda
+    spinA += (aim - spinA) * (1 - Math.exp(-dt / 90));          // suavizado igual a 60 o a 120 Hz
+    if (!first && dx === 0 && Math.abs(spinA) < 0.002 && Math.abs(spinV) < 0.002) { spinA = 0; spinX = null; }
+    else spinRaf = requestAnimationFrame(spinTick);
+    for (var k in M3) M3[k].spin = spinA;
+  }
   function nearestSlide() {                  // cálculo directo (hay muchas diapositivas)
     var a = slideEls[0], b = slideEls[1], pitch = b.offsetLeft - a.offsetLeft;
     if (!pitch) return activeIdx < 0 ? MIDC : activeIdx;
@@ -1633,6 +1648,7 @@
     function settle() { clearTimeout(settleTimer); settleTimer = setTimeout(function () { if (!touching && !ctxConsole && TAB === 'cons' && nearEdge()) recenter(); }, 400); }
     carEl.addEventListener('scroll', function () {
       if (!scrollRaf) scrollRaf = requestAnimationFrame(function () { scrollRaf = 0; setActive(nearestSlide()); });
+      if (!spinRaf && !SPIN_OFF) spinRaf = requestAnimationFrame(spinTick);
       settle();
     }, { passive: true });
     carEl.addEventListener('touchstart', function () { touching = true; clearTimeout(settleTimer); }, { passive: true });
@@ -2713,7 +2729,7 @@
   $('a2hsClose').onclick = closeSheets;
 
   /* ====== Actualizaciones sin reinstalar: los datos viven en este dominio y sobreviven a cualquier versión ====== */
-  var APP_VER = 134, APP_SEMVER = '1.11.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
+  var APP_VER = 135, APP_SEMVER = '1.12.0', APP_URL = 'https://elestinho.github.io/consolitas/', newVer = 0, lastCheck = 0;
   var isOfficial = location.hostname === 'elestinho.github.io', isLocal = /^(localhost|127\.|\[::1\]|)$/.test(location.hostname);
   function checkUpdate(manual) {                   // revalida index.html (304 si no cambió) y compara APP_VER
     if (!window.fetch || (!manual && Date.now() - lastCheck < 30 * 60000)) return;
