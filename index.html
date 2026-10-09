@@ -168,11 +168,10 @@
   @media (prefers-reduced-motion: reduce) { .slide.active .art img, .slide.active .art::before, .slide.active .art::after, .slide.active .sn .nm { animation:none; } }
   .slide .sn { margin-top:14px; font-size:22px; font-weight:800; letter-spacing:-.3px;
     display:flex; align-items:center; justify-content:center; gap:8px; }
-  /* Logo de la consola en lugar del nombre: sobre una chapa clara (oscura para el de GBA, que es blanco) */
-  .slide .sn .nm.lg { display:inline-flex; align-items:center; justify-content:center; height:52px; padding:0 18px; border-radius:14px;
-    background:#f1f1f6; box-shadow:0 4px 16px rgba(0,0,0,.28); }
-  .slide .sn .nm.lg.lgd { background:#1d1d24; }
-  .slide .sn .nm.lg img { display:block; max-height:34px; max-width:190px; width:auto; height:auto; object-fit:contain; pointer-events:none; -webkit-user-drag:none; }
+  /* Logo de la consola en lugar del nombre, a color y con un halo blanco fino para que se lea sobre cualquier fondo */
+  .slide .sn .nm.lg { display:inline-flex; align-items:center; justify-content:center; height:52px; }
+  .slide .sn .nm.lg img { display:block; max-height:40px; max-width:210px; width:auto; height:auto; object-fit:contain; pointer-events:none; -webkit-user-drag:none;
+    filter:drop-shadow(0 0 1.2px #fff) drop-shadow(0 0 1.2px #fff) drop-shadow(0 0 3px rgba(255,255,255,.7)) drop-shadow(0 2px 6px rgba(0,0,0,.3)); }
   .slide.active .sn .nm.lg { animation:none; }
   .slide .sn::before { content:""; flex:0 0 30px; }   /* contrapeso de la estrella: el nombre queda centrado */
   /* Icono de favorita (estrella, Sonic o PS): gris y translúcida sin marcar; al marcar, salta, gira y suelta destellos */
@@ -1567,7 +1566,7 @@
       var cid = ls[i].getAttribute('data-c'), src = cid === 'psx' ? PS_IMG : (typeof BOXLOGO !== 'undefined' && BOXLOGO && BOXLOGO[cid]);
       var nm = ls[i].querySelector('.sn .nm'); if (!src || !nm || nm.classList.contains('lg')) continue;
       var im = new Image(); im.alt = CONSOLES[cid].name; im.src = src; im.decoding = 'async';
-      nm.textContent = ''; nm.appendChild(im); nm.classList.add('lg'); nm.classList.toggle('lgd', cid === 'gba');
+      nm.textContent = ''; nm.appendChild(im); nm.classList.add('lg');
     }
   }
   function buildSlides() {
